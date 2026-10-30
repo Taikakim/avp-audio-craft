@@ -13,19 +13,34 @@
 #   1. C3_avp_song       latents_avp, val-frac 0.10 (~15 songs), 20 epochs  (~35 min)
 #   2. C3_goa_avp_song   latents_sa3 + latents_avp, val-frac 0.05, 12 epochs (~65 min)
 # Epoch choice for rendering comes from the honest val curve, not the last epoch.
+#
+# KUANG 2026-10-30: the targets were the second problem. Lehto/latents_avp_chroma (from the
+# first extract_avp_same_chroma.py) holds the linear readout W z + b of the FULL-MIX latent,
+# saved under 'other'; Goa's latents_sa3_stem_chroma 'other' is compute_same_chroma on the
+# separated other-stem audio. So the 10-29 AVP heads learned the July production-head target
+# (the head E21c found needs gain 8192), and the combined arm mixed two definitions. This
+# driver now builds stem-audio targets for AVP first (CPU, resumable, step 0) and trains on
+# them; OUT moved so the readout-target runs are kept apart. Crops without stems (variants
+# whose stems were never rendered) drop out of training; step 0 prints how many.
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/chroma_retrain_avp_songsplit_20261030
+OUT=/run/media/kim/Mantu/latch_sweep/chroma_retrain_avp_stemchroma_20261030
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
+AVP_CHROMA=/run/media/kim/Kosmos/latents/latents_avp_stem_chroma
+
+echo "$(date +%H:%M) Step 0: AVP stem-chroma targets -> $AVP_CHROMA (CPU)"
+$SAO/.venv/bin/python $SAO/stable-audio-3/scripts/latch/extract_avp_same_chroma.py \
+    --latent-dir /run/media/kim/Kosmos/latents/latents_avp --out-dir "$AVP_CHROMA" --workers 8 </dev/null \
+    || { echo "$(date +%H:%M) stem-chroma extraction failed"; exit 1; }
 
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0 WANDB_MODE=offline WANDB_DIR=$OUT
 
 COMMON="--feature same_chroma --target-source chroma --chroma-key other --val-seed 0 --val-group-by song --seed 0 --num-workers 8 --loss cosine --save-every-epoch --save-online --optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-warmup-epochs 1 --mod-radial-brake 0.8 --grad-clip 1.0 --ema-halflife-epochs 1 --ema-extra-halflife-epochs 0.25 --depth 8 --dim 512 --batch-size 8 --grad-accum 4 --lr 1e-3 --wandb --wandb-project sa3-latch-chroma --log-every 20 --layer-every 100"
 
 ARMS=(
-"C3_avp_song|--chroma-dir /run/media/kim/Lehto/latents_avp_chroma --latent-dir /run/media/kim/Kosmos/latents/latents_avp --val-frac 0.10 --epochs 20 $COMMON"
-"C3_goa_avp_song|--chroma-dir /run/media/kim/Kosmos/latents/latents_sa3_stem_chroma,/run/media/kim/Lehto/latents_avp_chroma --latent-dir /run/media/kim/Kosmos/latents/latents_sa3,/run/media/kim/Kosmos/latents/latents_avp --val-frac 0.05 --epochs 12 $COMMON"
+"C3_avp_song|--chroma-dir $AVP_CHROMA --latent-dir /run/media/kim/Kosmos/latents/latents_avp --val-frac 0.10 --epochs 20 $COMMON"
+"C3_goa_avp_song|--chroma-dir /run/media/kim/Kosmos/latents/latents_sa3_stem_chroma,$AVP_CHROMA --latent-dir /run/media/kim/Kosmos/latents/latents_sa3,/run/media/kim/Kosmos/latents/latents_avp --val-frac 0.05 --epochs 12 $COMMON"
 )
 
 mkdir -p "$OUT"

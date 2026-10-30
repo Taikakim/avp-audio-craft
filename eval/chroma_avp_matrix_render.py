@@ -42,7 +42,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, "/home/kim/Projects/mir-same-chroma/src")
 
 import chroma_steer_targets as T  # noqa: E402
-from chroma_steer_render import build_target_raw, _chroma12_per_frame  # noqa: E402
+from chroma_steer_render import build_target_raw, _chroma12_per_frame, latent_frames, fit_to_latent  # noqa: E402
 from harmonic import same_chroma as sc  # noqa: E402
 
 OUT = Path("/run/media/kim/Mantu/sa3_control_runs/chroma_avp_matrix_20261029")
@@ -52,8 +52,19 @@ DORA_FT = Path("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/ru
 
 HEADS = {
     "goa_e13": Path("/run/media/kim/Mantu/latch_sweep/chroma_retrain_2026-10-16/C3_chroma_d512_lr1e-3/latch_sa3_same_chroma_ep10.pt"),
-    "avp_aug": Path("/run/media/kim/Mantu/latch_sweep/chroma_retrain_avp_20261029/C3_avp_aug/latch_sa3_same_chroma_ep10.pt"),
-    "goa_avp": Path("/run/media/kim/Mantu/latch_sweep/chroma_retrain_avp_20261029/C3_goa_avp_combined/latch_sa3_same_chroma_ep10.pt"),
+    # KUANG 2026-10-30: the 10-29 AVP heads learned the full-mix latent readout stored under
+    # 'other', not stem chroma (see latch/run_chroma_avp_songsplit.sh). These are the
+    # stem-chroma, song-split retrains; pick the epoch from val_by_t and pass --head if not best.
+    "avp_aug": Path("/run/media/kim/Mantu/latch_sweep/chroma_retrain_avp_stemchroma_20261030/C3_avp_song/latch_sa3_same_chroma_best.pt"),
+    "goa_avp": Path("/run/media/kim/Mantu/latch_sweep/chroma_retrain_avp_stemchroma_20261030/C3_goa_avp_song/latch_sa3_same_chroma_best.pt"),
+}
+# Heads the cells.jsonl records written before 2026-10-30 were rendered with (they carry no
+# head_path). A record is reused only if it was rendered with the head now configured.
+LEGACY_HEADS = {
+    "base": "/run/media/kim/Mantu/latch_sweep/chroma_retrain_2026-10-16/C3_chroma_d512_lr1e-3/latch_sa3_same_chroma_ep10.pt",
+    "goa_e13": "/run/media/kim/Mantu/latch_sweep/chroma_retrain_2026-10-16/C3_chroma_d512_lr1e-3/latch_sa3_same_chroma_ep10.pt",
+    "avp_aug": "/run/media/kim/Mantu/latch_sweep/chroma_retrain_avp_20261029/C3_avp_aug/latch_sa3_same_chroma_ep10.pt",
+    "goa_avp": "/run/media/kim/Mantu/latch_sweep/chroma_retrain_avp_20261029/C3_goa_avp_combined/latch_sa3_same_chroma_ep10.pt",
 }
 
 PROMPTS = {
@@ -161,16 +172,28 @@ def load_cells_db():
     return db
 
 
+def is_progression(tid):
+    return bool(tid) and target_spec(tid)["kind"] != "static"
+
+
+def record_is_current(rec):
+    """Reuse a measured cell only if it was rendered with the head configured now and, for a
+    chord progression, with the target fitted to the latent window (before 2026-10-30 the
+    progression was stretched ~1.3x by generate()'s resample; static targets were not)."""
+    head = rec["head"]
+    have = rec.get("head_path", LEGACY_HEADS.get(head))
+    if have is None or Path(have) != Path(HEADS["goa_e13" if head == "base" else head]):
+        return False
+    return not is_progression(rec.get("target")) or rec.get("target_fit") == "latent"
+
+
 def resolve_head_path(hid):
+    """The configured checkpoint, exactly. (The old fallback to ep12/best swapped in a
+    different epoch without saying so in the results.)"""
     path = HEADS[hid]
     if path.exists():
         return path
-    # Try fallback to ep12 or best
-    parent = path.parent
-    for candidate in [parent / "latch_sa3_same_chroma_ep12.pt", parent / "latch_sa3_same_chroma_best.pt", parent / "latch_sa3_same_chroma_ep10.pt"]:
-        if candidate.exists():
-            return candidate
-    raise FileNotFoundError(f"Cannot resolve checkpoint for {hid} at {path}")
+    raise FileNotFoundError(f"Cannot resolve checkpoint for {hid} at {path} (pass --head {hid}=PATH)")
 
 
 def _csv(s, cast=str):
@@ -185,7 +208,14 @@ def main():
     ap.add_argument("--targets", default="", help="comma list, default all TARGET_IDS")
     ap.add_argument("--seeds", default="", help="comma list, default 5678,1234")
     ap.add_argument("--extra", default="", help="extra head:gain pairs, e.g. avp_aug:16384")
+    ap.add_argument("--head", action="append", default=[], metavar="ID=PATH",
+                    help="override a head checkpoint, e.g. avp_aug=/path/latch_sa3_same_chroma_ep14.pt")
     args = ap.parse_args()
+    for spec in args.head:
+        hid, path = spec.split("=", 1)
+        if hid not in HEADS:
+            raise SystemExit(f"unknown head {hid!r}; one of {sorted(HEADS)}")
+        HEADS[hid] = Path(path)
 
     OUT.mkdir(parents=True, exist_ok=True)
     AAC_DIR.mkdir(parents=True, exist_ok=True)
@@ -193,8 +223,8 @@ def main():
     extra = [(p.split(":")[0], int(p.split(":")[1])) for p in _csv(args.extra) or []]
     plan = build_plan(targets=_csv(args.targets), gains=_csv(args.gains, int),
                       seeds=_csv(args.seeds, int), extra=extra)
-    db = load_cells_db()
-    print(f"[matrix] Total plan: {len(plan)} cells; already measured: {len(db)}")
+    db = {fn: rec for fn, rec in load_cells_db().items() if record_is_current(rec)}
+    print(f"[matrix] Total plan: {len(plan)} cells; reusable measured cells: {len(db)}")
 
     todo = [c for c in plan if c["fn"] not in db]
     if args.limit > 0:
@@ -206,13 +236,9 @@ def main():
             print(f"  [{i+1}] {c['fn']} -> head={c['head']} target={c['target']} gain={c['gain']} pid={c['prompt_id']} s={c['seed']}")
         return
 
-    # Check that head paths exist before loading
-    for hid in ["goa_e13", "avp_aug", "goa_avp"]:
-        try:
-            resolved = resolve_head_path(hid)
-            print(f"[matrix] Head {hid} -> {resolved}")
-        except FileNotFoundError as e:
-            print(f"[matrix] Warning: {e}")
+    # Every head the pending cells need must exist before the model loads (fail now, not mid-run)
+    for hid in sorted({"goa_e13" if c["head"] == "base" else c["head"] for c in todo}):
+        print(f"[matrix] Head {hid} -> {resolve_head_path(hid)}")
 
     # Load StableAudioModel with DoRA adapter
     import torch
@@ -227,10 +253,12 @@ def main():
     print("[matrix] Model ready on GPU.", flush=True)
 
     n_frames = int(round(DURATION_SEC * FPS))
-
-    # Pre-build targets for speed
+    # Targets cover the audible n_frames and hold their last frame over generate()'s padding,
+    # so frame f of the target lands on latent frame f (KUANG 2026-10-30).
+    n_latent = latent_frames(model, DURATION_SEC)
+    print(f"[matrix] target frames: {n_frames} audible, {n_latent} in the latent window", flush=True)
     targets_raw = {
-        tid: build_target(tid, n_frames) for tid in TARGET_IDS
+        tid: fit_to_latent(build_target(tid, n_frames), n_latent) for tid in TARGET_IDS
     }
 
     pt = model.model.pretransform
@@ -345,6 +373,9 @@ def main():
             "hit_bass": m_t["bass"]["hit"],
             "hit_mid": m_t["mid"]["hit"],
             "z_std": z_std,
+            "head_path": str(hpath),
+            "target_fit": "latent",
+            "target_frames": [n_frames, n_latent],
             "latency_s": round(dt, 2),
             "measured_all": met,
         }

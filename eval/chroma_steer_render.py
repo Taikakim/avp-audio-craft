@@ -108,6 +108,32 @@ def build_target_raw(dim: int, target_spec: dict, n_frames: int) -> np.ndarray:
     raise ValueError(f"unsupported head dim {dim}")
 
 
+# ── fit a target to the latent window generate() actually renders ────────────────────
+# generate() renders seconds_total + duration_padding_sec (6 s) of latents, rounded up by
+# _adapt_sample_size, and model.py linearly resamples target_raw onto that WHOLE window.
+# A target built for the audible DURATION_SEC frames was therefore stretched ~1.3x
+# (216 -> ~280 frames): progression chord changes landed ~30% late and the last chords fell
+# in the trimmed padding. Static targets were unaffected. KUANG 2026-10-30.
+
+def latent_frames(model, duration_sec: float, padding_sec: float = 6.0) -> int:
+    """Latent frames generate(duration=duration_sec) samples (default duration_padding_sec)."""
+    from stable_audio_3.model import DEFAULT_SAMPLE_SIZE
+    n = model._adapt_sample_size([{"seconds_total": duration_sec}], DEFAULT_SAMPLE_SIZE,
+                                 padding_sec, allow_grow=True)
+    return n // model.model.pretransform.downsampling_ratio
+
+
+def fit_to_latent(target_raw: np.ndarray, n_latent: int) -> np.ndarray:
+    """Hold the last frame over the padding tail so model.py's resample is the identity and
+    target frame f lands on latent frame f; the audible part is unchanged."""
+    n = target_raw.shape[-1]
+    if n > n_latent:
+        raise ValueError(f"target has {n} frames, the latent window only {n_latent}")
+    if n == n_latent:
+        return target_raw
+    return np.concatenate([target_raw, np.repeat(target_raw[..., -1:], n_latent - n, axis=-1)], axis=-1)
+
+
 # ── output chroma measurement (CPU; the chroma-trap-safe Δ is computed page-side) ────
 
 def measure_cos12(wav_np: np.ndarray, target_spec: dict, n_frames: int):
@@ -180,6 +206,7 @@ def render(mode: str):
             print(f"[chroma-steer] MISSING head {m['ckpt']} — its tab will stay pending")
 
     model = StableAudioModel.from_pretrained("medium-base", device="cuda")
+    n_latent = latent_frames(model, DURATION_SEC)
 
     if mode == "verify-one":
         cells = [(next(m for m in T.MODELS if m["id"] == "hpcp"),
@@ -200,7 +227,7 @@ def render(mode: str):
         gen = dict(prompt=p["text"], duration=DURATION_SEC, steps=STEPS,
                    cfg_scale=CFG, seed=s)
         if g > 0:
-            target_raw = build_target_raw(m["dim"], t, n_frames)
+            target_raw = fit_to_latent(build_target_raw(m["dim"], t, n_frames), n_latent)
             gen["latch_configs"] = [{"model_path": str(ck), "target_raw": target_raw,
                                      "weight": 1.0, "loss_type": "cosine"}]
             gen["latch_hparams"] = {"rho": float(g), "mu": float(g)}

@@ -7,6 +7,15 @@
 
 Uses 20.0s (280 latent frames), 24-step flow-matching Euler, native seeds & prompts,
 and latch_sa3_same_chroma_ep10.pt (same_chroma_e13).
+
+KUANG 2026-10-30:
+- The base clip is now `base0`: the guided sampler at weight 0. The old `base` passed no
+  latch config, so generate() took sample_diffusion (CFG rescale, padding mask), a different
+  sampler from every steered clip (the EXPERIMENTS E13 note-5 confound). Old `base` files are
+  left alone; the page reads `base0`.
+- Every decode is checked against a second decode (the first-GPU-decode noise burst seen in
+  chroma_avp_matrix_render), and a full-FT checkpoint must cover every DiT weight.
+- The render plan is read from --plan and copied next to the wavs, so the run can be redone.
 """
 import os
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
@@ -14,7 +23,7 @@ os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 
-import sys, time, json, subprocess
+import argparse, shutil, sys, time, json, subprocess
 from pathlib import Path
 import numpy as np
 import torch
@@ -35,8 +44,6 @@ from sa3_control.audio_io import save_audio
 LATCH_CKPT = "/run/media/kim/Mantu/latch_sweep/chroma_retrain_2026-10-16/C3_chroma_d512_lr1e-3/latch_sa3_same_chroma_ep10.pt"
 OUT_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/choice_clips_chroma_20261030")
 OUT_AAC_DIR = Path("/home/kim/evals_aac/choice_clips_chroma")
-OUT_WAV_DIR.mkdir(parents=True, exist_ok=True)
-OUT_AAC_DIR.mkdir(parents=True, exist_ok=True)
 
 ALIENS_MP3 = "/run/media/kim/Mantu/goa_archive_extracted/Goa.PsyTrance.Collection.1994/VA_-_Order_Odonata_1-(HQ)-(BFLCD13)-1994-ZAiK_iNT/03-total_eclipse_-_aliens.mp3"
 ALIENS_START = 6073122
@@ -45,6 +52,43 @@ TOTAL_SAMPLES = LATENT_FRAMES * 4096  # 1146880 samples at 44100 Hz = 26.006s wi
 DURATION = 20.0
 STEPS = 24
 SAMPLE_RATE = 44100
+PLAN_DEFAULT = "/home/kim/.gemini/antigravity/brain/62fc5213-e94b-4c13-86bf-69147f02f03c/scratch/render_plan_items.json"
+
+
+def load_full_ft(dit, ckpt_path):
+    """Load a full-finetune DiT state dict and refuse a partial load (strict=False alone
+    would keep base weights for any key the checkpoint names differently, silently)."""
+    ck = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    sd_raw = ck.get("state_dict", ck)
+    tgt_keys = set(dict(dit.named_parameters())) | set(dict(dit.named_buffers()))
+    prefixes = ("diffusion.model.", "model.")
+    sd = max(
+        ({(k[len(pfx):] if k.startswith(pfx) else k): v for k, v in sd_raw.items()}
+         for pfx in prefixes),
+        key=lambda d: sum(1 for k in d if k in tgt_keys)
+    )
+    res = dit.load_state_dict({k: v for k, v in sd.items() if k in tgt_keys}, strict=False)
+    missing = [k for k in res.missing_keys if k in dict(dit.named_parameters())]
+    if missing:
+        raise RuntimeError(f"{ckpt_path}: {len(missing)} DiT weights not in the checkpoint "
+                           f"(first: {missing[:3]}); refusing a partial load")
+    return len(tgt_keys & set(sd))
+
+
+def checked_decode(decode_fn, z, tries=4):
+    """Decode z until two decodes agree (atol 5e-2), as chroma_avp_matrix_render does."""
+    cands = []
+    for _ in range(tries):
+        w = decode_fn(z)
+        if not torch.isfinite(w).all():
+            cands.append(w)
+            continue
+        for prev in cands:
+            n = min(prev.shape[-1], w.shape[-1])
+            if torch.allclose(prev[..., :n], w[..., :n], atol=5e-2, rtol=0):
+                return w, len(cands)
+        cands.append(w)
+    raise RuntimeError(f"VAE decode never reproduced itself in {tries} attempts")
 
 def transcode_to_aac(wav_path: Path, aac_path: Path):
     if aac_path.exists() and aac_path.stat().st_size > 0:
@@ -87,14 +131,20 @@ def build_targets():
     }
 
 def main():
-    with open("/home/kim/.gemini/antigravity/brain/62fc5213-e94b-4c13-86bf-69147f02f03c/scratch/render_plan_items.json") as f:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--plan", default=PLAN_DEFAULT, help="render_plan_items.json (29 choice rows)")
+    args = ap.parse_args()
+    OUT_WAV_DIR.mkdir(parents=True, exist_ok=True)
+    OUT_AAC_DIR.mkdir(parents=True, exist_ok=True)
+    with open(args.plan) as f:
         items = json.load(f)
+    shutil.copy(args.plan, OUT_WAV_DIR / "render_plan_items.json")   # keep the plan with the run
 
     targets = build_targets()
     print(f"Precomputed targets for 280 frames: C {targets['C'].shape}, Eb {targets['Eb'].shape}, Aliens {targets['Aliens'].shape}")
 
     conditions = [
-        ("base", None, 0.0),
+        ("base0", targets["C"], 0.0),    # guided sampler, zero weight: same sampler as the steered clips
         ("C", targets["C"], 2048.0),
         ("Eb", targets["Eb"], 2048.0),
         ("Aliens", targets["Aliens"], 2048.0),
@@ -156,19 +206,22 @@ def main():
         # Load model
         model = StableAudioModel.from_pretrained("medium-base", device="cuda")
         decode_dtype = next(model.same.parameters()).dtype
+        n_latent = CSR.latent_frames(model, DURATION)
+        if n_latent != LATENT_FRAMES:
+            raise RuntimeError(f"generate() renders {n_latent} latent frames for {DURATION}s, "
+                               f"the targets were built for {LATENT_FRAMES}")
+
+        def decode(z):
+            with torch.no_grad():
+                return model.same.decode(z.to(decode_dtype)).float()
+
+        # warm-up after every load: the first GPU decode of a fresh model was unreliable
+        for _ in range(2):
+            decode(torch.randn(1, 256, LATENT_FRAMES, device="cuda") * 0.8)
 
         if is_fullft and ckpt_path:
-            ck = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-            sd_raw = ck.get("state_dict", ck)
-            tgt_keys = set(dict(model.model.model.named_parameters())) | set(dict(model.model.model.named_buffers()))
-            prefixes = ("diffusion.model.", "model.")
-            sd = max(
-                ({(k[len(pfx):] if k.startswith(pfx) else k): v for k, v in sd_raw.items()}
-                 for pfx in prefixes),
-                key=lambda d: sum(1 for k in d if k in tgt_keys)
-            )
-            model.model.model.load_state_dict(sd, strict=False)
-            print(f"Loaded full-FT DiT weights from {ckpt_path}.")
+            n_loaded = load_full_ft(model.model.model, ckpt_path)
+            print(f"Loaded full-FT DiT weights from {ckpt_path} ({n_loaded} tensors).")
         elif not is_fullft and ckpt_path:
             model.load_lora([str(ckpt_path)])
             model.set_lora_strength(strength)
@@ -180,20 +233,17 @@ def main():
             t0 = time.time()
             print(f"Rendering [{render_idx}/{total_renders}] {wav_path.name} ...", flush=True)
 
-            if weight == 0.0:
-                # Base unguided render: if original z0 exists and matches, we can decode it directly or generate fresh
-                latch_configs = None
-                latch_hparams = None
-            else:
-                latch_configs = [{
-                    "model_path": LATCH_CKPT,
-                    "target_raw": tgt,
-                    "weight": weight,
-                    "loss_type": "cosine",
-                    "start_pct": 0.0,
-                    "end_pct": 1.0,
-                }]
-                latch_hparams = {"n_iter": 4, "gamma": 0.3}
+            # weight 0 (base0) still goes through the guided sampler, so base and steered
+            # clips differ only by the guidance
+            latch_configs = [{
+                "model_path": LATCH_CKPT,
+                "target_raw": tgt,
+                "weight": weight,
+                "loss_type": "cosine",
+                "start_pct": 0.0,
+                "end_pct": 1.0,
+            }]
+            latch_hparams = {"n_iter": 4, "gamma": 0.3}
 
             z0 = model.generate(
                 prompt=prompt,
@@ -211,9 +261,10 @@ def main():
                 print(f"WARNING: Non-finite latent in {wav_path.name}! Skipping.", flush=True)
                 continue
 
-            with torch.no_grad():
-                audio = model.same.decode(z0.to(decode_dtype))
-            audio = audio.to(torch.float32)[:, :, :int(DURATION * SAMPLE_RATE)]
+            audio, redecodes = checked_decode(decode, z0)
+            if redecodes:
+                print(f"  [decode mismatch, fixed after {redecodes + 1} decodes]", flush=True)
+            audio = audio[:, :, :int(DURATION * SAMPLE_RATE)]
             save_audio(str(wav_path), audio[0].cpu(), SAMPLE_RATE, normalize=True)
             transcode_to_aac(wav_path, aac_path)
             print(f"  -> Done in {time.time() - t0:.1f}s: {aac_path.name}", flush=True)

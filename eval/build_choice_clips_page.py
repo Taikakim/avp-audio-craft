@@ -45,7 +45,8 @@ def main():
         strength = item['strength']
         
         # Audio file stems
-        base_stem = f"choice_{idx:02d}__{model}__{ckpt}__base__s{seed}.m4a"
+        # base0 = guided sampler at weight 0 (KUANG 2026-10-30); the old `base` used another sampler
+        base_stem = f"choice_{idx:02d}__{model}__{ckpt}__base0__s{seed}.m4a"
         
         c_1024 = f"choice_{idx:02d}__{model}__{ckpt}__C_g1024__s{seed}.m4a"
         c_2048 = f"choice_{idx:02d}__{model}__{ckpt}__C__s{seed}.m4a"
