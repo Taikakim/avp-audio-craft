@@ -179,7 +179,7 @@ def main():
         active_models = [m for m in MODELS if m["id"] in selected_ids]
 
     targets = build_mood_targets()
-    weights = [256.0, 512.0, 1024.0, 1536.0, 2048.0, 3072.0]
+    weights = [256.0, 512.0, 1024.0, 1536.0, 2048.0, 3072.0, 4096.0, 8192.0]
 
     conditions = []
     # 1. Base unguided
@@ -211,7 +211,7 @@ def main():
             stem = f"fine_{m_id}__{cond_name}__s{SEED}"
             wav_path = OUT_WAV_DIR / f"{stem}.wav"
             aac_path = OUT_AAC_DIR / f"{stem}.m4a"
-            if not (wav_path.exists() and aac_path.exists()):
+            if not (aac_path.exists() and aac_path.stat().st_size > 0):
                 needed.append((cond_name, tgt, weight, wav_path, aac_path))
 
         if not needed:

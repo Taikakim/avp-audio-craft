@@ -117,7 +117,7 @@ TARGETS = [
     }
 ]
 
-WEIGHTS = [0, 256, 512, 1024, 1536, 2048, 3072]
+WEIGHTS = [0, 256, 512, 1024, 1536, 2048, 3072, 4096, 8192]
 
 def get_clip_filename(model_id, target_id, weight):
     if weight == 0:
@@ -984,6 +984,8 @@ td.cell-w-base {{
                     <th class="col-w">g = 1536<br><span style="font-size:9px;font-weight:normal;color:#64748b;">Assertive</span></th>
                     <th class="col-w">g = 2048<br><span style="font-size:9px;font-weight:normal;color:#f59e0b;">Dominant</span></th>
                     <th class="col-w">g = 3072<br><span style="font-size:9px;font-weight:normal;color:#f43f5e;">Boundary</span></th>
+                    <th class="col-w">g = 4096<br><span style="font-size:9px;font-weight:normal;color:#ec4899;">2x Force</span></th>
+                    <th class="col-w">g = 8192<br><span style="font-size:9px;font-weight:normal;color:#a855f7;">4x Extreme</span></th>
                 </tr>
             </thead>
             <tbody id="matrixTableBody">
