@@ -34,7 +34,7 @@ def build_conditioner(ck, device, dtype):
     cargs = ck.get("args", {})
     control_dim = int(cargs.get("control_dim", 768))
     n_tokens = int(cargs.get("n_tokens", 256))
-    if cm == "fingerprint":
+    if cm in ("fingerprint", "mood"):                      # mood: in_dim = 2K (sa3_control/mood.py)
         from sa3_control.conditioner import FingerprintEncoder
         enc = FingerprintEncoder(in_dim=int(ck["fp_in_dim"]), control_dim=control_dim,
                                  n_tokens=min(n_tokens, 16))

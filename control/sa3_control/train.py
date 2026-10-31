@@ -403,7 +403,7 @@ def main():
                          "log_snr biases toward the informative sigma band (may de-noise the loss).")
     ap.add_argument("--control-mode",
                     choices=["audio_ref", "scalar", "attribute", "fingerprint", "dual_scalar",
-                             "melody_contour", "metrical_position"],
+                             "melody_contour", "metrical_position", "mood"],
                     default="audio_ref",
                     help="audio_ref = the riffer (opaque reference latent); scalar = a per-crop scalar "
                          "(e.g. onset_density); attribute = a TIME-VARYING per-frame feature "
@@ -417,7 +417,16 @@ def main():
                          "MelodyContourEncoder — teacher-forced (crop, its own lead stream) pairs; "
                          "metrical_position = E3 (spec 2026-07-31-metrical-tree-pe-design.md): "
                          "4-level metrical tree (subdiv/beat/bar/phrase) hard-class streams + "
-                         "coverage, via MetricalEncoder.")
+                         "coverage, via MetricalEncoder; "
+                         "mood = census mood tags (--mood-spec) as a [values, present] vector via "
+                         "FingerprintEncoder(in_dim=2K): one detachable adapter for every tag, any subset "
+                         "settable at inference (sa3_control/mood.py).")
+    # --- mood args ---
+    ap.add_argument("--mood-spec", default="",
+                    help="mood mode: mood_spec.json from stable-audio-3 scripts/latch/mood_census.py (tags, "
+                         "log-odds z units, smoothing). Saved into the checkpoint for inference requests.")
+    ap.add_argument("--mood-clip", type=float, default=3.0,
+                    help="mood mode: clip window-mean tag values to +-this many SD (training and requests)")
     # --- melody_contour (Head B) args ---
     ap.add_argument("--melody-dir", default="/run/media/kim/Lehto/latents-all-backup/latents_sa3_melody",
                     help="sidecar dir of <stem>.melody8.npy class streams (melody_contour mode)")
@@ -579,6 +588,7 @@ def main():
 
     # adapters + conditioner
     _fp_vocab = None   # set in fingerprint branch; referenced by checkpoint saves
+    _mood_spec = None  # set in mood branch; saved into the checkpoint
     wrappers = install_adapters(sam, control_dim=args.control_dim)
     if args.control_mode == "scalar":
         cond_enc = ScalarAttributeEncoder(control_dim=args.control_dim,
@@ -615,6 +625,18 @@ def main():
               f"({'/'.join(str(n) for n in cond_enc.level_sizes)}) + (coverage,conf) -> "
               f"MetricalEncoder, metrical-dropout {args.metrical_dropout} (independent of text "
               f"cfg-dropout {args.cfg_dropout})", flush=True)
+    elif args.control_mode == "mood":
+        from sa3_control.conditioner import FingerprintEncoder
+        from sa3_control import mood as _mood
+        if not args.mood_spec:
+            raise SystemExit("--control-mode mood needs --mood-spec (mood_census.py's mood_spec.json)")
+        _mood_spec = _mood.mood_targets().load_spec(args.mood_spec)
+        cond_enc = FingerprintEncoder(in_dim=_mood.in_dim(_mood_spec), control_dim=args.control_dim,
+                                      n_tokens=min(args.n_tokens, 16)).to(device=device, dtype=dtype)
+        print(f"[control] mood {len(_mood_spec['names'])} tags {_mood_spec['names']} "
+              f"({_mood_spec['transform']}, smooth {_mood_spec.get('smooth_s', 0)} s) -> "
+              f"FingerprintEncoder in_dim={cond_enc.in_dim}, tag subsets 1..K, clip +-{args.mood_clip}",
+              flush=True)
     elif args.control_mode == "fingerprint":
         from sa3_control.conditioner import FingerprintEncoder
         from sa3_control.dataset import fingerprint_in_dim
@@ -881,12 +903,16 @@ def main():
                                   seed=args.seed, subset_tracks=args.subset_tracks,
                                   fingerprint=True, genre_vocab=_fp_vocab, fp_variant=args.fp_variant,
                                   random_crop_frames=args.crop_frames)
+    elif args.control_mode == "mood":
+        ds = LatentControlDataset(encoded_dir, controls=(), audio_ref=None,
+                                  seed=args.seed, subset_tracks=args.subset_tracks,
+                                  mood_spec=_mood_spec, random_crop_frames=args.crop_frames)
     else:
         ds = LatentControlDataset(encoded_dir, controls=(), audio_ref="same_track",
                                   seed=args.seed, subset_tracks=args.subset_tracks)
-    # track-level train/val split for fingerprint early-stop (val_frac>0, not smoke)
+    # track-level train/val split for fingerprint/mood early-stop (val_frac>0, not smoke)
     val_dl = None
-    if args.control_mode == "fingerprint" and args.val_frac > 0 and not args.smoke:
+    if args.control_mode in ("fingerprint", "mood") and args.val_frac > 0 and not args.smoke:
         from sa3_control.dataset import track_key as _tk
         all_keys = sorted(ds.by_track.keys())
         _val_rng = np.random.default_rng(args.seed + 999)
@@ -989,7 +1015,8 @@ def main():
              "metrical_dir": getattr(args, "metrical_dir", None),
              "metrical_dropout": getattr(args, "metrical_dropout", None),
              "dora_rank": int(getattr(args, "dora_rank", 0) or 0),
-             "dora_alpha": getattr(args, "dora_alpha", None)}
+             "dora_alpha": getattr(args, "dora_alpha", None),
+             "mood_spec": _mood_spec, "mood_clip": getattr(args, "mood_clip", None)}
         if d["dora_rank"] > 0:
             from stable_audio_3.models.lora import get_lora_state_dict
             d["lora_state"] = {k: v.detach().cpu() for k, v in get_lora_state_dict(dit).items()}
@@ -1066,6 +1093,10 @@ def main():
                 ctrl = cond_enc(feat)                                          # (B, T/ds, control_dim)
             elif args.control_mode == "fingerprint":
                 ctrl = cond_enc(b["fingerprint"].to(device=device, dtype=dtype))  # (B, n_tokens, control_dim)
+            elif args.control_mode == "mood":
+                vals = _mood.window_values(b["controls"]["mood"][:, :, :T].to(device), args.mood_clip)  # (B, K)
+                mask = _mood.sample_tag_mask(B, vals.shape[1], device=device)                       # (B, K)
+                ctrl = cond_enc(_mood.build_vector(vals, mask).to(dtype))      # (B, n_tokens, control_dim)
             elif args.control_mode == "melody_contour":
                 ctrl = cond_enc(b["melody_cls"][:, :T].to(device=device))         # (B, T, control_dim)
             elif args.control_mode == "metrical_position":
@@ -1292,7 +1323,11 @@ def main():
                     vn = torch.randn_like(vc)
                     vnoised = vc * (1 - vt.view(vB, 1, 1)) + vn * vt.view(vB, 1, 1)
                     vtarget = vn - vc
-                    vctrl = cond_enc(vb["fingerprint"].to(device=device, dtype=dtype))
+                    if args.control_mode == "mood":                     # val: every tag present
+                        vvals = _mood.window_values(vb["controls"]["mood"][:, :, :vT].to(device), args.mood_clip)
+                        vctrl = cond_enc(_mood.build_vector(vvals, torch.ones_like(vvals)).to(dtype))
+                    else:
+                        vctrl = cond_enc(vb["fingerprint"].to(device=device, dtype=dtype))
                     vcond = build_train_cond(sam, vb["prompt"], crop_seconds, vT, device, dtype)
                     with use_control_context(ControlContext(vctrl)):
                         vv = dit(vnoised, vt, **vcond, cfg_scale=1.0, cfg_dropout_prob=0.0,

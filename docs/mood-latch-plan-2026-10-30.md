@@ -1,8 +1,8 @@
 # Mood LATCH head: plan and run order (October 30, 2026)
 
-**Goal:** a LATCH guidance head that reads mood from noisy SA3 latents. It works first as a meter and then as a steering target. The base model stays frozen and no new conditioner is trained.
+**Goal:** a LATCH guidance head that reads mood from noisy SA3 latents. It works first as a meter and then as a steering target. The base model stays frozen and no new conditioner is trained. Route B, a detachable FiLM mood adapter, is the trained alternative.
 
-**Route.** Route A, a guidance head, was chosen. Route B, an attribute adapter with an in-trained conditioner, waits until A shows that mood can be read and steered. goa_archive is out of scope for now.
+**Route.** Route A, a guidance head, comes first. Route B, a trained FiLM mood adapter, is coded too (see the end of this document) and uses the same census spec. The large archive corpus is out of scope for now.
 
 ## Data that already exists
 
@@ -46,7 +46,7 @@ The spec (`mood_spec.json`) carries the tags, transform, statistics, smoothing a
 
 1. **`bash latch/run_mood_prep.sh`** (CPU, on the desktop):
    - It refuses to start while a `train_latch` run is active.
-   - It backs up the existing companions (tar to Mantu).
+   - It backs up the existing companions (tar to the backup drive).
    - It adds the three fields to both corpora (about 7 GB more on Kosmos) and prints coverage.
    - It runs the census with `--val-frac 0.05 --val-seed 0 --val-group-by song`.
 2. **Review `census.txt`.**
@@ -58,4 +58,51 @@ The spec (`mood_spec.json`) carries the tags, transform, statistics, smoothing a
    - Baselines through the guided sampler at gain 0.
    - A prompt-only comparison (the mood word in the text prompt), plus drift and quality checks.
    - Listening.
-5. **Route B** only if guidance works but is too slow or harms the audio.
+5. **Route B** (the FiLM adapter below) can train once the spec is reviewed. Compare it with route A on the same evaluation.
+
+## Route B: a FiLM mood adapter (added October 31, 2026)
+
+**One adapter covers every mood.** The K census tags are one input, so a single training run gives a slider per tag. No checkpoint per mood is needed.
+
+**Shape.** `sa3_control/train.py --control-mode mood` uses the existing FiLM conditioner: learned tokens modulated by a vector, read by decoupled cross-attention adapters, base model frozen. The input vector is `[value_1..value_K, present_1..present_K]`.
+- `value_k` is the window mean of tag k's curve in the census units, clipped to ±3.
+- `present_k` says whether the tag is set. Each training item keeps a random non-empty subset of tags (subset size uniform in 1..K), so a request like "dark +2, everything else free" is in distribution.
+- An absent tag differs from a tag held at the corpus mean.
+- No mood at all is the existing token dropout (`--cfg-dropout`), which is also the guidance null.
+
+**Detachable.** The adapter and conditioner are saved to their own `riffer_*.pt` beside the untouched base, with the spec inside. They load on top of the base and have a gain knob, like the density FiLM adapter.
+
+**Why FiLM and not the other conditioner types.**
+- Global and cross-attention conditioners feed trained layers whose input sizes or attention change, so they are not a no-op at step 0.
+- Local addition is fully used by inpainting in medium-base.
+- The modular local inlet (B7) is the native per-frame route, but its runs were never read back.
+- FiLM is the one control here with an ear-approved result (density). Its known flaw is that it pulls in the training-set style (E7), so mood steering must be checked for genre drift.
+
+**Code.**
+- `control/sa3_control/mood.py`: vector layout, tag-subset sampling, requests (`request_vector`, `parse_request`). It loads `mood_targets.py` from stable-audio-3 (`SA3_ROOT`).
+- `dataset.py`: `mood_spec` gives each crop a `mood` curve sliced with the training window. Crops without the field are dropped.
+- `train.py`: the mood mode, track-split validation with every tag present, and the spec in the checkpoint.
+- `generate.build_conditioner` rebuilds the mood encoder.
+- `tests/test_mood.py`: 5 CPU tests.
+
+**Not tested.** The training step needs the base model, so the first run on the desktop is a `--smoke`. The render server (:8056) does not serve this mode yet.
+
+**Run** (after the prep script, with the reviewed `mood_spec.json`; recipe as the shipped FiLM onset adapter, `control/run_film_modular_full.sh`):
+
+```
+SA3_ROOT=$SAO/stable-audio-3 $PY sa3_control/train.py \
+  --encoded-dirs $KOSMOS/latents/latents_sa3 $KOSMOS/latents/latents_avp --model medium-base --precision bf16 \
+  --crop-frames 512 --random-crop --batch 1 --optimizer modular --allow-uniform-lr --mod-whitening shampoo \
+  --ema 0.999 --warmup-steps 300 --no-checkpoint --no-preencode-text --timestep-sampler logit_normal \
+  --control-mode mood --mood-spec $OUT/mood_spec.json --control-dim 768 --n-tokens 256 \
+  --cfg-dropout 0.1 --num-workers 4 --seed 42 --no-export-onnx-on-finish \
+  --lr <the E12 lr> --steps <N> --save-every <N/10> --save-dir <dir> --run-name mood_film
+```
+
+Add `--smoke` for the first run.
+
+**Evaluation.**
+- Render ±2 on single tags and on pairs at gain 0, 1 and 1.75, with fixed seeds and prompts. Re-measure mood on the decoded audio (`eval/mood_timeseries.py`).
+- Check that a tag moves its own score more than the others, and that it does not just move loudness or onset density.
+- Compare against prompt-only and against the route A guidance head.
+- Listen for genre drift.

@@ -96,6 +96,14 @@ def _to_ct(arr: np.ndarray) -> np.ndarray:
     return arr[None, :] if arr.ndim == 1 else arr.T
 
 
+def _npz_has(npz_path: str, field: str) -> bool:
+    """True if the .npz exists and stores `field` (reads the zip index only, not the arrays)."""
+    if not os.path.exists(npz_path):
+        return False
+    with np.load(npz_path) as z:
+        return field in z.files
+
+
 def track_key(meta: dict, path: str) -> str:
     """Group crops by their source track. All crops of a track share `path`
     (the source full_mix.flac); `relpath`'s number is a GLOBAL crop id, so its
@@ -137,8 +145,13 @@ class LatentControlDataset(Dataset):
                  # UNLIKE melody_dir, crops WITHOUT a sidecar are KEPT, not dropped — they get the
                  # all-zero null token (coverage=0), the zero-condition dropout design
                  # (docs/superpowers/specs/2026-07-31-metrical-tree-pe-design.md §2).
-                 metrical_dir=None):
+                 metrical_dir=None,
+                 # mood (--control-mode mood): a census target spec (sa3_control/mood.py). Set -> controls
+                 # carry "mood" = the spec's (K, 4096) curve, sliced with the window like every control;
+                 # crops whose companion lacks the spec's field are dropped (counted).
+                 mood_spec: "dict | None" = None):
         self.root = root
+        self.mood_spec = mood_spec
         self.melody_dir = melody_dir
         self.metrical_dir = metrical_dir
         self.controls = [c for c in controls if c in CONTROL_FIELDS]
@@ -189,6 +202,10 @@ class LatentControlDataset(Dataset):
                           if os.path.exists(self._melody_path(p))]
             print(f"[dataset] melody_dir: {len(self.paths)}/{before} crops have a "
                   f".melody8.npy stream", flush=True)
+        if self.mood_spec is not None:          # mood mode: keep only crops whose companion has the field
+            before, fld = len(self.paths), self.mood_spec["field"]
+            self.paths = [p for p in self.paths if _npz_has(p[:-4] + ".TIMESERIES.npz", fld)]
+            print(f"[dataset] mood: {len(self.paths)}/{before} crops have {fld}", flush=True)
         if self.metrical_dir is not None:       # metrical mode: NO filtering — uncovered crops
             n_cov = sum(1 for p in self.paths   # already carry the all-zero null (coverage=0),
                         if os.path.exists(self._metrical_path(p)))  # which IS the training null
@@ -253,11 +270,14 @@ class LatentControlDataset(Dataset):
         return os.path.join(str(self._sidecar_of[latent_path][1]), stem + ".metrical.npy")
 
     def _load_controls(self, stem: str) -> dict:
-        if not self.controls:                       # scalar/no-timeseries mode: don't touch the npz
+        if not self.controls and self.mood_spec is None:   # scalar/no-timeseries mode: don't touch the npz
             return {}                               # (some crops, e.g. 'silence', have no .TIMESERIES.npz)
         z = np.load(stem + ".TIMESERIES.npz")
-        chroma_z = None                             # lazy: the .CHROMA.npz sidecar (e.g. same_chroma_ts)
         out = {}
+        if self.mood_spec is not None:
+            from sa3_control.mood import mood_targets
+            out["mood"] = torch.from_numpy(mood_targets().apply_spec(z[self.mood_spec["field"]], self.mood_spec))
+        chroma_z = None                             # lazy: the .CHROMA.npz sidecar (e.g. same_chroma_ts)
         for name in self.controls:
             chans = []
             for f in CONTROL_FIELDS[name]:
