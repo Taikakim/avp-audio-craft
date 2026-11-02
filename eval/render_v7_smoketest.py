@@ -10,6 +10,7 @@
 # Last edited: GHOST-NOTE 2026-10-13 -- --dump-ab (A and B on one time base, silence outside each clip, for overlaying in a DAW)
 # Last edited: GHOST-NOTE 2026-10-13 -- --other-sweep (the assembler's LP/HP moving-crossover `other` crossfade as the a2a init audio)
 # Last edited: GHOST-NOTE 2026-10-13 -- --phase-mode kicks (default): onset-based B->A phase alignment over +-1/2 beat, replaces the NCC shift that hit its 1/4-beat limit
+# Last edited: GHOST-NOTE 2026-11-03 -- --other-inpaint-head: chroma-morph LatCH guidance through the other-stem masked inpaint
 """render_v7_smoketest.py -- 4-stem v7 transition smoke test, pre-computed stems.
 
 Replaces render_v7_4track_smoketest_fast.py (and the copies in ..._FULL.py / ..._FULL2.py) with the
@@ -190,6 +191,8 @@ def parse_args(argv=None):
     ap.add_argument("--steps", type=int, default=24)
     ap.add_argument("--seed", type=int, default=1234)
     ap.add_argument("--latch-gain", type=float, default=2048.0)
+    ap.add_argument("--other-inpaint-head", default=None,
+                    help="LatCH chroma head (384-d same_chroma) that steers the `other` masked inpaint toward the chroma morph A->B (rho=mu=--latch-gain, off after 60%% of steps). Needs --no-generate runs' inpaint path; works with --other-inpaint-bars.")
     ap.add_argument("--ckpt-a", default=os.environ.get(ENV["ckpt_a"]),
                     help=f"unused since 1307106 (single adapter); kept so existing command lines still parse. env {ENV['ckpt_a']}")
     ap.add_argument("--ckpt-b", default=os.environ.get(ENV["ckpt_b"]), help=f"lora_latch adapter. env {ENV['ckpt_b']}")
@@ -447,7 +450,7 @@ def latent_slerp_other(model, other_a, other_b, L):
     return np.pad(out, ((0, 0), (0, max(0, L - out.shape[-1]))))[:, :L]
 
 
-def drum_inpaint(model, drums_xf, n_bars, bpm, L, args, prompt=None, cfg=None):
+def drum_inpaint(model, drums_xf, n_bars, bpm, L, args, prompt=None, cfg=None, latch_target=None):
     """Masked inpaint of the central n_bars of a stem window (ported from 799b349; 9c0ddd1 reuses it for `other`). The real
     audio is the context on both sides; only the masked span comes from the generation (50 ms edge fades). Runs on whatever
     weights the model holds: the base model unless a lora_latch run has loaded the adapter. Returns (audio, lo_s, hi_s)."""
@@ -462,6 +465,9 @@ def drum_inpaint(model, drums_xf, n_bars, bpm, L, args, prompt=None, cfg=None):
               chunked_decode=True if args.chunked_decode else None)
     if args.sample_pad_sec is not None:
         kw["sample_size"] = int((W_sec + args.sample_pad_sec) * SR)
+    if latch_target is not None:       # chroma-morph guidance inside the masked span (--other-inpaint-head); target (1,384,T) raw units
+        kw["latch_configs"] = [{"model_path": args.other_inpaint_head, "target_raw": latch_target, "weight": 1.0, "end_pct": 0.6}]
+        kw["latch_hparams"] = {"rho": args.latch_gain, "mu": args.latch_gain}
     gen = model.generate(**kw)[0].float().cpu().numpy()
     dsp.assert_finite(gen, f"inpaint {n_bars} bar")
     gen = np.pad(gen, ((0, 0), (0, max(0, L - gen.shape[-1]))))[:, :L]
@@ -886,9 +892,10 @@ def main(argv=None):
                 """Masked inpaint of the `other` stem; level-matched, checked against the real onsets like every generated layer
                 (SYNC CHECK 2), edges are the real crossfade (the mask is central, so only the fades differ)."""
                 t_gen = time.time()
-                ot, _, _ = drum_inpaint(sa3_model, other_ref, ob, bpm_b, L, args, prompt=args.prompt_b, cfg=args.other_cfg)
+                ot, _, _ = drum_inpaint(sa3_model, other_ref, ob, bpm_b, L, args, prompt=args.prompt_b, cfg=args.other_cfg,
+                                        latch_target=chroma_morph_target(other_a, other_b) if args.other_inpaint_head else None)
                 ot, gain = dsp.match_rms(ot, other_ref)
-                info = {"gen_seconds": round(time.time() - t_gen, 1), "other_gain": gain, "adapter_live": bool(generating and args.other_mode == "lora_latch")}
+                info = {"gen_seconds": round(time.time() - t_gen, 1), "other_gain": gain, "adapter_live": bool(generating and args.other_mode == "lora_latch"), "head_steered": bool(args.other_inpaint_head)}
                 info.update(check_gen(ot, f"other inpaint {ob} bar"))
                 return ot, info
 
