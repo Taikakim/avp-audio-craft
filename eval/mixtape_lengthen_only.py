@@ -6,6 +6,7 @@ medium-base + BRIDGE_CKPT, prompt 'aggressive upbeat goa trance', 24 steps, cfg 
 (Kim's validated 3x outpaint). Input --clips-json = [{"id","path"}], output <out>/<id>_len3x.wav (skips existing).
 Owner ask 2026-10-27: 'we already know how to make clean mixes ... remember to 3x extend the clips before cross-fading'."""
 import argparse, json, os, sys
+import torch
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE"); os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 from pathlib import Path
@@ -27,5 +28,5 @@ for i, c in enumerate(clips):
     audio, s = load(c["path"]); assert s == sr
     d = audio.shape[1] / sr
     ext = outpaint_forward(model, audio, sr, (a.mult - 1) * d, a.prompt, a.steps, a.cfg_scale, a.seed)
-    save_audio(str(out), ext, sr); print(f"[{i + 1}/{len(clips)}] {out.name} {ext.shape[1] / sr:.1f}s", flush=True)
+    save_audio(str(out), torch.as_tensor(ext), sr); print(f"[{i + 1}/{len(clips)}] {out.name} {ext.shape[1] / sr:.1f}s", flush=True)
 print("LENGTHEN DONE", flush=True)
