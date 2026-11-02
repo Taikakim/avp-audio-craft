@@ -104,10 +104,12 @@ experiment decides C++.
 
 ## 6. Release blockers known today
 
-1. **Dead decode (W, 2026-11-02, MASTER section 5):** a healthy latent can decode to all-NaN audio, written as a full-scale
-   DC file, and a request can come out unsteered. The first guided render of a fresh process hit it in 3 of 3 tries, which
-   is exactly a new user's first click. Later update in MASTER says it was not seen through the render server: read that
-   before scoping. At minimum, check the audio after decode and refuse to show a dead clip. Unknown whether this is
+1. **Dead decode (W, 2026-11-02, MASTER section 5), a watch item more than a blocker so far.** A healthy latent can decode
+   to all-NaN audio, written as a full-scale DC file, and a request can come out unsteered. The first guided render of a
+   fresh process hit it in 3 of 3 tries, **but on direct `generate(latch_configs)` with the bare base model.** Through the
+   render server, the GUI's path, C found 0 dead in 714 clips and two clean first requests on a fresh server, both with a
+   DoRA installed first. The cause is not established, and a GUI on the bare base model with no DoRA is the untested
+   case. Cheap guard regardless: check the audio after decode and refuse to show a dead clip. Unknown whether this is
    ROCm-only, so **test on NVIDIA**.
 2. **Live-adapter render fault:** NaN or about 1e11 on identical inputs with a live DoRA; merged adapters are deterministic
    (W39 synopsis). v1 could ship merged only. Also unknown off ROCm.
