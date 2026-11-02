@@ -1,0 +1,77 @@
+un 23231 hi 23232 pairs 23231 same rel 23231
+distinct hints 1 [('goa trance and psytrance, psychedelic electronic dance music of the 1990s and 2000s', 23232)]
+median chars un/hi 2097.0 2122.0
+first-3000 pairs 3000 random-ish? top dirs [('Goa.PsyTrance.Collection.1997', 672), ('Goa.PsyTrance.Collection.1999', 641), ('Goa.PsyTrance.Collection.1996', 610)] | all [('Goa.PsyTrance.Collection.1997', 5392), ('Goa.PsyTrance.Collection.1996', 4692), ('Goa.PsyTrance.Collection.1999', 4690)]
+word                     un%     hi%      x |    un3k    hi3k (first3000)
+hypnotic                56.9    96.5    0.6 |    57.6    96.2
+psychedelic              1.2    93.7    0.0 |     1.4    94.0
+driving                 63.0    86.6    0.7 |    64.1    86.2
+high-energy             48.0    84.5    0.6 |    48.9    84.9
+relentless              65.9    76.3    0.9 |    65.4    76.0
+evolving                55.9    66.1    0.8 |    55.9    66.1
+immersive               59.2    61.5    1.0 |    60.4    60.3
+dark                    49.2    12.6    3.9 |    49.2    12.7
+aggressive              41.4    10.1    4.1 |    40.1    10.1
+metallic                41.3     5.1    8.1 |    40.7     4.3
+raw                     32.1     0.7   45.1 |    32.1     0.9
+gritty                  28.6     0.9   30.2 |    27.8     0.9
+dystopian               13.4     0.7   20.5 |    13.1     0.6
+unsettling              10.6     0.8   13.1 |     9.4     0.8
+ominous                  6.8     0.7   10.1 |     7.2     0.9
+brooding                 6.8     0.3   20.9 |     6.3     0.3
+futuristic              11.4     5.6    2.0 |    11.3     5.0
+contemplative           10.0     3.4    2.9 |    10.4     4.0
+meditative               9.9     4.4    2.3 |    10.0     4.5
+introspective            9.8     5.2    1.9 |    10.2     5.0
+searching                8.8    24.5    0.4 |     8.5    24.2
+uplifting               11.3    21.2    0.5 |    11.5    20.3
+euphoric                 9.2    32.5    0.3 |     9.3    32.4
+melancholic              3.9     2.9    1.4 |     3.9     3.2
+mystical                 0.2     0.8    0.2 |     0.1     0.8
+spiritual                0.7     1.2    0.6 |     0.5     1.2
+industrial              44.5     0.6   75.4 |    43.7     0.8
+techno                  58.2     1.2   47.4 |    57.8     1.7
+trance                  21.1    98.2    0.2 |    21.4    97.9
+goa                      0.4    97.8    0.0 |     0.3    97.4
+psytrance                1.2    76.9    0.0 |     1.2    76.7
+psychedelic trance       0.2    19.9    0.0 |     0.2    20.4
+
+first sentence genre word rate (un / hi):
+  industrial 43.9 0.5
+  techno 58.1 1.2
+  psytrance 1.2 76.0
+  goa 0.4 97.7
+  trance 11.2 97.7
+  ebm 1.1 0.0
+  electro 4.1 0.0
+  ambient 14.7 1.2
+  house 17.7 0.2
+  drum 0.8 0.1
+
+unhinted: said industrial/techno/ebm n=14817, said trance/goa n=2694, both 129
+  dark           | ind-only  65.3%  trance-only  10.6%  neither  26.6%
+  aggressive     | ind-only  52.5%  trance-only  19.2%  neither  23.7%
+  metallic       | ind-only  58.2%  trance-only   2.4%  neither  16.6%
+  raw            | ind-only  46.2%  trance-only   0.5%  neither  10.9%
+  gritty         | ind-only  43.0%  trance-only   1.6%  neither   4.7%
+  dystopian      | ind-only  21.0%  trance-only   0.2%  neither   0.5%
+  unsettling     | ind-only  12.1%  trance-only   0.2%  neither  11.8%
+  ominous        | ind-only   8.4%  trance-only   0.4%  neither   5.8%
+  brooding       | ind-only   9.7%  trance-only   0.3%  neither   2.2%
+  futuristic     | ind-only  13.9%  trance-only   8.6%  neither   6.3%
+  contemplative  | ind-only   2.9%  trance-only   3.5%  neither  30.9%
+  uplifting      | ind-only   0.8%  trance-only  63.7%  neither  14.0%
+  euphoric       | ind-only   0.3%  trance-only  59.3%  neither   9.2%
+  melancholic    | ind-only   0.9%  trance-only   7.7%  neither   9.6%
+  mystical       | ind-only   0.1%  trance-only   0.3%  neither   0.3%
+
+paired: phi(unhinted word, hinted word) on same track
+  dark           phi 0.044  n11 1610
+  aggressive     phi 0.080  n11 1247
+  metallic       phi 0.048  n11 608
+  raw            phi 0.053  n11 101
+  uplifting      phi 0.046  n11 695
+  euphoric       phi 0.041  n11 820
+  melancholic    phi 0.061  n11 72
+  mystical       phi 0.114  n11 10
+  contemplative  phi 0.187  n11 318

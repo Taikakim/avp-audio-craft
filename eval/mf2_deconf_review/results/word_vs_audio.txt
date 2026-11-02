@@ -1,0 +1,63 @@
+n 23231
+albums 3085
+genre idx ['Electronic---Ambient', 'Electronic---Dark Ambient', 'Electronic---Industrial', 'Rock---Industrial', 'Electronic---Goa Trance', 'Electronic---Psy-Trance', 'Electronic---Trance', 'Electronic---Techno']
+INSTRUMENT known-pos: unhinted first sentence "ambient" vs effnet ambient AUC 0.880; meditative tag 0.901
+INSTRUMENT known-neg: shuffled 0.500
+effnet top genre share on all tracks: [('Electronic---Goa Trance', 60.4), ('Electronic---Techno', 14.0), ('Electronic---Ambient', 6.6), ('Electronic---Trance', 5.7), ('Electronic---Psy-Trance', 2.4), ('Electronic---House', 1.6), ('Electronic---Downtempo', 1.5)]
+said industrial/techno/ebm: 63.8%; said trance/goa 11.6%; effnet audio says psy/goa or trance top 68.5%, techno/industrial top 14.2%
+said-ind tracks whose effnet top is techno/industrial 16.1%, psy/trance 73.3%
+AUC said-ind ~ effnet techno+industrial minus psy+trance: 0.428
+
+1. WORD vs matching Essentia tag from the AUDIO, AUC (0.5 = no information)
+word           tag         unhint hinted un|ind un|trn | n_un n_hi
+dark           dark         0.577  0.551  0.570  0.497 | 11441 2925
+uplifting      uplifting    0.532  0.517  0.583  0.592 | 2627 4928
+euphoric       uplifting    0.480  0.478  0.510  0.532 | 2129 7549
+melancholic    melancholic  0.732  0.627  0.662  0.558 | 908 667
+meditative     meditative   0.804  0.726  0.623  0.668 | 2292 1017
+contemplative  calm         0.825  0.647  0.654  0.575 | 2334 797
+ominous        dark         0.655  0.649  0.628    nan | 1582 157
+brooding       dark         0.590  0.705  0.580    nan | 1571 75
+aggressive     powerful     0.560  0.566  0.573  0.478 | 9615 2343
+aggressive     heavy        0.559  0.560  0.584  0.473 | 9615 2343
+gritty         heavy        0.550  0.646  0.553  0.472 | 6636 220
+raw            heavy        0.581  0.711  0.591    nan | 7446 165
+metallic       heavy        0.585  0.546  0.600  0.530 | 9590 1180
+futuristic     space        0.514  0.503  0.509  0.497 | 2658 1310
+dystopian      dark         0.583  0.632  0.596    nan | 3123 152
+unsettling     dark         0.723  0.626  0.694    nan | 2472 188
+
+DEAM/emomusic val/aro mean, sanity {'val_deam': 5.49, 'aro_deam': 5.69, 'val_emo': 5.54, 'aro_emo': 5.69}
+  dark           val un 0.409 hi 0.443 | aro un 0.475 hi 0.460
+  uplifting      val un 0.638 hi 0.541 | aro un 0.570 hi 0.517
+  euphoric       val un 0.630 hi 0.558 | aro un 0.602 hi 0.552
+  aggressive     val un 0.470 hi 0.488 | aro un 0.603 hi 0.550
+  contemplative  val un 0.234 hi 0.340 | aro un 0.186 hi 0.339
+  melancholic    val un 0.379 hi 0.440 | aro un 0.295 hi 0.389
+
+2. HELD-OUT album-split AUC, audio mood+VA+bark -> word present
+word           unhint hinted un|ind-only
+dark            0.667  0.571    0.635
+aggressive      0.753  0.607    0.720
+metallic        0.719  0.576    0.709
+raw             0.741  0.769    0.708
+gritty          0.692  0.701    0.628
+dystopian       0.712  0.710    0.676
+unsettling      0.786  0.683    0.764
+ominous         0.707  0.692    0.684
+brooding        0.641  0.727    0.652
+futuristic      0.615  0.604    0.585
+contemplative   0.860  0.707    0.706
+meditative      0.827  0.742    0.715
+searching       0.568  0.541    0.569
+uplifting       0.757  0.554    0.668
+euphoric        0.738  0.567      nan
+melancholic     0.799  0.662    0.755
+hypnotic        0.697  0.599    0.718
+driving         0.724  0.534    0.658
+
+3. OLS std effect on effnet tag, all three in the model
+  tag dark        word dark         un-word +0.314 hi-word +0.173 said-ind -0.289 said-trance -0.386
+  tag uplifting   word uplifting    un-word +0.057 hi-word +0.055 said-ind -0.454 said-trance -0.429
+  tag heavy       word aggressive   un-word +0.213 hi-word +0.200 said-ind -0.075 said-trance -0.203
+  tag melancholic word melancholic  un-word +0.707 hi-word +0.418 said-ind -0.631 said-trance -0.687

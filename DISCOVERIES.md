@@ -10,11 +10,15 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*312 entries from 5 journals.*
+*343 entries from 5 journals.*
 
 ---
 
 ## Long-form generation · transitions · crossfade
+- **Gate G1 (Zero-Training Baselines on SA3 Medium Base): Unsupervised separation fails, validating Gate G2 trained adapter.** → `/home/kim/sao_runs/drum_sep_g1/listen/index.html` — ANTIGRAVITY, 2026-10-26
+- **Optimizer papers filed (HTMuon, NAMO, Xie, SpecMuon); batch-engineering and noise-regime experiments registered; Kim's smooth FiLM->LatCH hand-off built and run by W (E18) (23:54).** — CONTINUITY, 2026-10-25
+- [review] **Kuang V6.1 review, Surge classic oscillator shape correction, and SA3 drum sep plan.** → `ClassicOscillator.cpp`, `eval_real_stems_consensus_v6.py`, `refine_v6_stems_cpu.py`, `DRUM_SEPARATION_SA3_PLAN.md`, `scripts/drum_sep/codec_ceiling.py`, `feature/sa3-drum-sep` — ANTIGRAVITY, 2026-10-23
+- [lesson] **the per-stem inpaint transitions already existed; check the flags before calling something unbuilt (2026-10-28).** — WINTERMUTE, 2026-10-16
 - **v7 transition tempo: 10 ms-quantised bar intervals cause the hi-hat gallop; use a regression slope.** → `eval/render_v7_smoketest.py::get_exact_bpm` — ANTIGRAVITY, 2026-10-08
 - **clean DSP baseline accepted by Kim ("finally! the transitions were perfect").** — ANTIGRAVITY, 2026-10-08
 - [plan] **masked drum inpaint and latent slerp trials (rendered 2026-10-08, not yet auditioned).** → `~/staging/kone-mixtape/smoke/inpaint_trials/` — ANTIGRAVITY, 2026-10-08
@@ -80,7 +84,13 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **ES v2 — dimension eats global norms.** — CONTINUITY, 2026-07-02
 
 ## LatCH · probing · layer-feature mapping
+- **Weekly routine collision: stood down to THE-FINN; parked E22 and the trainer port; an amend landed on G's commit (19:40).** — CONTINUITY, 2026-11-02
 - **the same_chroma LatCH head steers pitch class transparently; most audible at gain 2048.** → `riffer-evals/clips/chroma_steer/`, `latch/run_chroma_retrain.sh` — WINTERMUTE, 2026-10-16
+- [RULED OUT] **test plan P1: at the end of the E05 LatCH run no momentum direction tolerates a bigger step (2026-10-21).** → `latch_sweep/kuang_plan_P_20261017/run_meta.json` — WINTERMUTE, 2026-10-16
+- **test plan B (H2): LatCH lr 3e-2 diverges only because the sign group rides it (2026-10-21).** → `sa3_control_runs/film_precision_A_20261017_overflow/kuang_plan_B_20261021/run_meta.json` — WINTERMUTE, 2026-10-16
+- [RULED OUT] **test plan P1 at ep5 and ep10: no checkpoint tolerates a bigger step; the leading directions oscillate (2026-10-21).** → `latch_sweep/kuang_plan_P_20261017/run_meta.json` — WINTERMUTE, 2026-10-16
+- [lesson] **a gain-0 LatCH baseline must go through the guided sampler (2026-10-28).** → `eval/chroma_e13_render.py` — WINTERMUTE, 2026-10-16
+- **gradient noise by flow time and part: late in training the head's step is mostly noise at low t (2026-10-28).** — WINTERMUTE, 2026-10-16
 - [RULED OUT] **Phase E onset LatCH heads barely steer; the gate passed them because nothing changed.** → `latch_onset_compare.html`, `Misc/build_latch_onset_grid_page.py`, `latch_onset_grid.html` — WINTERMUTE, 2026-10-15
 - [plan] **early-budget bracket queued on the GPU lock.** → `eval/latch_early_budget_bracket.py`, `eval/run_latch_early_budget.sh`, `Misc/build_latch_early_budget_page.py` — WINTERMUTE, 2026-10-15
 - **early budget: flat weighting helps the onset head ~1.45x, early-only windows collapse.** → `latch_early_budget.html` — WINTERMUTE, 2026-10-15
@@ -117,6 +127,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **weight garden: the mutation that never was.** → `stable-audio-3/scripts/weight_mutations.py`, `mutate_weights.py` — CONTINUITY, 2026-07-04
 
 ## Style/genre adapters · fingerprint conditioning
+- **Review: MF2 hinted vs unhinted mood words, MF2 mood axes, de-confounded mood targets (ANTIGRAVITY) (01:30).** — CONTINUITY, 2026-11-03
 - **dora128_mix3's blown-up cells traced to a weight-scale runaway, via the trajectory tool nobody had pointed at this run yet.** → `score_and_publish.py`, `checkpoint_trajectory_stats.py`, `run_meta.json`, `CLAUDE.md`, `corruption_scan_to_db.py` — GHOST-NOTE, 2026-09-24
 - **"the model makes harsh timbres" is mostly the PROMPT, and the band we were fixing is the wrong band.** → `mir/src/tools/spectral_harshness_contrast.py` — WINTERMUTE, 2026-09-17
 - **Mixtape harshness thread closed out (restore, quarantine, census note).** → `Misc/models_index_overrides.json`, `spectral_harshness_contrast.py` — GHOST-NOTE, 2026-09-17
@@ -170,6 +181,9 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **TADA! deep-read: the semantic bottleneck is real, and it cuts both ways.** → `latch/probe_layer_feature_map.py` — CONTINUITY, 2026-07-06
 
 ## Evals · metrics · benchmarking pitfalls
+- **Gate G0 (SAME-L Codec Ceiling): Passed decisively on isolated drum multitrack stems.** → `/home/kim/sao_runs/drum_sep_g0/listen/index.html` — ANTIGRAVITY, 2026-10-26
+- **Gate G3 Multi-Stem Separation: Unified prompt conditioning, transient locking, and codec boundary.** → `http://localhost:8088/drum_sep_g3_eval/index.html`, `/home/kim/sao_runs/drum_sep_g3_eval/index.html` — ANTIGRAVITY, 2026-10-26
+- **Separate-and-Detect (MSG-LD 5-Stem Latent Diffusion): clean generative sub-kit hits vs IDM phase destruction.** → `/home/kim/sao_runs/drum_sep_comparison/listen/index.html`, `docs/drum-separation-benchmarks-2026-10-22.md` — ANTIGRAVITY, 2026-10-22
 - **The PT rewind is not localized, and the two endpoints don't share a sampler.** → `soup_descriptors.py` — CONTINUITY, 2026-09-07
 - **four meters, four failed gates, and the controls that saved it.** → `contour_codes.py`, `morph_merit.py`, `morph_contour_ab.py` — CONTINUITY, 2026-09-04
 - **Top-100-by-ear-proxy page: the dedup problem was the interesting part.** → `eval/build_top100.py`, `Misc/build_top100_page.py`, `~/evals_aac/top100.html` — CONTINUITY, 2026-08-21
@@ -187,6 +201,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **chroma correlation is a mode-collapse trap — it declared wins twice.** — WINTERMUTE, 2026-06-19
 
 ## Data pipeline · corpus prep · augmentation
+- **Checkpoint weight-set probe for W; Morph A/B step 3 done with a new instrument (null); E21c launched (10:40).** — CONTINUITY, 2026-10-29
 - **v7 kick phase alignment: sign of the shift (b_lo -= shift).** → `trans0_bungee_aligned_overlay_track0/1.wav` — ANTIGRAVITY, 2026-10-08
 - **D3 Part B: f0 into training crops (the crop-encoder resampler wiring).** → `mir/src/tools/crop_timeseries_resample.py`, `.TIMESERIES.npz`, `<idx>.json`, `track_folder/<name>.npz`, `--timeseries-root/<name>.npz` — CONTINUITY, 2026-08-12
 - **two nulls that could not fail, in one afternoon.** — WINTERMUTE, 2026-08-12
@@ -227,6 +242,10 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **Bitwig calls middle C "C3".** — GHOST-NOTE, 2026-07-02
 
 ## Infra gotchas · venvs · ROCm/CK · storage
+- **Gate G2 Conditioned Separation: Inpainting contract resolution and sliding-window full-song benchmarking.** → `eval_separation.py`, `file:///home/kim/sao_runs/drum_sep_g2_eval/index.html` — ANTIGRAVITY, 2026-10-26
+- **BS-RoFormer drum stem separation: +14.85 to +18.65 dB SDR on studio multitracks, zero Wiener comb-filtering.** → `mir/src/bs_roformer/inference.py` — ANTIGRAVITY, 2026-10-22
+- **bf16 Newton-Schulz removes most of the modular optimizer's cost; fp32 optimizer state is nearly free (2026-10-19).** → `Mantu/sa3_control_runs/film_t_section_20261017/` — WINTERMUTE, 2026-10-16
+- [RULED OUT] **fp32-state checkpoints are 2.4 GB (bf16 1.6 GB); Mantu filled and A5 died mid-save (2026-10-19 23:46).** → `eval/run_kuang_plan_a5_rerun.sh` — WINTERMUTE, 2026-10-16
 - [lesson] **env: `transformers/audio_utils.py` raises PackageNotFoundError for torchcodec.** — ANTIGRAVITY, 2026-10-08
 - **We were pulling the weights and leaving the logs.** → `lightning_logs/`, `metrics.csv`, `runs/`, `/project/.../code`, `hparams.yaml`, `run_meta.json` — GHOST-NOTE, 2026-09-09
 - **RUNBOOK.md: the operator manual, and a workflow inversion.** → `RUNBOOK.md`, `filelock.py`, `gpu_guard.sh`, `agent_commit.sh`, `docs/commands.md`, `/tmp`, `CLAUDE.md`, `MASTER.md`, `KIM-TASKLIST.md` — GHOST-NOTE, 2026-09-08
@@ -253,6 +272,11 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **gfx1201 ROCm nightlies are the clean path.** — GHOST-NOTE, 2026-07-02
 
 ## Uncategorized · recent
+- **Eight Antigravity boards published after correction, V8 held.** — WINTERMUTE, 2026-11-03
+- [lead] **Dead decode may sit in the GPU VAE decode.** — WINTERMUTE, 2026-11-03
+- [mistake] **My publish script hid its own failures.** — WINTERMUTE, 2026-11-03
+- **The dead decode comes after the latent, and empty_cache can set it off.** — WINTERMUTE, 2026-11-03
+- **Gate G2 Modular Inlet Freeze & Serialization Catch: Arm A vs Arm A-v2.** → `train_lora.py`, `diffusion.py` — ANTIGRAVITY, 2026-10-26
 - [RULED OUT] **control trainer: Schedule-Free + --ema checkpoints held the SF average, not the EMA.** → `control/sa3_control/train.py` — WINTERMUTE, 2026-10-16
 - **E12 FiLM bracket under the modular optimizer: all three lrs stable, loss identical.** → `eval/film_bracket_density_check.py`, `eval/run_film_e12_night.sh` — WINTERMUTE, 2026-10-16
 - **AVP drone sweep: force_scalar runs the latent level to ~3 at every cfg; the EMA renders are ~60% base weights.** → `renders_pull/dronesweep/run_meta.json`, `eval/dronesweep_weights_test.py` — WINTERMUTE, 2026-10-16
@@ -263,6 +287,12 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **the modular optimizer costs ~320 ms per update; Shampoo, NorMuon, SF and EMA are not the cost.** → `film_optimizer_timing_20261016/` — WINTERMUTE, 2026-10-16
 - [result] **same_chroma head retrained under the modular recipe (E13).** — WINTERMUTE, 2026-10-16
 - **the modular 54k FiLM steers density over 3.6-9.3 onsets/s at weight 2.5-3.25, wider than the shipped FiLM, no saturation.** → `film_bracket_check.html` — WINTERMUTE, 2026-10-16
+- **with bf16 adapter weights the FiLM cross-attention keys/values stop learning; fp32 optimizer state keeps them moving (2026-10-20).** → `eval/run_a4_density_check.sh` — WINTERMUTE, 2026-10-16
+- **fp32 optimizer state halves the stable rank of the FiLM conditioner's change (2026-10-21).** → `kuang_plan_P4_adapter_audit_20261021/run_meta.json` — WINTERMUTE, 2026-10-16
+- **the chroma head retrained under ModularOptimizer steers ~10x further per gain (2026-10-28, EXPERIMENTS E13).** → `evals_aac/control_runs/chroma_e13_20261028/report.txt` — WINTERMUTE, 2026-10-16
+- [RULED OUT] **deeper / wider chroma heads and the onset recipe do not beat C3 ep10 (2026-10-28, E13b).** — WINTERMUTE, 2026-10-16
+- **sharpening the chroma target nearly doubles frames on the right note (2026-10-29, read 11-02, EXPERIMENTS E13x).** — WINTERMUTE, 2026-10-16
+- [RULED OUT] **a finite latent can decode to dead audio, and warm-up does not cure it (2026-11-02).** — WINTERMUTE, 2026-10-16
 - **retrained air head A2 follows the dB target both ways; the anchor removes the seed-764 + FiLM saturation (by ear).** → `punch_air_film.html` — WINTERMUTE, 2026-10-15
 - [tool] **disintegration gate: optional latent-level leg (final std ratio > 1.3).** → `eval/control_head_disintegration_eval.py`, `docs/superpowers/specs/2026-07-20-control-head-disintegration-gate.md` — WINTERMUTE, 2026-10-15
 - **the punch DoRA shifts every seed the same way; seed 764 gets one of the largest shifts.** — WINTERMUTE, 2026-10-15
@@ -286,6 +316,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [confirmed] **the `fullft_bigset` DDP prediction, closed at runtime by me rather than handed off.** → `/users/akekim/sa3_fullft_bigset-20784494.out` — THE-FINN, 2026-08-17
 - [lesson] **LUMI ssh is a time-boxed cert, not a standing grant — verify, don't remember.** — THE-FINN, 2026-08-17
 - **leak-scanned a new public page before it synced, caught a process gap not a leak.** → `top100.html` — THE-FINN, 2026-08-17
+- **2026-11-02 — three instances ran the same weekly routine, and my own "not recorded" was wrong.** — THE-FINN, 2026-08-17
 - **[2026-08-12] Morphological-space path: doc reviewed+current, 8-arm sweep sbatch, soft-rank loss prototype (TDD).** → `papers/deep-research/MORPHOLOGICAL_SPACE_DESIGN_NOTE.md`, `lumi/sbatch/morph_head_sweep.sbatch`, `control/sa3_control/contour_loss.py` — CONTINUITY, 2026-08-12
 - **2026-08-16→17 — the bug report that described its own cause.** → `rate.html`, `evaluator.html` — WINTERMUTE, 2026-08-12
 - **the dead rows were at the top of the list.** → `file://` — WINTERMUTE, 2026-08-10

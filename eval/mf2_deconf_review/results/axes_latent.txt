@@ -1,0 +1,49 @@
+n 4461 hint source [('per_track+global', 4415), ('global', 46)]
+terms 55 mean terms per caption 6.4
+ rate searching 23.9
+ rate dark 14.0
+ rate raw 0.5
+ rate uplifting 18.1
+ rate mantra-like 3.8
+ rate sci-fi 1.5
+ rate alien 0.6
+eig top12 [3.31 2.33 1.75 1.56 1.44 1.36 1.35 1.22 1.21 1.19 1.17 1.16] | var explained by 8: 26.0% of 55 terms | eig>1 count 23
+parallel analysis: random eig1 1.22; real eigs above it: 8
+split-half congruence per axis, sorted, mean of 10 splits [0.29 0.52 0.68 0.77 0.83 0.86 0.88 0.96]
+tracks with crops 2676 crops 5400
+artists 600
+axis1 contemplative, introspective, meditative     R2 from 56 Essentia tags, artist-held-out +0.058 r 0.249 | shuffled R2 -0.013
+axis2 sci-fi, futuristic, robotic                  R2 from 56 Essentia tags, artist-held-out +0.030 r 0.176 | shuffled R2 -0.015
+axis3 raw, gritty, unsettling                      R2 from 56 Essentia tags, artist-held-out -0.005 r 0.055 | shuffled R2 -0.012
+axis4 mantra-like, ritualistic, spiritual          R2 from 56 Essentia tags, artist-held-out +0.002 r 0.088 | shuffled R2 -0.010
+axis5 resonant, pulsating, energetic               R2 from 56 Essentia tags, artist-held-out -0.011 r 0.019 | shuffled R2 -0.012
+axis6 uplifting, bright, euphoric                  R2 from 56 Essentia tags, artist-held-out -0.003 r 0.068 | shuffled R2 -0.012
+axis7 searching, dark, unsettled                   R2 from 56 Essentia tags, artist-held-out -0.009 r 0.042 | shuffled R2 -0.004
+axis8 otherworldly, cosmic, expansive              R2 from 56 Essentia tags, artist-held-out -0.009 r 0.021 | shuffled R2 -0.005
+--- latent-based reading
+latent feats (2676, 512)
+known-pos: Essentia calm       from latent R2 0.586 r 0.772
+known-pos: Essentia dark       from latent R2 0.403 r 0.641
+known-pos: Essentia melodic    from latent R2 0.392 r 0.637
+known-pos: Essentia energetic  from latent R2 0.110 r 0.332
+known-neg: shuffled R2 -0.018 r -0.017
+axis1 contemplative, introspective, meditative     latent R2 +0.039 r 0.202
+axis2 sci-fi, futuristic, robotic                  latent R2 +0.013 r 0.126
+axis3 raw, gritty, unsettling                      latent R2 -0.014 r 0.026
+axis4 mantra-like, ritualistic, spiritual          latent R2 -0.018 r 0.006
+axis5 resonant, pulsating, energetic               latent R2 -0.013 r 0.014
+axis6 uplifting, bright, euphoric                  latent R2 -0.005 r 0.046
+axis7 searching, dark, unsettled                   latent R2 -0.014 r 0.027
+axis8 otherworldly, cosmic, expansive              latent R2 -0.011 r 0.016
+  word meditative     n  115  AUC latent 0.701  AUC 56 tags 0.706
+  word contemplative  n  121  AUC latent 0.661  AUC 56 tags 0.632
+  word sci-fi         n   42  AUC latent 0.608  AUC 56 tags 0.648
+  word futuristic     n  162  AUC latent 0.600  AUC 56 tags 0.644
+  word robotic        n  273  AUC latent 0.603  AUC 56 tags 0.653
+  word mantra-like    n  116  AUC latent 0.503  AUC 56 tags 0.634
+ritualistic too few 8
+  word searching      n  639  AUC latent 0.551  AUC 56 tags 0.510
+  word dark           n  366  AUC latent 0.586  AUC 56 tags 0.530
+  word uplifting      n  470  AUC latent 0.518  AUC 56 tags 0.551
+  word euphoric       n  769  AUC latent 0.525  AUC 56 tags 0.527
+  word otherworldly   n  419  AUC latent 0.495  AUC 56 tags 0.519

@@ -1,0 +1,22 @@
+Melodic CE deconf>naive 8 /16 mean -0.03 | key kept naive 15 deconf 13 of 16
+Space CE deconf>naive 12 /16 mean +0.11 | key kept naive 11 deconf 11 of 16
+Dark CE deconf>naive 11 /16 mean +0.17 | key kept naive 10 deconf 10 of 16
+Uplifting key kept 12 /16 CE-baseCE mean +0.01
+AntiDark key kept 12 /16 CE-baseCE mean -0.05
+
+library floor: sum of 10 tags, change from baseline at each gain
+  base base 0.142 naive Space +0.022 -0.001 +0.009 -0.025 | deconf Space -0.012 -0.013 -0.028 -0.050 | naive Melodic +0.001 +0.004 +0.007 +0.009 | deconf Melodic -0.004 -0.014 -0.023 -0.041
+  adamw base 0.118 naive Space +0.021 +0.021 -0.005 -0.017 | deconf Space -0.010 -0.020 -0.025 -0.044 | naive Melodic -0.013 -0.013 -0.012 -0.007 | deconf Melodic -0.018 -0.023 -0.037 -0.052
+  goa base 0.030 naive Space -0.009 -0.002 +0.014 +0.052 | deconf Space -0.006 -0.011 -0.008 +0.004 | naive Melodic -0.002 -0.002 -0.002 +0.001 | deconf Melodic +0.002 +0.001 -0.002 -0.013
+  combo_fusion_goa base 0.038 naive Space -0.015 -0.009 +0.009 +0.033 | deconf Space -0.010 -0.015 -0.015 -0.016 | naive Melodic -0.007 -0.007 -0.010 -0.009 | deconf Melodic +0.002 +0.001 -0.003 -0.007
+
+matched-effect: melodic loss when the own tag has moved about the same (Space, Dark), nearest gain pair within 0.015
+  Space base ['+0.034/+0.023:mel -0.041 vs -0.010']
+  Space adamw ['+0.036/+0.032:mel -0.081 vs -0.035', '+0.070/+0.061:mel -0.083 vs -0.055', '+0.070/+0.075:mel -0.083 vs -0.044']
+  Space goa ['+0.103/+0.092:mel -0.263 vs -0.212', '+0.161/+0.174:mel -0.318 vs -0.330']
+  Space combo_fusion_goa ['+0.029/+0.028:mel -0.301 vs -0.218', '+0.029/+0.044:mel -0.301 vs -0.308', '+0.046/+0.044:mel -0.352 vs -0.308']
+  Dark base no matched pair
+  Dark adamw ['+0.028/+0.026:mel -0.085 vs -0.055', '+0.028/+0.026:mel -0.085 vs -0.067', '+0.028/+0.022:mel -0.085 vs -0.077', '+0.034/+0.026:mel -0.112 vs -0.055', '+0.034/+0.026:mel -0.112 vs -0.067', '+0.034/+0.022:mel -0.112 vs -0.077']
+  Dark goa no matched pair
+  Dark combo_fusion_goa no matched pair
+peak check [('fine_adamw__Aliens_g1024__s1102008041.m4a', None)] dead-like crest/rms sample {'rms_db': -13.28, 'crest': None, 'peak_db': -1.55}

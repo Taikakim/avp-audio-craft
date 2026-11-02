@@ -1891,6 +1891,13 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
 - **Instrument FIRST (today's lesson):** MuScriptor on the render -> the same token derivation -> agreement / centred-pitch correlation with the fed stream, with the reference audio as positive control and shuffled/foreign streams as floors, before any training result is read.
 - **Kill:** an arm whose renders do not beat shuffled streams on the gated instrument at matched steps. Cost: one D15-scale training per arm (local) + renders.
 
+### E25 — De-confounded mood targets and unhinted caption mood words: what survives the review — **(a) RUNNING (WINTERMUTE), (b) POTENTIAL, not started, no go given**
+- **Why:** ANTIGRAVITY 2026-11-03 reported conditional de-confounded mood targets and mood words mined from Music Flamingo 2 captions. Reviewed the same night: `docs/mf2-mood-deconf-review-2026-11-03.md`.
+- **(a) Targets.** Reported on one prompt and one seed, with selected cells. Measured on those clips: de-confounded moves its own tag less than naive at equal gain (Space 0/16, Dark 2/16, Melodic 4/16), key is held no better, and where `space` moved equally it lost less melodic in 7 of 9 pairs. `eval/mood_deconf_render.py` (W, 15 prompts, 4 models, 1,980 clips, baseline through the guided sampler at gain 0) decides. **Read at matched own-tag movement, not at equal gain.**
+- **(b) Caption words.** Unhinted mood words are somewhat more readable from audio than hinted ones for `dark`, `aggressive`, `metallic`, `unsettling`, `melancholic`, `uplifting` (held-out AUC, named genre held fixed), but they also follow the wrong genre label (`dark` 65% when it names industrial or techno, 11% when it names trance). The eight MF2 axes are not shown to be in the audio (R² <= 0.06 from Essentia, <= 0.04 from the latent).
+- **Cheap test if wanted, before any caption merge or training:** no finetune. Add each candidate word to the canonical prompts on the Goa LoRA and on Base, same seeds, guided-path baseline, and read the Essentia tag and Audiobox against the prompt without it. **Kill:** the word moves nothing the plain prompt does not. Only words that move the meter are worth merging into captions.
+- **Results / tools:** `eval/mf2_deconf_review/`.
+
 ## F. Data, captions, corpora (experiments they gate)
 
 ### F1 — goa_src caption chain (year pass → Granite → sidecar) and the `latents_sa3` key join — **GATED on Kim**

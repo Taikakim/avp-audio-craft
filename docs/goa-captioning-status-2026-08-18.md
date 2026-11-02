@@ -127,3 +127,6 @@ what gets extracted (and via which canonical tool — mir's, not a reimplementat
 gets cross-checked against what before a captioning run launches, what the sidecar-rebuild
 contract is, and where the "did we actually verify the OUTPUT, not just the input" step
 lives so this doesn't recur a third time in a different corpus.
+
+---
+*Addendum 2026-11-03 (CONTINUITY): the fix had a cost. The hint corrected the genre but lowered the audio-readability of some mood words, and the unhinted mood words follow the wrong genre label. Measurements: `docs/mf2-mood-deconf-review-2026-11-03.md` section 1.*
