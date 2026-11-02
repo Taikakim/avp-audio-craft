@@ -74,6 +74,56 @@ format. A hobby scene may already be forming around it, so being format-compatib
 2. Do the merge in a scratch worktree; re-render one DoRA at strength 1 against an existing render to check it is unchanged.
 3. Head-gradient export experiment, which decides whether steering can leave torch.
 
+## 0c. Results of the three spikes (2026-11-03, upstream 790793b)
+
+Scripts: `scripts/release_spikes/`. Outputs outside the repo: `/home/kim/sao_runs/{tflite_cpu_test,head_export}`.
+
+**1. CPU test: works, and fast.** Upstream's LiteRT runtime, no torch, this box (Ryzen 9900X, 12 threads, other jobs running),
+24 s of audio, 8 steps, same seed:
+
+| Run | Wall | Realtime |
+|---|---:|---:|
+| Medium, int8 | 10.9 s | 2.21x |
+| Medium, fp32 rung | 12.5 s | 1.92x |
+| Medium, fp32 legacy | 11.0 s | 2.19x |
+| Medium, fp32 legacy + Kim's AVP DoRA | 21.9 s (about 12 s one-time patch), sampling 781 ms/step | 1.10x first run |
+
+The DoRA (`dora128adj_avp_aug10_lr1e4` ep74) converted from `.ckpt` to `.safetensors` with no key changes. It clearly changes
+the output (correlation 0.44 with base, +2 to +5 dB by band), and all outputs are finite. **Not judged by ear.** Caveats:
+- **The current fp32 rung file cannot take LoRAs:** its weights are named `arith.constant*`, so upstream's name-based mapper
+  resolves 1 of 229 layers. This looks like an upstream gap: its mapping test skips unless a model is present. The `legacy/`
+  file works (227 of 229), so that is what ran. A proper fix could match by weight values against `model.safetensors`, which would
+  bring back the rung file's flat RAM. The rung file has 222 FC weights against legacy's 227, so check that first. Reporting
+  this upstream is Kim's call.
+- **Two layers are dropped:** `pre/postprocess_conv`, which the runtime never maps. They rank 229th and 227th of 229 by relative
+  change in this adapter, so low impact is likely, but it is an approximation.
+- LoRA means fp32 (5.8 GB plus a 5.8 GB patched copy per adapter and strength). Strength changes cost a re-patch of about 12 s.
+- The DoRA was trained on `medium-base` and rendered on post-trained `medium`. A first fp32 rung attempt failed with "Failed to
+  allocate tensors" right after its download and did not recur on retry; cause unknown.
+
+**2. Trial merge: clean so far.** Local branch `align/upstream-2026-11` (9dd2335, worktree `/home/kim/Projects/sa3-align`), not pushed,
+shared checkout untouched.
+- Real DoRA, all 229 layers, old vs merged code: **bit-identical at strength 1.0 and 0.0. At 0.5 they differ,** as expected
+  (median 30% relative on random W0, which exaggerates it). So renders at other strengths will not match our corpus, and
+  **Kim's by-ear notes at weights other than 1 were made on the old behaviour.** `lora_interp` is kept.
+- 53 LatCH, longform and warmup tests: same result on both trees (53 passed, 2 skipped).
+- **Not done:** `test_lora.py` needs a GPU (same failure on both trees on CPU). A GPU render comparison waits for the card. `tests`
+  in `SAO/.venv` is shadowed by a site-packages package, so `test_lora.py` fails to collect there; an unrelated existing fault.
+
+**3. Head gradient without torch: works.** A production head (`latch_sa3_hardness_best.pt`, 4.9 M params) with its MSE guidance
+loss exported to one ONNX file, 26.7 MB. ONNX Runtime on CPU against torch's real gradient, 4 seeds and timesteps:
+**cosine 1.0000, relative error 2-5e-7, loss equal to 6 digits, about 33 ms per call** (torch: 12 ms).
+- **Route:** `torch.onnx` cannot trace autograd directly. AOTAutograd captures forward and backward as plain graphs, which then
+  export. Attention must be written as plain math during capture, since the CPU flash-attention backward has no ONNX form.
+- **Not yet shown:** a full steered render through it. One head, one loss, fixed T=259 only: static length means one export per
+  rung or dynamic axes. `cosine_rotinv` and other losses untested. ONNX Runtime, not LiteRT.
+
+**So the torch-free stack looks viable:** LiteRT for the DiT, ONNX Runtime (or a converted model) for head gradients, with a numpy sampler
+between them. FiLM still needs a re-export. Next: one steered render end to end, measured against the torch path.
+
+**Reliability note for the plan (W, 2026-11-03):** on the ROCm stack the same latent can decode to NaN or finite-but-wrong audio
+on the first render, cause unknown, and a CPU decode was reported clean. The CPU route may avoid that whole class. Not tested.
+
 ## 1. The audit (2026-11-02)
 
 Static import closure from `eval/explorer_render_server.py` + `eval/forge_api.py`, lazy imports included.
