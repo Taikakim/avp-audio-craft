@@ -1170,3 +1170,16 @@ target reads them as HF-deficient and would push generations brighter).
 
 ### negative · a finite latent can decode to dead audio, and warm-up does not cure it (2026-11-02)
 - All-NaN audio from a healthy latent; 3 of 3 fresh processes at the first guided render. I first read this as gain 16384, then as process warm-up; both wrong as a full account, since a head first used after six warm-ups still gave bad cells. One request also came out unsteered in one run and steered in another. Cause not established; rare (2 of 1,715 cells unsteered). Corpus scan: 509 DC-like clips still in the served model-matrix manifest. MASTER section 5.
+
+## 2026-11-03
+
+### finding · Eight Antigravity boards published after correction, V8 held
+Read all nine staged pages against their data before publishing. The clips were fine (1,308 decoded, none dead); the prose was not. mood_finegrained called a 314 Hz centroid change +70 Hz and said "proven" about a mood score. E22 said the absolute target moved the root on "almost every track" when it kept 8 of 14. Corrections live only in the staged HTML, so a rebuild restores the old text: Antigravity's 00:38 rebuild of mood_finegrained already did.
+
+V8 stays unpublished. KUANG's review sits on a branch that never reached main, so the page looked ready and nothing on main said otherwise. Worth remembering: a staged page can be stale against a review I cannot see from `main`. Check `git log --all` for the subject before trusting a page.
+
+### lead · Dead decode may sit in the GPU VAE decode
+Antigravity's render notes report the first GPU decode in a process as unreliable, once a constant full-scale signal, with a CPU decode of the same latent clean. Not re-tested. See MASTER section 5.
+
+### mistake · My publish script hid its own failures
+A `|| true` on the directory step, and ssh errors on stdout, so a connection reset both left the upload unfinished and printed the server's address into my session output. Not on any public page. Rewritten with retries, real exit codes and stderr to a private file.
