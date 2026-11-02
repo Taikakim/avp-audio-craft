@@ -55,11 +55,6 @@ Pages (local files): `~/evals_aac/latch_phaseE.html` (74 clips, six trained dens
 **RUN (in the morning, when his training is done; no sudo needed now that the dead mounts are gone):** `udisksctl unmount -b /dev/sdd1 && udisksctl mount -b /dev/sdd1 && findmnt /run/media/kim/Mantu`
 **VERIFY:** `findmnt /run/media/kim/Mantu` shows `/dev/sdd1`, and `head -c 100 /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/REPORT.md` reads. If it mounts as `Mantu3` again, a stale entry is still around: `findmnt | grep -i mantu`.
 
-### ✅ RESOLVED 2026-10-07 (relayed by G from your listening of v7b; correct me if it is wrong) — DJ mix: both open decisions answered, plan is F7
-**Your verdict as G recorded it:** plain audio crossfade is the best and very clean (kicks, bass, drums, other blend almost unnoticeably); the a2a-smoothed versions stutter / add misplaced extra kick onsets, so smoothing is OUT; remaining faults are few (hi-hats "galloping", rare pitch mismatch).
-**Decisions closed:** (1) lengthen the clips 2-3x with a more gradual crossfade: YES (needs the GPU and Mantu). (2) the stem-separated version: tried, no separator gives a usable bass stem on this material (htdemucs_ft best at 0.44), so the transition is the stem-free band split.
-**Plan:** `EXPERIMENTS.md` F7 (owner GHOST-NOTE): v7c band-swap built and tested on synthetic signals, NOT yet on real clips because Mantu is down (see the Mantu item above); then lengthening; then a staged multi-band transition. v7b stays on the Kone page.
-
 ### 🎧 LISTEN + RATE on your phone: DJ mix v6 on the Kone mixtape page (C, 2026-10-07; waits on W to publish)
 **WHAT:** the new "DJ mixes: the beat-aware set" section on https://aavepyora.online/files/kone-mixtape/ : v6 smoothed (41 clips, 25.3 min), v6 bass-swap, v6 plain, v5 for comparison. Four big buttons at the bottom: A too bright, B lacks punch (about the clip playing), C transition out of sync, D transition had unfitting sounds (about the transition that last played).
 **WHY:** your "one faultless mix". The corruption was in the latents, fixed per clip with a latent-size ceiling at decode; v6 scans at 4.5 jumps/min vs v5's 43.5, but a count is a screen, your ears decide. docs/training-findings.md 2026-10-07 A1.
@@ -71,18 +66,6 @@ Pages (local files): `~/evals_aac/latch_phaseE.html` (74 clips, six trained dens
 **RESULT:** vs the anchor (~0.199, noise ~0.004): **dim 512 0.1908 (better)**, depth 8 0.1946 (borderline), depth 2 / lr 1.5e-2 worse, lr 3e-3..1e-2 and late brake/EV switching within noise; the BATCH readings were a step-count confound (W): b32 at equal steps matches the anchor at ~60% of the wall time, b8 only looked equal because it ran twice the steps; every curve was still falling at epoch 10, so this ranks learning speed, not the ceiling (Phase E, 20 epochs + a repeat seed, is queued behind W's GPU job), Lion 0.228-0.262 (far behind; its best lr was the lowest tried). Head recipe stays `--optimizer modular --lr 1e-2 --mod-warmup 500 --batch-size 16`; try `--dim 512` as the next default after one repeat seed.
 **CHECK:** `cut -f1,3,4,5 /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseD/SUMMARY.tsv`. **Incident:** a render of mine OOM-killed D13 at 7 s; it was re-run alone and the number above is that run.
 **YOUR DECISIONS (nothing else needs you):** (1) mir `bpm.py` fix at source + import in `latch/extract_density_targets.py` instead of my copy: go / no-go. (2) FiLM bracket: join the granite captions to the bigset, or train with empty prompts on purpose?
-
-### ✅ DONE 2026-10-06 (verdict withdrawn 10-07, see Phase D above) — LatCH Phase C: brake, escape velocity and Schedule-Free+ settings on the head recipe (C, 2026-10-06, EXPERIMENTS E5)
-**WHAT:** 9 LatCH arms on the goa bigset density target. The head recipe (b16, lr 1e-2, warmup 500, Shampoo, SF on) plus,
-one at a time: a repeat seed, radial brake 0.8, escape velocity, SF+ burn-in 0 / 3000, SF+ r 0 (uniform) / 2, brake+EV.
-**WHY:** your ask. Phase B never had the brake, escape velocity or an SF+ burn-in on. Scion's layer norms were on in every arm already.
-**RUN** (when W is off the GPU; it waits by itself if the GPU is taken):
-```bash
-cd /home/kim/Projects/SAO && setsid nohup bash latch/run_modular_bracket.sh /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseC_arms.txt /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseC > logs/latch_bracket_phaseC.log 2>&1 < /dev/null &
-```
-**TAKES:** ~30 min per arm, ~4.5 h total. Stop: `pkill -f run_modular_bracket` (resumes, skipping finished arms).
-**VERIFY:** `cut -f1-4 /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseC/SUMMARY.tsv` has 9 lines.
-**REPORT BACK:** that output. An arm counts only if it beats the C01-vs-C02 seed spread.
 
 ### ✅ RENDERED 2026-09-30 (126/126, latents normal) — now LISTEN: soup_mean vs soup_filtered vs soup_ep7_ep14. Was: render the fp32cmp_avp_t4096_bs1 soups WITHOUT ep35 (C, 2026-09-29)
 **WHAT:** 42 cells each for `soup_mean` (mean of ep3/7/14/21), `soup_filtered` (same, per value drops at most one
@@ -97,25 +80,6 @@ cd /home/kim/Projects/SAO && export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTO
 (renders land on Mantu; `~/evals_aac/model_matrix` only gets the cfg-7 subset).
 **THEN, to see them on the page:** `bash /home/kim/Projects/SAO/Misc/stage_matrix_clips.sh` (copies new renders into the page's folder and rebuilds `~/.cache/evals_aac/model_matrix.html`; nothing does this automatically).
 **REPORT BACK:** that count; C checks the latent sizes before you listen.
-
-### ✅ DONE 2026-09-26 (C ran it): r256 6340 is healthy — its NaN was the render fault. Was: re-render r256 at 5072/6340, merged (C, 2026-09-25)
-**WHAT:** the merged cfg sweep for `goa3_avp_r256_2026-09-23` (the rank-128 run abandoned on a NaN loss
-at ~step 6900). **WHY:** its step-6340 `rb_mid_4` clips were all-NaN, and training-findings reads that as
-"6340 is suspect". But they were in-training live-adapter demos, and the shampoo run's identical 6340 NaN
-turned out to be the render bug (13e), not the model. This decides whether r256 was already failing at
-6340, and fills the missing `rb_mid_4` board cell if it wasn't. 5072 is the known-good control.
-**RUN** (only after `rocm-smi --showpids` is empty; the shampoo run holds the card until ~step 10144):
-```
-cd /home/kim/Projects/SAO && export ROCR_VISIBLE_DEVICES=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 && .venv/bin/python stable-audio-3/scripts/demo_cfg_sweep.py --run-dir /run/media/kim/Mantu/sa3_lora_runs/goa3_avp_r256_2026-09-23 --steps-ckpt 5072 6340 --cfgs 1 7
-```
-**TAKES:** ~5 min. **VERIFY:** `goa3_avp_r256_2026-09-23/cfg_sweep/step6340_x/` holds 12 `.z0.npy`
-files. **REPORT BACK:**
-```
-python3 -c "import json;[print(r['step'],r['prompt'],r['frames'],r['cfg'],r['finite_frac'],r['pre_clamp_std']) for r in map(json.loads,open('/run/media/kim/Mantu/sa3_lora_runs/goa3_avp_r256_2026-09-23/cfg_sweep/sweep_results.jsonl'))]"
-```
-**READ IT:** `rb_mid_4` finite at 6340 ⇒ the NaN was the render bug and 6340 is usable (tell W, who can
-publish it). Still NaN merged ⇒ the model really was failing by 6340, earlier than the loss guard saw.
-**ROLLBACK:** writes only `<run>/cfg_sweep/`; delete it to undo.
 
 ### ⬜ cfg sweep of a run's milestone checkpoints — is the checkpoint broken, or only its demos? (C, 2026-09-25)
 **WHAT:** re-renders the trainer's six demo clips per checkpoint at cfg 1 / 3 / 7 from the
@@ -212,41 +176,6 @@ fix is the pair. Not necessarily the cause of anything here, but it is half a se
 
 
 
-### ✅ DONE (verified 2026-09-24, THE-FINN) Re-render the 93 quarantined `lion_lr1e-5` native cells
-**WHAT** — `lion_lr1e-5` ep399 has its full 108-cell 20 s grid plus 18 native cells; 93 more natives
-were quarantined for non-finite latents (see `model_matrix_QUARANTINE_2026-09-08_nan/`). Its nine
-campaign siblings carry ONE native cell each, so the arm already exceeds the sibling shape — this
-only buys extra long-form material.
-**WHY** — the underlying render fault is undiagnosed and parked for budget (2026-09-08). Batching is
-a workaround, not a fix: a 24-cell process rendered clean and a 12-cell one did not, so expect some
-batches to drop cells. That is now SAFE — `model_matrix_gen` refuses to write a non-finite cell, so
-repeated passes converge and nothing bad reaches the board.
-**RUN** — one (cfg, strength) combo per process; note the `< /dev/null`, without which the inner
-python eats the loop's stdin and the second iteration reads a mangled `cfg=150`:
-```bash
-cd /home/kim/Projects/SAO
-export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2
-python3 Misc/filelock.py acquire /home/kim/Projects/SAO/.gpu.lock --handle KIM --pid-aware --pid $$
-for combo in "1 1.0" "1 1.5" "1 2.0" "7 1.5" "7 2.0" "16 1.0" "16 1.5" "16 2.0"; do
-  set -- $combo
-  echo "=== cfg$1 strength$2"
-  .venv/bin/python eval/model_matrix_gen.py --only-labels lion_lr1e-5 --weights online       --native-grid --only-cfgs "$1" --only-strengths "$2" < /dev/null
-done
-python3 Misc/filelock.py release /home/kim/Projects/SAO/.gpu.lock --handle KIM
-```
-**TAKES** — ~8 batches x ~2.5 min = ~20 min, plus a model load per batch.
-**VERIFY** — the artifact, not the exit code (it exits 3 whenever it drops a cell, by design):
-```bash
-/home/kim/Projects/SAO/.venv/bin/python -c "
-import numpy as np, glob
-g=glob.glob('/run/media/kim/Mantu/sa3_lora_runs/model_matrix/lion_lr1e-5__*__d48.z0.npy')
-print(len(g),'native cells, NaN:',sum(1 for p in g if not np.isfinite(np.load(p)).all()))"
-```
-Expect NaN = 0 always (the guard cannot write one); the number of native cells is what should climb
-toward 108. Re-run the loop to fill whatever a pass dropped.
-**REPORT BACK** — paste the line above.
-**ROLLBACK** — nothing to roll back; the guard cannot write a bad cell, and a resume only adds.
-
 ### ⬜ Decide: 60 `xft_*` arms have zero board cells (~9 GPU-hours)
 **WHAT / WHY** — all 60 SVD-extracted adapters are on disk with zero rendered cells. `EXPERIMENTS.md:44`
 calls them "60 mislabeled broken `xft` checkpoints" while their manifest note records that load and
@@ -269,60 +198,6 @@ _(none queued yet — see `RUNBOOK.md` for the standing operations.)_
 
 ---
 
-## MORPH A/B — the measurement that decides the lane (C, 2026-09-11) — DONE 2026-10-29: null, see step 3
-
-**WHY:** D17/D18 both rendered EMA weights whose shadow started at the ZERO-INIT adapter —
-77.9% zero-init at step2000, 22.3% at step12000. The dilution shrinks monotonically with step,
-so it is perfectly confounded with training progress: an A/B on the raw checkpoints would
-measure the EMA horizon and report it as learning. Run these three in order and the lane gets a
-real number instead of impressions. All tooling is committed and self-validating.
-
-### 1. Deconvolve the checkpoints (CPU only, no GPU lock)
-**DONE 2026-10-27 18:46-18:49 (CONTINUITY, at Kim's go):** five files in `$R/deconv/` (steps 4000-12000, 8.5 GB). Every validate line improved: raw EMA vs deconvolved error 0.694 -> 0.345 (step 4000), 0.673 -> 0.269 (6000), 0.643 -> 0.234 (8000), 0.588 -> 0.196 (10000), 0.559 -> 0.168 (12000). The early steps are the least accurate. What these are: a windowed average of the online weights over the 2000 steps before each save, not the endpoint. Steps 2 and 3 below are still open. Log: `~/sao_runs/morph_deconv_20261027.log`.
-RUN — one block, from `/home/kim/Projects/SAO`:
-```
-R=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09 && for S in 4000 6000 8000 10000 12000; do P=$((S-2000)); .venv/bin/python eval/ema_deconv_ckpt.py --ckpt $R/riffer_step$S.pt --prev $R/riffer_step$P.pt --out $R/deconv/riffer_step$S.pt --report; done
-```
-TAKES ~6 min. VERIFY `ls $R/deconv/*.pt | wc -l` = **5**, and each `[validate]` line shows
-deconvolved **below** raw (expect ~0.20 vs ~0.59). A validate line that does NOT improve means
-the gap or beta is wrong — stop and say so.
-REPORT BACK: `grep -h validate` output from the run.
-ROLLBACK: `rm -rf $R/deconv` — nothing else is touched, originals are read-only inputs.
-
-### 2. Re-render the morph clips from the deconvolved weights (GPU, ~15 min)
-**DONE 2026-10-27 22:48-23:10 (CONTINUITY, at Kim's go), with two corrections to the block below:** (1) `--melody-dir /home/kim/Projects/latents_sa3_morphL3` no longer exists; the copy at `/run/media/kim/Lehto/latents-all-backup/latents_sa3_morphL3` was used. (2) The deconvolved DoRA magnitudes came out negative in places (0 / 218 / 419 / 991 / 1598 entries at steps 4000-12000; the tool validated only the adapter), so a repaired set (`$R/deconv_clamped/`, entries below 0.001 replaced by the EMA value, `eval/ema_deconv_clamp_magnitudes.py`) was rendered as well. RESULT: steps 4000-10000 render healthy in BOTH sets (peak 0.8913, 48 clips each: labels `morph_L3_deconv_step*` and `morph_L3_deconvclamp_step*`). Step 12000 renders dead (peak exactly 1.0, even with null conditioning) in BOTH sets, so negative magnitudes are not the whole cause; cause open. Those 24 step-12000 files were MOVED (not deleted) to `$R/clips_dead_step12000/` so step 3 cannot ingest them. The renders segfault at teardown (rc=134 on 3 of 5 steps) after writing every file, as warned. **For step 3 prefer the `deconvclamp` clips; the 4000-10000 span still covers the EMA-dilution range the A/B is confounded by, but there is no step 12000 point.** Logs: `~/sao_runs/morph_rerender_20261027.log`, `~/sao_runs/morph_clamp_rerender_20261027.log`.
-RUN:
-```
-cd /home/kim/Projects/SAO && R=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09 && Misc/gpu_guard.sh acquire KIM $$ && export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2 PYTORCH_HIP_ALLOC_CONF=expandable_segments:True && for S in 4000 6000 8000 10000 12000; do .venv/bin/python lumi/render_morph.py --ckpt $R/deconv/riffer_step$S.pt --label morph_L3_deconv_step$S --melody-dir /home/kim/Projects/latents_sa3_morphL3 --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --out $R/clips --n-refs 4 --gains 1.0,2.0 --cfg 7 --steps 24; done; Misc/gpu_guard.sh release KIM
-```
-TAKES ~15 min. **VERIFY THE ARTIFACT, NOT THE EXIT CODE** — renders segfault at teardown after
-writing every file (rc=134 happened on step6000 last time and all 12 clips were fine):
-`ls $R/clips/*deconv*.wav | wc -l` = **60**. Also check none is a dead DC clip:
-a healthy clip peaks at exactly **0.8913**, a NaN one at exactly **1.000**.
-REPORT BACK: that count.
-ROLLBACK: `rm $R/clips/*deconv*` — the original EMA clips are untouched and differently named.
-
-### 3. Transcribe + score both weight sets (GPU then CPU)
-**DONE 2026-10-29 (CONTINUITY): NO DETECTABLE CONTOUR FOLLOWING, measured with an instrument that passes its positive control.** `eval/morph_f0_contour_ab.py` (Demucs `other` stem -> Melodia -> pitch-curve correlation with the fed stem's curve; reference clips r +0.43 own vs -0.07 foreign). Renders: own - foreign +0.0001 (74/144), conditioned - null +0.023 (73/144); deconvolved weights no better than EMA. Detail: EXPERIMENTS D17. Rerun (cached f0, ~1 min): `cd /home/kim/Projects/SAO && R=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09 && /home/kim/Projects/mir/mir/bin/python eval/morph_f0_contour_ab.py --renders $R/clips --out $R/morph_f0_contour_ab.json`. What remains for Kim: whether to listen to the deconvclamp step8000 g2.0 clips (the only cell that followed, 4/4, likely noise) before the lane is parked.
-**RUN 2026-10-28 (CONTINUITY), NO RESULT: the instrument failed.** Transcription of all 200 clips finished; the block's `--renders $R/clips` finds nothing (the tool globs `<renders>/*/*.json`, so pass `--renders $R`), and it needs the mir venv (pretty_midi). With both fixed: 170 cells scored, but the extractor FAILS its own positive control (reference audio vs its own fed stream 0.073, n = 56), so the A/B numbers measure the pipeline, not the conditioner, and are not reported. The tool's own instruction: reproduce f0_other (stem-separated melodic line, as build_morph_streams did) instead of a transcription skyline, via mir stem separation + f0 on the renders. Output `eval/morph_contour_ab_D17.json` is the failed-gate record.
-RUN:
-```
-cd /home/kim/Projects/SAO && R=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09 && Misc/gpu_guard.sh acquire KIM $$ && FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE .venv/bin/python eval/hook_eval_renders.py --wavs "$R/clips/*.wav" --out $R/hook.jsonl --midi-dir eval/morph_midi; Misc/gpu_guard.sh release KIM; .venv/bin/python eval/morph_contour_ab.py --renders $R/clips --midi eval/morph_midi --out eval/morph_contour_ab_D17.json
-```
-TAKES ~30 min (transcription dominates; it is resumable — clips with a cached `.mid` skip the GPU).
-VERIFY `morph_contour_ab_D17.json` exists and the run printed `cells:` with a number **> 100**.
-**READ IT AS:** per arm, `own` vs `foreign`. Own > foreign = the render followed ITS OWN fed
-contour rather than contours in general. Compare `morph_L3_lion_r128_bs32_step*` (EMA) against
-`morph_L3_deconv_step*` — **that delta is the whole point**: if adherence rises across steps only
-in the EMA set, the "learning" was the EMA horizon.
-ROLLBACK: delete the json; nothing else is written.
-
-**⚠ The positive control in step 3 is FATAL BY DESIGN and has failed before** (scored 0.09 where
-the renders scored 0.151, because the fed stream is f0-derived while the check re-extracts a
-MuScriptor skyline). If it fails, the number that follows is not interpretable — report the
-control's value and stop rather than reading the adherence figures.
-
-
 ## 🔴 Decisions waiting on Kim
 
 - **[2026-09-16, G] Song-structure retest queued, not yet run.** `song_structure_probe.py`
@@ -343,19 +218,6 @@ control's value and stop rather than reading the adherence figures.
   intro's element-list in reverse) rather than the current bare "song section: X" suffix,
   and/or layer in an onset-density LatCH control-head sweep for a guaranteed-reliable
   arrangement lever independent of text conditioning. Not yet built or run.
-- **[2026-09-16, G] Mixtape v2 (BPM-corrected, DJ-overlay) rebuilt overnight, needs your ears.**
-  `~/staging/mixtape-v2/` — full 121.9min mixtape (real madmom BPM for all 82 clips, corrected
-  a 1.5x octave-fold bug found along the way; each clip 3x-lengthened + tail-faded/treated;
-  all 81 pairs mixed via the corrected-scale DJ-overlay technique from earlier the same night).
-  **Known limitation, not a bug to fix blind:** the 81 pairwise renders are independent
-  self-contained two-clip mixes, concatenated with a short crossfade at each of 80 internal
-  joins — each clip's arrival is technically heard twice near its own seam. If it doesn't hold
-  up, the real fix is re-architecting the compile as one continuous multi-clip pass, not a
-  smaller tweak. Also staged: `~/staging/dj-mixing-experiments/` (the night's three test
-  batches + your live commentary). Interactive tagging page for HF-damping (per-clip checkbox,
-  saves to its own db) at `https://claude.ai/code/artifact/aa3b5dc6-4358-4080-b02e-9d041241d333`.
-  DM'd to Wintermute for publish; none of this has been listened to by Kim yet.
-- **[2026-09-04, C] Morph-conditioner adherence is still UNMEASURED after four instruments.** Not a null result — every meter failed its own control. Next session, step 1 is a bounded bug: the contour encoder reproduces ground truth at only 0.55 (L3) when it should be ~1.0, degrading with alphabet size = a grid/window offset. Fix that and the whole test becomes readable. **Nothing about the conditioner should be concluded until then.**
 - **[2026-09-04, C] Two brackets built and unrun, both need the GPU:** B11 decoupled Muon/AdamW LR (G briefed, flag shipped) and B12 PT→base soup ladder (`eval/soup_pt_ladder.py`). B12 is the one aimed at your "punchy but the kick/bass always sound the same" — judge by ear, no metric exists for it.
 - **[2026-09-04, C] A/B question set changed and `structure` is now unmeasurable.** W's fix collapsed the four questions into `clarity_meaning`. `fullft_avp_t256` wins on top_end (85.7%) and spectral_image (81.8%) but structure was 1/3 and no future vote will measure it. If structure is what you judge backbones on for control work, the single-question design cannot tell you.
 
@@ -409,6 +271,7 @@ into history unasked on `sa3-style-adapter`. Both are code we want; the issue is
 committed rather than left in the working tree for you. Your call: keep, or reset and re-stage.
 
 ### ⏳ BEFORE LUMI SCRATCH WIPE: hand-tag promising FATS for final pull (Kim, self-assigned 2026-08-21)
+⏰ **DEADLINE ESTIMATE ~2026-11-21 (THE-FINN, 2026-11-02):** the allocation closed 2026-08-23 and WORKLOG says `/scratch` persists ~90 days. That is one line's estimate, not a confirmed purge date. Agents cannot look: `ssh efp.lumi.csc.fi` returned `Permission denied (publickey)` today, likely an expired cert (needs your login). Note Mantu is 99% full (38 GB free) and the UUID pull target was not mounted today, so make room before pulling.
 ⚠️ AMBIGUOUS (THE-FINN, 2026-09-24): can't determine whether the scratch wipe this entry is
 racing already happened over the past month — no mention of a completed wipe in WORKLOG,
 DISCOVERIES, or the W35-W38/live dialogue archives, and I can't reach LUMI to check scratch
@@ -421,22 +284,6 @@ from: fullft_avpaug ep19 (B9 backbone), the A11 per-corpus winners once heard, B
 terminals, one suomi wfleet replica set. The PQ keeplist (eval/build_fat_keeplist.py) is the
 metric-based skeleton for the END-OF-PROJECT local slim curation Kim mentioned — rerun it when
 the new arms are scored and it ranks everything.
-
-### 🎧 DECIDE: quality-matched big-goa file list — which variant, and is the threshold right? (W, 2026-08-21)
-Your ask, done. Measured both corpora the same way (spectral cutoff, not header bitrate):
-**old goa 86.0% near-lossless vs the archive 28.4%** — the old corpus is ~3× richer, a much bigger
-gap than the model results implied. *(CORRECTED 2026-08-23: the original 75.9% / 27.7% came from a
-v1 audit that measured ONE 30s window and so read intros, not encodes. v2 takes the max over 6
-windows; both corpora have now been fully re-audited, n=3978 and n=23232, and the gap SURVIVES the
-fix — it was briefly unsupported in either direction while the re-audit ran. Note this measures
-ENCODING FIDELITY, not musical quality, and W is not proposing to filter on it.)* Lists at `mir/stats/goa_big_quality_matched/` (**4,111 files**, cutoff
-≥20.0 kHz, duplicates already dropped, `master_variant` kept per your directive) and
-`..._matched_noverlap/` (**3,147** — same but excluding the 2,669 tracks already in old goa; use this one
-if it is meant as NEW data rather than a replacement corpus). Two calls for you: (a) which variant, and
-(b) the mean matches but the SHAPE does not — old goa is bimodal (mostly excellent + a lossy tail), the
-filtered set is bunched just above threshold so its median is *lower* (20.68 vs 21.29). Matching the shape
-exactly would mean discarding good files to reproduce old goa's bad ones; say the word if you want that.
-Ladder is in the tool output — ≥19.5k keeps 5,044, ≥20.5k keeps 2,326.
 
 ### 🎧 LISTEN: Top-100 clips per frame length, PQ-ranked (C, 2026-08-21)
 Your bedtime ask, live: https://aavepyora.online/files/evals/top100.html (needs G's morning sync of
@@ -506,23 +353,6 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
   train identically. Harmless — a duplicate arm, not a wrong one — but it costs a GCD and answers
   nothing. Separable only if the augmented files are distinguishable by filename; nobody has
   checked. **Ask:** worth a base-only staging dir, or accept the duplicate?
-- **LUMI budget just flipped from "can't spend it" to "can't afford it all" — needs your
-  priority call, today** (W, 08-09, right after the aug×8 launch below landed). This morning:
-  2880 of 5000 GPU-hours remain, 14 days left = 336 wall-clock hours → 8.6 GCDs would need to
-  run continuously on a single 8-GPU node just to spend what's left — unspendable without
-  multi-node. As of THIS submit: two 8-GCD jobs are now running concurrently (aug×8 full-FT
-  `20869819` + the resumed `fullft_bigset`) — **16 GCDs continuous would exhaust the entire
-  remaining budget in 7.5 days, 187% of the 14-day window. One 8-GCD job alone is 93% of what's
-  left.** Nothing is currently sequenced — both jobs just run in submit order until the hours
-  are gone, which risks the thing you actually wanted most being the thing that doesn't fit.
-  **Two asks:** (1) pick the priority order — W's read (not her call to make): multi-node
-  smoke first (minutes, gates whether 32 GCDs can even work), then the melody-wall A/B (the
-  actual research question), with the two full-FTs as the expensive incumbents already running;
-  (2) confirm `20869819` (60-epoch full-FT at T=2048) actually resumes cleanly from a checkpoint
-  *before* it hits the 48h wall — `fullft_bigset` has already timed out twice at the 2-day cap
-  this week, and an unresumable timeout on a 7.5-day effective budget is hours billed for
-  nothing. C's 4-node/32-rank rendezvous smoke is built and ready — cheap (~mins of a 4-node
-  alloc), needs your submit.
 - **same-chroma-steering-demos** — 1 commit stranded off `main`; merge it, or keep it a demos branch? (C to action)
 - **Dev-branch rename** — `sa3-style-adapter` is a misnomer now ("far past a style adapter"); rename / restructure around `main` whenever you want. No rush.
 - **SSH to the desktop — half-done, needs you at the desk** (08-04/05). `sshd` is enabled + starts on
@@ -599,33 +429,6 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
   leave them and only validate new heads from here. I'd do the energy heads at least, since they
   are the ones with demonstrated authority and so the ones worth trusting precisely.
 
-- **LUMI: submit the step-resolution trajectory job tonight (C, 2026-08-18 — your "save every step" ask,
-  built and smoke-tested locally).** Two single-line commands from your LOCAL terminal, in SAO/:
-  `rsync -avRn -e "ssh -i ~/.ssh/id_EFP" stable-audio-3/scripts/trajectory_sketch.py stable-audio-3/scripts/train_lora.py stable-audio-tools/stable_audio_tools/training/fusion_opt.py lumi/vendor/stable_audio_tools/training/fusion_opt.py lumi/sbatch/traj_sketch_arms.sbatch eval/trajectory_sketch_analyze.py akekim@efp.lumi.csc.fi:/project/project_465003186/code/`
-  *(updated 01:10 — now EIGHT arms: + `bs1_fusion_cos` / `bs1_fusion_snr` / `bs1_fusion_cos_snr`, the muon
-  damping tests you asked for; the two fusion_opt.py paths carry the new `--fusion-decay` / `--fusion-snr`
-  code and the sbatch refuses to run without them.)*
-  (dry run; then the same without `-n`). Then on LUMI: `cd /project/project_465003186/code && SMOKE=1 sbatch lumi/sbatch/traj_sketch_arms.sbatch`
-  (30 steps/arm, ~5 min, exit code is the gate) and if it exits 0: `sbatch lumi/sbatch/traj_sketch_arms.sbatch`.
-  Eight 1-GCD arms, 6 h: bs1/accum8/bs8 × AdamW + bs1/bs8 × Fusion + Fusion-bs1 × {cosine, SNR gate, both}, sanity16 recipe on goa; every step
-  sketched, ckpt every step to 1000 then every 5 (~65 GB/arm on scratch — you said we have space; delete
-  after). Read with `python3 eval/trajectory_sketch_analyze.py /scratch/project_465003186/runs/traj_sketch/<arm>/traj`
-  (several dirs at once for cross-run). What it decides: whether the "broken AdamW" signature is BATCH
-  (accum8/bs8 drift where bs1 diffuses) or OPTIMIZER (Fusion-bs1 healthy where AdamW-bs1 isn't).
-- **LUMI, next night — the #59 melody A/B with the new R²(t)-gated arm (C, 2026-08-19; you asked for the code).**
-  The v3 melody-subspace A/B (`lumi/sbatch/subspace_loss_v3sel_grid_mt.sbatch`, wired since 08-06) now has
-  a 4th arm: K=5 + noise-level gate from the measured melody R²(t) curve (same recipe as arm 1, only the
-  gate differs; the arm measures its own gate on its GCD first if the reference json isn't in the tree).
-  Files: everything is in **one bundle, 106 KB, 11 files, paths relative to `code/`** —
-  `/home/kim/Projects/SAO/traj_sketch_bundle.tgz` (also all pushed to the three GitHub mirrors:
-  `avp-audio-craft` sa3-style-adapter 1b16bdb, `stable-audio-3` latch-sa3-phase1 fc576ea, `audio-tools-avp`
-  main 3b7f82f). On LUMI after upload: `cd /project/project_465003186/code && tar xzvf traj_sketch_bundle.tgz && sbatch lumi/sbatch/subspace_loss_v3sel_grid_mt.sbatch`
-  (4 GCDs on small-g, 40 h; preflight refuses to run if any of the new files is missing) and, if
-  hours allow, `sbatch lumi/sbatch/traj_sketch_arms.sbatch` (8 arms, 6 h; the SNR-gate arms carry the
-  FIXED grad-based gate now). Fallbacks if scp fails again: `scp -O`, `sftp`, or the LUMI web portal's
-  Files upload. **Kill-criterion for the gated arm:** if by ep10 it does not move whitened-chroma
-  recurrence (`eval/melody_wall_analysis.py`) or your ears vs arm 1, the melody-first (SFD) route gets
-  the budget instead.
 - **Listen: spectral-repair probes of a broken AdamW arm (C, 2026-08-18).** Four variants of
   `adamw_goa_t512_bs4_lr1e4` ep9, cfg 7 / W1 / 23.79 s / 3 prompts, rendering on CPU tonight into
   `lumi_runs/analysis/task_vector_gram_goa_2026-08-18/renders/` (UUID drive): `00_bad_terminal`,
@@ -717,24 +520,25 @@ thread (mostly C/G per the entries' own bylines) to confirm still-relevant vs. c
   that closes it is the z0 std of the wd03 re-run (job 21251551, real DDP) — rendered on LUMI as
   job 21329730, **pending the pull**. Every unmigrated multi-GPU script stays flagged unverified in
   ARCHITECTURE.md §E, with the one-line check (`grep -h LOCAL_RANK <log> | sort -u`).
-- **Melody-selective subspace (v3) — sbatch WIRED, one submit from you** (C, 08-06). Machinery-audit of
-  your "are we even seeing a small second?" landed a fix: the #59 subspace had **zero** melody-vs-codec-
-  noise selectivity on held-out data (SNR 1.0×); rebuilt via whitened CSP → **5.1×**
-  (`lumi/melody_subspace15_selective_v3.npz`). We DO see a small second before the weight update
-  (clean-note AND in-mix = 12.7× codec noise) — #59 was weak because the *loss had no lever*, not
-  because melody's invisible. A/B sbatch ready: `lumi/sbatch/subspace_loss_v3sel_grid_mt.sbatch`
-  (K∈{2,5,12} on v3, identical recipe → compares directly to the run subloss_goa_k{2,5,12} v2 arms +
-  lreq K=1). **To run** (from KIMRETURNNOTES rsync pattern): ship code (incl. the v3 npz + sbatch) →
-  `sbatch /project/project_465003186/code/lumi/sbatch/subspace_loss_v3sel_grid_mt.sbatch`. Verdicts:
-  `eval/musicology/{interval_resolution_ladder,inmix_floor,melody_selective_subspace}_2026-08-06/VERDICT.md`.
 - **LUMI campaigns** live (big-FT / grids — current job IDs in WORKLOG).
-- **`sa3_lenvar_hq` (length-variant renders, 220 tasks)** — *blocked on you for one thing:* when it
-  drains, relay the artifact count (`ls .../renders/length_variant/*.wav | wc -l`, or the `.out`
-  tail). Agents can't reach LUMI. Everything downstream is built + deployed — the clips ingest and
-  the boards fill the remaining 55 models' native/ptm cells with no further code changes. — W
 - **model_index.md generator** — being built (F, 08-05).
 
 ## ✅ Recently done (rolling — prune monthly)
+
+### ✅ Moved by the 2026-11-02 staleness patrol (THE-FINN) - one line each, original text is in git history
+- **Mixtape v2 needs your ears (G, 2026-09-16)** - SUPERSEDED: v2 was rebuilt as v3/v4/v5 (entry below, 09-17), then v6/v7; you listened to v7b on 10-07 and the mix plan is F7 (WORKLOG 2026-09-16 overnight entry; commits 13a1dd5, 973fb96).
+- **Morph-conditioner adherence UNMEASURED (C, 2026-09-04)** - ANSWERED 2026-10-29: instrument that passes its positive control, result null (commit 79814ee, EXPERIMENTS D17, `eval/morph_f0_contour_ab.py`).
+- **Quality-matched big-goa file list: which variant, which threshold (W, 2026-08-21)** - CLOSED by Kim 2026-08-23 (via W): lists dropped, gating rejected; `INVALID.md` stamped in `mir/stats/goa_big_quality_matched{,_noverlap}` (EXPERIMENTS.md lines 177-183).
+- **LUMI budget priority call (W, 2026-08-09)** - MOOT: allocation closed 2026-08-23 at 4765/5000 GPU-h (WORKLOG '2026-08-23 - ALLOCATION CLOSED'); LUMI reported unavailable 2026-09-25 (dialogue W39).
+- **LUMI: submit the step-resolution trajectory job tonight (C, 2026-08-18)** - MOOT: time-bound submit on an allocation that closed 2026-08-23 (WORKLOG 2026-08-23); no later submit recorded.
+- **LUMI #59 melody A/B with the R2(t)-gated arm (C, 2026-08-19)** - RAN AND HEARD: the v3sel arms incl. `subloss_v3sel_k5_tgate` exist and you listened 2026-09-27 (docs/training-findings.md '2026-09-27 Melody-subspace loss WORKS by ear').
+- **Melody-selective subspace (v3) sbatch wired, one submit from you (C, 2026-08-06)** - RAN AND HEARD: `subloss_v3sel_k2/k5/k12` listened 2026-09-27 (docs/training-findings.md 2026-09-27).
+- **`sa3_lenvar_hq` length-variant renders: relay artifact count (W, 2026-08-04)** - DONE: renders/length_variant pulled, ingested, scored and published 2026-08-22 (WORKLOG 2026-08-22, GHOST-NOTE, 2606 new clips).
+- **DJ mix: both open decisions answered, plan F7 (G, 2026-10-07)** - RESOLVED 2026-10-07: plain crossfade wins, smoothing out, stem-free band split; follow-on tracked in EXPERIMENTS F7 (v7c commits 13a1dd5, 973fb96).
+- **LatCH Phase C brake/EV/SF+ settings (C, 2026-10-06)** - DONE, verdict withdrawn 2026-10-07 (seed/worker-count audit, WORKLOG 2026-10-07 01:50; EXPERIMENTS E5); superseded by Phase D, which stays above because two decisions of yours remain open.
+- **r256 re-render at 5072/6340 (C, 2026-09-25)** - DONE 2026-09-26: 6340 healthy, NaN was the render fault; `goa3_avp_r256_2026-09-23/cfg_sweep/step6340_x` holds 12 z0 files (checked today).
+- **Re-render the 93 quarantined `lion_lr1e-5` native cells** - DONE (verified 2026-09-24; re-checked today: 108 native z0 files in `model_matrix`).
+- **MORPH A/B, the measurement that decides the lane (C, 2026-09-11)** - DONE 2026-10-29: steps 1-3 run; deconvolved weights no better than EMA, no detectable contour following, instrument passes its positive control (commit 79814ee, EXPERIMENTS D17; steps 1-2 2026-10-27).
 
 ### ✅ Kone mixtape audit: Kim's shortlist recovered (THE-FINN, 2026-10-20)
 The 09-15 audit page (`staging/kone-mixtape-audit/`, 249 clips) keeps ★ picks only in the browser, so no server-side results exist. Kim did the audit on his phone (Kim, 2026-10-20), so any picks beyond the exported 141 would still sit in the phone browser's localStorage (`kone_mixtape_stars_v1`, aavepyora.online origin), not on this machine. Kim pasted the export into G's session on 2026-09-15 08:15; it is now saved as `eval/mixtape_audit_kim_shortlist_2026-09-15.json`: 141 clips (105 rated 5★, 36 unrated genre-fusion). It fed the AVP-only mixtape v1/v2 and the later DJ mixes. Kim's later by-hand harshness tagging (about 40 tracks, 09-16) is in `~/mixtape_harshness_review/`.
