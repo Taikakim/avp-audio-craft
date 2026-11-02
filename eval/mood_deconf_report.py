@@ -10,7 +10,7 @@ Every clip is compared with its own model + prompt baseline (guided sampler at g
   gate     control_head_disintegration_eval.gate(), unchanged thresholds, plus the latent-level leg
 Paired naive vs de-confounded: same model, prompt and gain, difference Deconf - naive, with a 95% bootstrap interval that
 resamples PROMPTS (15), since clips of one prompt are not independent. "wins" counts pairs where Deconf is higher.
-Also: does the result on the one prompt the first run used (rb_bracket_0) hold on the other 14, and the first run's named claims.
+Also: at MATCHED own-tag movement (E25 review), and does the result on the one prompt the first run used (rb_bracket_0) hold on the other 14, and the first run's named claims.
 Writes report.json and report.txt in the run dir. RUN: mir/bin/python eval/mood_deconf_report.py
 """
 import json
@@ -122,6 +122,54 @@ def paired(steered, rng, keep=lambda c: True):
     return out
 
 
+def matched(steered, rng, tol=0.01, min_move=0.01):
+    """Deconf vs naive at MATCHED movement of the requested tag, not equal gain (CONTINUITY's E25 review): a target that moves its tag
+    less also costs less, so an equal-gain comparison can flatter it. Per model + prompt, each naive clip whose tag moved by at least
+    min_move is paired with the Deconf gain that moved it closest, if within tol. Both clips gate-clean. A Deconf clip can serve
+    two naive gains. Lower collateral and a less negative melodic change favour Deconf."""
+    by = defaultdict(list)
+    for c in steered:
+        by[(c["model"], c["pid"], c["tid"])].append(c)
+    out = {}
+    for naive, dec in PAIRS:
+        rows = []
+        for (m, p, t), clips in by.items():
+            if t != naive:
+                continue
+            for c in clips:
+                if c["bad"] or c["own"] < min_move:
+                    continue
+                cand = [d for d in by.get((m, p, dec), []) if not d["bad"]]
+                if not cand:
+                    continue
+                d = min(cand, key=lambda x: abs(x["own"] - c["own"]))
+                if abs(d["own"] - c["own"]) <= tol:
+                    rows.append((p, c, d))
+        res = {"n_pairs": len(rows), "prompts": len({r[0] for r in rows}), "n_naive_eligible": sum(1 for c in steered if c["tid"] == naive and not c["bad"] and c["own"] >= min_move)}
+        for measure in ("melodic", "off", "ce"):
+            bp = defaultdict(list)
+            for p, c, d in rows:
+                if c[measure] is not None and d[measure] is not None:
+                    bp[p].append(d[measure] - c[measure])
+            xs = [x for v in bp.values() for x in v]
+            if xs:
+                res[measure] = {"diff": round(float(np.mean(xs)), 4), "deconf_higher": int(sum(x > 0 for x in xs)), "n": len(xs), "ci": list(boot(bp, rng))}
+        out[dec] = res
+    return out
+
+
+def reach(steered):
+    """How far each target can move its own tag: per model + prompt the largest change over gains among gate-clean clips, then the mean."""
+    by = defaultdict(list)
+    for c in steered:
+        if not c["bad"]:
+            by[(c["model"], c["pid"], c["tid"])].append(c["own"])
+    out = defaultdict(list)
+    for (m, p, t), xs in by.items():
+        out[t].append(max(xs))
+    return {t: {"mean_best": fmean(v), "n": len(v)} for t, v in out.items()}
+
+
 def main():
     cells, idx = load()
     steered, base = per_clip(cells, idx)
@@ -134,6 +182,8 @@ def main():
                                for p in sorted({c["pid"] for c in steered}) for t in OWN}
     rep["paired"] = paired(steered, rng)
     rep["paired_clean"] = paired(steered, rng, keep=lambda c: not c["bad"])
+    rep["matched"] = matched(steered, rng)
+    rep["reach"] = reach(steered)
     rep["paired_first_prompt"] = {}
     rep["paired_other_prompts"] = {}
     for naive, dec in PAIRS:
@@ -179,6 +229,11 @@ def main():
     L += ["", "PAIRED Deconf - naive, all prompts and models (95% interval over prompts):"]
     for k, v in rep["paired"].items():
         L.append(f"  {k}: {v['diff']:+.4f} [{v['ci'][0]}, {v['ci'][1]}] wins {v['wins']}/{v['n']}")
+    L += ["", "MATCHED own-tag movement (within 0.01, moved at least 0.01, gate-clean), Deconf - naive; the comparison E25 asked for:"]
+    for k, v in rep["matched"].items():
+        L.append(f"  {k}: pairs {v['n_pairs']} of {v['n_naive_eligible']} eligible naive clips, {v['prompts']} prompts; " + "; ".join(
+            f"{m} {v[m]['diff']:+.4f} {v[m]['ci']} higher {v[m]['deconf_higher']}/{v[m]['n']}" for m in ("melodic", "off", "ce") if m in v))
+    L += ["", "REACH, best gate-clean own-tag change per model + prompt, mean:"] + [f"  {t}: {v['mean_best']} (n {v['n']})" for t, v in sorted(rep["reach"].items())]
     L += ["", "PAIRED, the first run's prompt vs the other 14:"]
     for k in rep["paired_first_prompt"]:
         a, b = rep["paired_first_prompt"][k], rep["paired_other_prompts"][k]
