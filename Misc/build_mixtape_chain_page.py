@@ -2,6 +2,7 @@
 # Last edited: GHOST-NOTE 2026-10-26 -- arms x0.75/x0.65 added
 # Last edited: GHOST-NOTE 2026-10-21 -- added relative-cut arms x0.92/x0.85/hf5/hf10/hf15 and letters to H; 2026-10-27 -- letters to I (9 arms), explainer mentions x0.85g
 # Owner: GHOST-NOTE (created 2026-11-03; adapted from build_mixtape_clamp_page.py)
+# Last edited: GHOST-NOTE 2026-11-03 -- page JS carries meters only (no ckpt paths; leak gate)
 # Last edited: WINTERMUTE 2026-10-20 — optional EVALS_ROOT / AAC_BITRATE env (192k publish copies; defaults unchanged)
 # Last edited: WINTERMUTE 2026-10-21 — page Source line: no internal file name (public page), no fixed bitrate
 """build_mixtape_chain_page.py -> ~/evals_aac/<name>.html. Blind same-playhead page for the bass+body+air LatCH chain test (eval/mixtape_chain_smoke.py).
@@ -30,7 +31,7 @@ for r in rows:
         if not os.path.exists(o):
             subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", f"{SRC}/{r['id']}__{k}.wav", "-af", f"volume={20*np.log10(tgt/rms[k]):.3f}dB", "-c:a", "aac", "-b:a", BITRATE, o], check=True)
     order = arms[:]; rnd.shuffle(order)
-    clips.append(dict(id=r["id"], std=r["z0_std"], order=order, m={k: r[k] for k in arms}))
+    clips.append(dict(id=r["id"], std=r["z0_std"], order=order, m={k: {q: r[k][q] for q in ("rms_db", "crest", "hf_ratio")} for k in arms}))
 page = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bass Body Air Chain A/B</title>
 <style>:root{--bg:#f3f1ee;--fg:#1d2326;--mut:#5d676b;--card:#fff;--line:#d6d2cc;--acc:#0b6e6e}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#15191b;--fg:#e6e9ea;--mut:#9aa5a8;--card:#1d2326;--line:#343c3f;--acc:#5fc4c0}}
