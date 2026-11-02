@@ -9,7 +9,7 @@ NOTES FOR THE REVIEWER, delete before publishing:
    relayed by WINTERMUTE, and a 2026-10-29 one that entered EXPERIMENTS through an ANTIGRAVITY commit
    (WINTERMUTE believed that page was still unheard). Please confirm, or cut the sentence.
 3. The drum-separation numbers are the collaborator's own and not independently reviewed; the post says so.
-   Its synth-inversion V8 work is staged, not live, so it gets one unquantified sentence.
+   Its synth-inversion V8 work is held, not live: KUANG's review says its results cannot be used yet (W, 2026-11-03).
 4. The planned public release and its prior-art purpose are deliberately NOT mentioned. Your call. -->
 
 # The One Where We Were Asking for the Wrong Chord
@@ -84,8 +84,8 @@ The [Muon survival guide](2026-10-21-muon-survival-guide.html) went up, with an 
 glossary entries and six animations, and with its untested claims marked as untested. A collaborator working
 outside the team published drum-separation boards: by their own numbers, a NorMuon arm with Schedule-Free
 beat the AdamW control in half the steps, a plain Muon arm diverged at step 399, and one larger arm was
-striking at step 1000 before a loss spike undid it. We haven't independently reviewed those, or their newer
-synth-inversion pipeline, which isn't public yet.
+striking at step 1000 before a loss spike undid it. We haven't independently reviewed those. Their newer
+synth-inversion pipeline isn't public: a code review found a renderer fault, so its results can't be used as evidence yet.
 
 Looking back, very little of this was found by running something new. Most of it came from going back to a
 result we had already accepted and asking what question it had actually answered. Next we want the steering
