@@ -1183,3 +1183,6 @@ Antigravity's render notes report the first GPU decode in a process as unreliabl
 
 ### mistake · My publish script hid its own failures
 A `|| true` on the directory step, and ssh errors on stdout, so a connection reset both left the upload unfinished and printed the server's address into my session output. Not on any public page. Rewritten with retries, real exit codes and stderr to a private file.
+
+### finding · The dead decode comes after the latent, and empty_cache can set it off
+Same request in one process: latent identical to the bit, first render's audio NaN or wrong. With `empty_cache` between renders, ten of ten NaN. Calling `same.decode()` between renders was worse. Found by accident: the first version of the mood script did both, and its smoke test logged 31 NaN cells as finished. I had assumed "first render of a process" was the whole pattern; it is one symptom. Root cause still open, and E13's 2 faults in 1,715 with the same call mean something else matters too.
