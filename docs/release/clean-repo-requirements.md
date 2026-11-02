@@ -9,9 +9,12 @@ rough is fine, speed matters, because the release is meant to establish prior ar
 - **SA3 Medium, both checkpoints:** `medium-base` and post-trained `medium`. The server already takes `--model` and knows
   both backbones (`forge/backbone.py`). Note post-trained is distilled: cfg is inert and it is not invertible, so separation
   and other inversion features stay base-only (MASTER section 5). The GUI must say so rather than fail.
-- **Bring the project as is.** No feature pruning, no re-architecture, no port onto upstream: untangling would burn more
-  tokens than it saves. **This supersedes the upstream-dependency plan in section 2 and the trimming in section 3.** Fleet
-  logs, journals and internal docs still stay out, per the original ask (reading to confirm with Kim).
+- **Bring the project as is.** No feature pruning, no re-architecture: untangling would burn more tokens than it saves.
+  **This supersedes the upstream-dependency plan in section 2 and the trimming in section 3.**
+- **Excluded, confirmed (Kim, 2026-11-03):** team discussion, DMs, tasklist, experiments and other dev files. Some `.md` files
+  will then reference missing things; that is a revision for later.
+- **First step: see what upstream added and look at aligning with it (Kim, 2026-11-03).** See section 0b. "Stays behind
+  upstream" below is therefore no longer the plan, pending that decision.
 - **Intel:** tested by Kuang on another computer, not recorded. **RTX:** not reachable from the desktop. Kuang is reached
   through GitHub only.
 
@@ -24,8 +27,52 @@ rough is fine, speed matters, because the release is meant to establish prior ar
 
 **Scan of the closure against "nothing that specific here" (2026-11-03): holds.** 0 secrets (2 false positives), 0 infra
 addresses (the one IP is `127.0.0.1`), 5 corpus names all in `chroma_morph_transitions.py`, 33 mentions of Kim in comments
-across 7 files, frontend clean. Consequence accepted: the vendored fork stays 197 commits behind upstream, including its LoRA
-work, so a later rebase is its own job. Vendored upstream code keeps its licence file.
+across 7 files, frontend clean. Vendored upstream code keeps its licence file.
+
+## 0b. What upstream added (read 2026-11-03, tip 790793b, 199 commits since our split on 2026-05-29)
+
+**Almost all of it is new runtimes, not core changes.** 40,153 added lines in 410 files: about 37,000 in `optimized/`
+(tensorRT, tflite, mlx), about 560 in the core package.
+
+**Merging upstream is small, smaller than section 2 implied.** A trial `git merge-tree` (no files touched) conflicts in only
+6 files, 9 hunks: `lora/model.py` (2), `lora/loader.py` (1), `interface/diffusion_cond.py` (1), `.gitignore` (1),
+`tests/conftest.py` (1), `uv.lock` (3). Our big `model.py` and `training/diffusion.py` edits merge cleanly as text. That is a
+text merge: it says nothing about behaviour, and nothing has been run.
+
+**Behaviour changes to check when merging:**
+- `lora_strength` now scales DoRA/BoRA magnitude too (`_blend_magnitude`). Strength 1 is unchanged by its own description;
+  other strengths will not match our earlier renders. It fixes the discontinuity near 0.
+- DoRA row norms get baked at save time, and there is an offline baker. New exclude patterns on load.
+
+| Runtime | Platforms | Medium? | Adapters | Host needs |
+|---|---|---|---|---|
+| `tflite` (LiteRT/XNNPACK) | **CPU**: macOS, Linux, Windows x64, x86 and ARM | **Yes**, 12-rung ladder to 4096 latents, int8 default 1.6 GB, fp32 5.8 GB | All nine types **merged by patching weights**; `.safetensors` only, needs fp32 | numpy, no torch |
+| `tensorRT` | Linux + NVIDIA | Yes | Low-rank branch as network inputs, stackable | Pinned TensorRT 10.15; compiled per GPU |
+| `mlx` | Apple Silicon | Yes | Merge, plus LoRA **training** | MLX |
+
+**Corrections to what I wrote earlier:**
+- Section 5's "LiteRT for Small; README lists Medium as GPU" was wrong: the tflite runtime ships Medium. Upstream describes it
+  as slower than the small models and points to GPU routes for sub-realtime. No Medium CPU timing has been measured by us.
+- "C++" was loose. The tree holds **no C++ source**. LiteRT is a C++ runtime used from a thin Python and numpy host. The goal
+  holds (no torch, no ROCm or CUDA, no GPU driver), but only on CPU; a real C++ app would still have to rewrite the host.
+
+**Limits for us:**
+- **These runtimes ship post-trained `medium` only** (pingpong sampler, 8 steps). `-base` appears only as a training start
+  on mlx. Base on CPU would mean running their `build/` export on it ourselves. Not tried.
+- **LatCH: no hooks anywhere.** The "latch" grep hits are tokenizer vocabulary. FiLM adapters are not there either.
+- **But the shape suits LatCH:** the sampler lives in the Python host (`tflite_pipeline.py`) between DiT calls, and our guidance
+  needs the gradient of the head only. So a small exported head-gradient model called between steps is plausible, and is
+  still the deciding experiment from section 5. Also untested: LatCH quality on an 8-step pingpong sampler at all.
+- FiLM needs per-block adapters, so a re-export through their `build/`.
+
+**Also worth knowing:** `dada-bots/underfit` is upstream's named LoRA-training UI, and the mlx trainer matches its checkpoint
+format. A hobby scene may already be forming around it, so being format-compatible helps the goal. mlx also ships an Ableton helper.
+
+**Suggested next steps, cheapest first:**
+1. **CPU test, no GPU lock:** run upstream's tflite on this box with one of Kim's AVP DoRAs converted to `.safetensors`. It
+   answers at once whether our fine-tunes work there, and how slow Medium is here.
+2. Do the merge in a scratch worktree; re-render one DoRA at strength 1 against an existing render to check it is unchanged.
+3. Head-gradient export experiment, which decides whether steering can leave torch.
 
 ## 1. The audit (2026-11-02)
 
@@ -118,9 +165,9 @@ because the shipped fine-tunes depend on it.
 | NVIDIA | Upstream's first-class path; **ours untested**. RTX is not reachable from here, only Kuang's side | Plain torch install, tested by Kuang. **This is most of the audience** |
 | Intel | Kuang tested inference on another computer; **not recorded**, so what exactly ran is unknown | Ask Kuang to write it down |
 | Apple | Upstream has MLX, also LoRA training; our steering untested | Later |
-| CPU | Upstream ships LiteRT/XNNPACK for **Small**; README lists Medium as GPU. Our ONNX DiT + decoder runs Medium on CPU, about 2x realtime at 8 steps (MASTER section 5) | ONNX for v2 |
+| CPU | Upstream's LiteRT/XNNPACK runs **Medium** with LoRA merge, no torch (section 0b). Our ONNX DiT + decoder also runs Medium on CPU, about 2x realtime at 8 steps (MASTER section 5) | Prefer upstream's route; steering is the gap |
 
-**The driver-independent goal.** Upstream's LiteRT/XNNPACK route is already a C++ runtime with no GPU driver in the
+**The driver-independent goal.** Upstream's LiteRT/XNNPACK route runs on a C++ runtime with no GPU driver in the
 loop, and ONNX Runtime on CPU has the same property. Both solve it for CPU. A GPU path always goes through some driver;
 the realistic aim is a Vulkan-style backend that avoids ROCm/CUDA **version pinning** (not evaluated).
 
