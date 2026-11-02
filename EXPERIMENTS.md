@@ -50,7 +50,7 @@ claim, including ones already in this file, against both corrections.
 
 ## A. Optimizer & training dynamics (why recent models broke)
 
-### A1 — Step-resolution trajectory: batch vs optimizer (walk vs drift) — **RUNNING (LUMI pending) / local DONE**
+### A1 — Step-resolution trajectory: batch vs optimizer (walk vs drift) — **local DONE; LUMI leg was pending, outcome not recorded here; LUMI reported unavailable 2026-09-25, and a 2026-11-02 sacct check was refused (key), so it could not be verified**
 - **Question:** is the "broken AdamW" signature (epoch displacements at the 1/√n random-walk floor; rank-1
   spike in B·A) a BATCH effect or an OPTIMIZER effect?
 - **Findings so far (C 08-18/19):** AdamW bs1 = accum8: update autocorr 0.9^τ then 0, gradient window-SNR
@@ -72,7 +72,7 @@ claim, including ones already in this file, against both corrections.
 - **Next variants (POTENTIAL):** inverse-sqrt decay (EDM2 Config E); `snr_beta` ≫ momentum window; per-neuron
   directional prior (see D4).
 
-### A3 — Stock-Stability sanity matrix (AdamW LoRA/DoRA r16, 7 datasets, 1 GCD each + 8-GPU DDP) — **RUNNING on LUMI (21353159/60/61)**
+### A3 — Stock-Stability sanity matrix (AdamW LoRA/DoRA r16, 7 datasets, 1 GCD each + 8-GPU DDP) — **SUBMITTED on LUMI (21353159/60/61); outcome not recorded here; LUMI reported unavailable 2026-09-25, and a 2026-11-02 sacct check was refused (key), so it could not be verified**
 - **Question:** Kim: "is stability's AdamW code broken?" — does the stock recipe give listenable models per
   dataset, and does 8× DDP at matched effective batch change the outcome?
 - **Gate:** trajectory stats (`eval/compare_trajectory_stats.py`) + soups + Kim's ears; pull before scratch purge.
@@ -201,7 +201,7 @@ claim, including ones already in this file, against both corrections.
   place a systematic bug could still hide — which is exactly what this entry's AdamW-vs-Fusion
   contrast tests, at matched everything, for the first time.
 
-### A12 — The 5e-5 replicate: Kim's auditioned operating point, carried to every corpus — **RUNNING (2026-08-22, ep24 wave: 21447819/20/21/22 → probe 21447823)**
+### A12 — The 5e-5 replicate: Kim's auditioned operating point, carried to every corpus — **SUBMITTED 2026-08-22 (ep24 wave: 21447819/20/21/22 → probe 21447823); outcome not recorded here; LUMI reported unavailable 2026-09-25, and a 2026-11-02 sacct check was refused (key), so it could not be verified**
 
 **Trigger (Kim direct, 2026-08-22, listening to `renders/length_variant/` on the drive as it pulled):**
 the 5e-5 clips beat 1e-4, 2e-4 shows degradation, and — the observation that actually motivated
@@ -532,7 +532,7 @@ trains without one becomes another unauditioned family — that is exactly how A
   soup vs single-replica cells (the averaging-rescue quantification); spectral repair on a128
   queued behind G's checkpoint pull.
 
-### B8 — Suomisoundi T512 anchor-clean + caption-probs drift postmortem (W+C, 2026-08-21) — **RUNNING: 21430198 (torchrun, PROBS_OVERRIDE=0.25,0.45,0.30); the cancelled 21428358/59 partials kept as soup input, see A10**
+### B8 — Suomisoundi T512 anchor-clean + caption-probs drift postmortem (W+C, 2026-08-21) — **SUBMITTED, outcome not recorded here; LUMI reported unavailable 2026-09-25, and a 2026-11-02 sacct check was refused (key), so it could not be verified: 21430198 (torchrun, PROBS_OVERRIDE=0.25,0.45,0.30); the cancelled 21428358/59 partials kept as soup input, see A10**
 - W's audit found winning_fleet's suomi tuple 0,0.9,0.1 was C's drift from the ratified
   0.25/0.45/0.30 (Kim 08-18) — zero t1 share = the corpus-anchor token "suomisoundi" never
   trains. F confirmed the drifted probs LIVE in the four running T1024 arms' own logs (a45 s1/s2 +
@@ -1352,7 +1352,7 @@ industrial, 2 goa) — use the **granite** tier (268/300 goa) or the hinted pros
   Q5–Q7 (gated on a Phase-B head). Their `measure_contour_codes.py` was NOT in the zip — ask the
   external agent or re-derive if Q2 (min H(A|B) on real audio) is picked up.
 
-### D14 — Cross-prompt a2a bracket at high noise, across model families — **RUNNING (21457563, submitted 2026-08-22)**
+### D14 — Cross-prompt a2a bracket at high noise, across model families — **SUBMITTED 2026-08-22 (21457563); outcome not recorded here; LUMI reported unavailable 2026-09-25, and a 2026-11-02 sacct check was refused (key), so it could not be verified**
 
 **Kim's spec, verbatim in intent:** bracket a2a transformations with noising values **random in
 [0.5, 0.9]**; take **T4096 crops** from our datasets; a2a them with **a random prompt taken from
@@ -1613,7 +1613,7 @@ same-seed same-prompt UNCONTROLLED base render (CLAP embedding distance; PQ alon
 don't use PQ as the drift meter). Before trusting (b): show it separates a known style-leaked FiLM render from a base render. FiLM-only is the
 positive control for (a) — Phase E's gate passed because nothing changed, so a meter with no dynamic range must fail loudly.*
 
-- **E7 — LatCH × FiLM combination grid with the drift meter — RUNNING (WINTERMUTE; driver `eval/latch_film_combo_e7.py render` started 13:55 on 10-15 — it appeared while this entry was being written).** Fixed
+- **E7 — LatCH × FiLM combination grid with the drift meter — DONE 2026-10-15, see "E7 / E8 RESULTS" below (WINTERMUTE; driver `eval/latch_film_combo_e7.py render` started 13:55 on 10-15 — it appeared while this entry was being written).** Fixed
   seeds/prompts; FiLM gain {0.5, 1.0, 1.75} × LatCH gain {off, mid, high} on the Phase-E E04-EMA onset head
   (`.../phaseE/E04ema_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt`, matrix driver precedent `eval/run_latch_onset_matrix_ema.sh`). Build as a
   thin CLIENT of :8056 `/generate` (`film` + `latch` payloads compose) — NOT a new guidance driver (INFERENCE-SURFACE rule). The July
@@ -1652,14 +1652,14 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   0.5-1.0 + LatCH 512. Drift meter audited (house: FiLM 1.75 0.22 vs LatCH alone 0.03). E8: FiLM gated to sigma >= 0.4..0.8 keeps 85-100% of its
   spread but does not reduce drift in house (0.26 vs 0.22) -> the style pull enters early with the density; kill met for the leak; FiLM's late
   steps add nothing. Next per plan: E9. Numbers in each run's `run_meta.json` `result`.
-- **E12 — FiLM density adapter retrained under the ModularOptimizer — RUNNING/QUEUED (W, asked in session 2026-10-15).** Reference = the shipped
+- **E12 — FiLM density adapter retrained under the ModularOptimizer — bracket + 54k run DONE 2026-10-17, results in WORKLOG 10-16/10-17 (W, asked in session 2026-10-15).** Reference = the shipped
   FiLM `onset_Fusion_lr1e-4_randomcrop` (FusionOpt lr 1e-4, 54k steps). The modular optimizer has never trained a control adapter, so LR does not
   transfer (TRAINING.md D4): stage 1 = LR bracket 3e-4 / 1e-3 / 3e-3 x 6000 steps, EMA 0.999 + online weights saved (`state_online`, added to
   `control/sa3_control/train.py` today, D6), prune-only (D25). Stage 2 = the survivor at 54k, then the E7 contexts vs the shipped FiLM (range,
   drift, gate). Runner `control/run_film_modular_bracket.sh` (queued behind GHOST-NOTE's air queue, `/tmp/air_nosf.done`), outputs
   `Mantu2/sa3_control_runs/film_modular_bracket_20261015/`. Kill: all arms diverge or show no density response at 6000 steps.
 
-### E13 — same_chroma LatCH head retrained under the ModularOptimizer — **TRAINED 2026-10-16/17; EVAL QUEUED 2026-10-28 (W)**
+### E13 — same_chroma LatCH head retrained under the ModularOptimizer — **TRAINED 2026-10-16/17; EVAL DONE 2026-10-28 (W; WORKLOG, files/evals/chroma_e13.html)**
 - **Why:** listening 2026-10-16 on the 06-25 all-C sweep (`riffer-evals/clips/chroma_steer/`, sidecar now carries the verdict): the production
   head steers, transparently (pad chords change their notes), most audibly at gain 2048, so higher gain may pay. Production head = AdamW,
   EMA 0.999, depth 4, 20 ep, train-loss selected (the E3 caveat).
@@ -1708,7 +1708,7 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   close to the retrain. I can't tell by ear how accurate these are." Weak sound and noise bursts on goa s5678 diagnosed: the E13 render
   ran on raw untuned `medium-base` at only 24 steps with prompt "goa", lacking the biggoa finetune DoRA used in E21b/c and E22 at 50 steps.
   Next requested: test with curated checkpoints (from `cleaned_checkpoints.txt`), sweep CFG, steps, sigma schedule, and guidance weights.
-- **E13b — onset recipe, bigger / deeper heads, gradient noise by t and part — RUNNING 2026-10-28 07:33 (W; Kim asked 2026-10-28).**
+- **E13b — onset recipe, bigger / deeper heads, gradient noise by t and part — DONE 2026-10-28 10:39, started 07:33 (W; Kim asked 2026-10-28; WORKLOG).**
   Kim's questions: was the best onset-head recipe used (no: the E13 arms used G's bass recipe: Shampoo, Muon on all 2-D, radial brake,
   wd-overtraining, batch 8 x 4; the onset winner is modular lr 1e-2 + 500 warmup, batch 16, depth 8), might chroma need a bigger or deeper
   head (E13 was already d512 depth 8 vs production d256 depth 4), and was gradient noise measured by timestep and model part (no: the
@@ -2159,7 +2159,7 @@ Code: `stable-audio-tools/scripts/synth_inversion/` (branch `feature/surge-xt-ne
 `papers/arxiv-2609.31024 - Synth-JEPA …` (sidecar has the implementation review). Results of paper-derived
 experiments go to the paper's verdict page (directive in `papers/knowledge.md`).
 
-**H1. FX-leak-fixed rerun with in-training accuracy controls — RUNNING** (W, launched 2026-10-06 02:43,
+**H1. FX-leak-fixed rerun with in-training accuracy controls — DONE, see REAL-STEM A/B RESULT below** (W, launched 2026-10-06 02:43,
 `Mantu/surge_200k_models/fxfix_ladder_ema_b64`, launcher `run_fxfix_ladder_ema.sh`).
 *Why:* the previous run (`modular_shampoo_sf_b64`) trained on poisoned renders — Surge keeps hidden
 chorus/delay state across renders in one instance, and the 5% random patches carried FX, so every
@@ -2341,7 +2341,7 @@ once with everything learned (v3 below) instead of an ablation chain.** Fix: `su
 fx_a1/fx_a2 TYPE to Off unless FX_RENDER_ENABLED (pedalboard drops an Off slot's mix params, so they are only set
 when on); test `test_fx_off_single_note_has_no_delay_trail` (46/46 pass). `surge_139_spec.py` has the same mix-only
 code (Synth-JEPA 139-param path) and is NOT yet fixed. H6 was stopped at ~step 14k.
-**v3 CLEAN RETRAIN — QUEUED (W, 2026-10-07 12:47).** `run_v3_clean.sh`: H1 recipe + `--cond_noise` (H6) +
+**v3 CLEAN RETRAIN — DONE: stopped 2026-10-08 10:16 at step 78416, best held-out JEPA 0.3647, per its training.log (ran from `run_v3_clean_home.sh`; queued W, 2026-10-07 12:47).** `run_v3_clean.sh`: H1 recipe + `--cond_noise` (H6) +
 `--flow_loss mae` (Synth-JDF supp.), FX truly off, 78,416 steps (~19 h at the 225 W cap). Waits behind C's Phase E
 until the GPU lock has been free 30 min (G may go first). `v3_post.sh` then inverts the 24 stems with v3 online / EMA /
 SF (tau 1) and EMA at tau 0.4 / 0.1, next to the Oct-5 model and H1 EMA RE-RENDERED WITH FX OFF (those two reference
@@ -2355,7 +2355,7 @@ at startup. Training since 17:34, ~19 h. The FX-off reference clips (`clips_ref_
 finished on Mantu before the drop. The post-step reads real-stem data from /Mantu, so the stale mount must be
 cleared before it runs (else rerun v3_post.sh with OUT_DIR=/home/kim/sao_runs/v3_clean_b64).
 **H6 — STOPPED 2026-10-07 ~12:40 (trained on delayed renders; superseded by v3).** Original entry:
-**H6 — RUNNING (W, launched 2026-10-07 08:44, authorised for the 48 h away window).** `run_h6_condnoise.sh` =
+**H6 — STOPPED at ~step 14k, folded into v3 (see the FX note above) (W, launched 2026-10-07 08:44, authorised for the 48 h away window).** `run_h6_condnoise.sh` =
 `run_fxfix_ladder_ema.sh` with ONE change, `--cond_noise --cond_noise_clean_frac 0.3`: the flow sees its mel condition
 partly noised in standardised space ((1-tau) eps + tau mel; 30% clean, else tau ~ logit-normal(0,1)), tau embedded as
 an input; mel stats stored as model buffers (also written into the EMA shadow). Old checkpoints load unchanged; tests
