@@ -25,6 +25,13 @@ Third-party: torch, torchaudio, numpy, scipy, einops, safetensors, transformers,
 uvicorn, soundfile, librosa, pydub, tqdm, packaging, dotenv, filelock, yaml; plus `flash_attn`, `stable_audio_tools`
 and `audiobox_aesthetics`, see section 3.
 
+Missed by the static scan, found by W reading the code (subprocess calls in the server and `forge/`; the frontend is not
+audited):
+- **`ffmpeg` and `ffprobe` binaries** (`explorer_render_server.py:417`, `forge/uploads.py:60`): a system dependency that
+  uploads fail without.
+- **Bungee** runs through `BUNGEE_PY` (`forge/stretch.py:13`), a hardcoded second interpreter in another venv. v1 needs
+  bungee in the main venv, or the feature dropped.
+
 Hardcoded local paths: **76 in 9 files**, mostly `explorer_render_server.py` (28), `chroma_morph_transitions.py` (26),
 `mixtape_v7_dsp.py` (13).
 
@@ -113,7 +120,11 @@ experiment decides C++.
    ROCm-only, so **test on NVIDIA**.
 2. **Live-adapter render fault:** NaN or about 1e11 on identical inputs with a live DoRA; merged adapters are deterministic
    (W39 synopsis). v1 could ship merged only. Also unknown off ROCm.
-3. **A latent-std guard before decode:** the clamp that fixed most sample corruption. Should be on by default.
+3. **A latent-std guard before decode, new work on the server path, not a default to flip (W, by reading the code, 2026-11-02).**
+   W found no std clamp before decode on `/generate`. `guide_anchor` is opt-in (default 0.0) and acts only on the guided
+   sampler; VADD is a training-side barrier. The search was by name, so a differently named clamp could exist. The clamp
+   that fixed most sample corruption needs building here. Likewise, `/generate` goes straight to `save_audio`, and neither
+   checks for non-finite audio, so the post-decode check in item 1 is also new work.
 
 ## 7. Questions for Kim
 
