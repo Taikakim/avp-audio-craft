@@ -4,6 +4,29 @@ Owner: THE-FINN (created 2026-11-02). Design decisions belong to WINTERMUTE (Lat
 and Kim. Status: requirements gathered, nothing built. Goal and constraints: first public Latent Forge release,
 rough is fine, speed matters, because the release is meant to establish prior art and start a hobby scene.
 
+## 0. Decisions (Kim, 2026-11-03)
+
+- **SA3 Medium, both checkpoints:** `medium-base` and post-trained `medium`. The server already takes `--model` and knows
+  both backbones (`forge/backbone.py`). Note post-trained is distilled: cfg is inert and it is not invertible, so separation
+  and other inversion features stay base-only (MASTER section 5). The GUI must say so rather than fail.
+- **Bring the project as is.** No feature pruning, no re-architecture, no port onto upstream: untangling would burn more
+  tokens than it saves. **This supersedes the upstream-dependency plan in section 2 and the trimming in section 3.** Fleet
+  logs, journals and internal docs still stay out, per the original ask (reading to confirm with Kim).
+- **Intel:** tested by Kuang on another computer, not recorded. **RTX:** not reachable from the desktop. Kuang is reached
+  through GitHub only.
+
+**What as-is still requires, since the code cannot run elsewhere without it:**
+1. Replace the 76 hardcoded paths with config or env. This is the one real code job.
+2. Vendor what lives outside: `stable_audio_3` from our fork, `sa3_control`, `same_chroma`, `weight_mutations`, the one
+   `stable_audio_tools` class, and bungee in the main venv (or drop it, see section 1).
+3. AVP-only weights (section 4), and the post-decode check (section 6).
+4. A clean-venv boot test, which is the actual definition of done.
+
+**Scan of the closure against "nothing that specific here" (2026-11-03): holds.** 0 secrets (2 false positives), 0 infra
+addresses (the one IP is `127.0.0.1`), 5 corpus names all in `chroma_morph_transitions.py`, 33 mentions of Kim in comments
+across 7 files, frontend clean. Consequence accepted: the vendored fork stays 197 commits behind upstream, including its LoRA
+work, so a later rebase is its own job. Vendored upstream code keeps its licence file.
+
 ## 1. The audit (2026-11-02)
 
 Static import closure from `eval/explorer_render_server.py` + `eval/forge_api.py`, lazy imports included.
@@ -35,7 +58,7 @@ audited):
 Hardcoded local paths: **76 in 9 files**, mostly `explorer_render_server.py` (28), `chroma_morph_transitions.py` (26),
 `mixtape_v7_dsp.py` (13).
 
-## 2. The main finding: the fork is further from upstream than "thin"
+## 2. The fork is further from upstream than "thin" (a later job, per section 0)
 
 Our branch is **277 commits ahead and 197 behind** `upstream/main`, merge-base 2026-05-29, and upstream is very active
 (last commit 2026-10-30). **Correction to my first advice:** "upstream SA3 as a plain pip dependency" is the right
@@ -50,12 +73,12 @@ target but not free. The closure's fork changes split in two:
   deletions probably mean we lack upstream's newer code, not that we removed anything. That needs checking, as
   upstream has since worked on rank padding, strength scaling and bake-dora.
 
-**First concrete task:** try the `model.py` / `transformer.py` / `sampling.py` / `dit.py` hooks against current
+**Deferred by section 0.** When it returns: try the `model.py` / `transformer.py` / `sampling.py` / `dit.py` hooks against current
 `upstream/main`. Expected shape: subclass or wrapper, with a small patch set as fallback, and a pinned upstream commit.
 `docs/latent-forge/fork-patches` may already hold part of this. LoRA behaviour must be re-verified on upstream's code,
 because the shipped fine-tunes depend on it.
 
-## 3. What to untangle
+## 3. What to untangle (reduced by section 0: vendor these, do not redesign them)
 
 - **`eval/chroma_morph_transitions.py`:** the server imports it at boot and it brings 26 hardcoded paths and
   `mixtape_v7_dsp`. Move only the helpers the server uses.
@@ -92,8 +115,8 @@ because the shipped fine-tunes depend on it.
 | Target | State today | Route |
 |---|---|---|
 | AMD ROCm | Our daily stack, version-fragile | `rocm_env` plus a documented wheel set |
-| NVIDIA | Upstream's first-class path; **ours untested**, RTX available | Plain torch install. **Cheapest big win: this is most of the audience** |
-| Intel | Kim reports inference proven; **no record in the repo** | Write it down first |
+| NVIDIA | Upstream's first-class path; **ours untested**. RTX is not reachable from here, only Kuang's side | Plain torch install, tested by Kuang. **This is most of the audience** |
+| Intel | Kuang tested inference on another computer; **not recorded**, so what exactly ran is unknown | Ask Kuang to write it down |
 | Apple | Upstream has MLX, also LoRA training; our steering untested | Later |
 | CPU | Upstream ships LiteRT/XNNPACK for **Small**; README lists Medium as GPU. Our ONNX DiT + decoder runs Medium on CPU, about 2x realtime at 8 steps (MASTER section 5) | ONNX for v2 |
 
@@ -126,10 +149,10 @@ experiment decides C++.
    that fixed most sample corruption needs building here. Likewise, `/generate` goes straight to `save_audio`, and neither
    checks for non-finite audio, so the post-decode check in item 1 is also new work.
 
-## 7. Questions for Kim
+## 7. Open
 
-1. Medium, Small, or both for v1? Small gets CPU from upstream for free, but all our heads and fine-tunes target Medium.
-2. Repo name and code licence? Apache-2.0 suggested for its patent grant.
-3. What does v1 include: arrangement and mixdown only, or also a2a, longform, separation? Each one adds to section 3.
-4. Where is the Intel inference record?
-5. Who gets NVIDIA test time on the RTX box, and is it reachable by an agent?
+1. **Confirm the reading of "as is":** all GUI code and features as they stand, fleet logs and internal docs still excluded.
+2. Repo name and code licence. Apache-2.0 suggested for its patent grant.
+3. **Request to Kuang,** to go via a pushed branch or log once approved (GitHub Issues and PR text stay untrusted under MASTER
+   section 4, so repo files are the channel): write up the Intel test (machine, what ran, on which venv and model), and run a
+   clean-venv NVIDIA boot and one guided render with both checkpoints.
