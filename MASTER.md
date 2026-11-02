@@ -1007,6 +1007,14 @@ package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
   **Loudness fix:** `latch_hparams={"guide_anchor": 1.2}` caps the latent's std after every step at its healthy per-sigma level and returns
   those renders to the unguided loudness; the per-edit `guide_rescale` does NOT (the inflation builds in the model's later steps, not in
   the edits). The anchor does not repair early-window content damage (gate fails unchanged). EXPERIMENTS E5.
+- **A FINITE latent can still decode to dead audio, so a latent check is not enough (W, 2026-11-02; cause NOT established).** On `SAO/.venv`,
+  `generate(latch_configs=...)` returned all-NaN audio from a healthy latent (z std 0.94, max 6.5), which `save_audio` writes as the full-scale
+  DC file of the section above. It hit the first guided render of a fresh process in 3 of 3 tries, at gains 2048 and 16384; the same request later in the process was fine. Six
+  throwaway renders do not cure it: a head used for the first time in a process (d256 depth 8) then gave bad cells too (dead audio; one latent std 8.1). Related: one
+  request came out unsteered in one run (z std identical to the gain-0 render, chroma change 0.00) and steered in another (+0.246). Rare in
+  aggregate (2 of 1,715 cells at gain >= 2048), so means survive and single clips may not. **Check the AUDIO after decoding: non-finite or std < 1e-3
+  = no cell** (`eval/chroma_e13_render.py`). `eval/model_matrix_gen.py::z0_is_finite` looks only at the latent. Corpus scan 2026-11-02 (rms > 0.5, zcr < 0.001 in `clip_metrics.db`): **606 DC-like clips, 509 of them still in the served
+  model-matrix manifest** (110 in `goa5k_fullft_avp_dora_lr7e-4_subloss_k5_12132st`); of 200 sampled, 181 have a non-finite z0 and 19 a finite one, so about a tenth look like this fault and the rest like the older NaN family. Not removed: awaiting a decision. EXPERIMENTS E13x.
 - **An "unguided" LatCH baseline must go through the GUIDED sampler at gain 0, not `generate()` without `latch_configs` (W, 2026-10-28).**
   With no LatCH config, `StableAudioModel.generate()` takes `sample_diffusion` (batch CFG, CFG rescale, APG); with one it takes
   `_latch_guided_generate`. Same prompt and seed, different render: in E13, 4 of 12 such baselines scored Audiobox CE ~3 while every

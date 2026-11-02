@@ -1164,3 +1164,9 @@ target reads them as HF-deficient and would push generations brighter).
 - I told the listener the 2-bar synth / 4-bar drum staging was never built; it is `render_v7_smoketest.py --drum-inpaint-bars /
   --other-inpaint-bars` (Oct 8-9, Antigravity + Kuang), with an earlier ear verdict in the Antigravity journal. I had read F7's
   plan text, not the renderer's flags or the smoke dirs. Rebuilt as the third candidate (v7c_inpaint_d4o2).
+
+### finding · sharpening the chroma target nearly doubles frames on the right note (2026-10-29, read 11-02, EXPERIMENTS E13x)
+- Retrained chroma head at gain 32768: strongest-class hit 0.25 plain vs 0.45 'sharp' (squared, mean removed), while frame cos falls. 'contrast' (mean removed) adds next to nothing. More gain keeps paying slowly with no collapse by 32768. Measured, not heard. files/evals/chroma_e13.html.
+
+### negative · a finite latent can decode to dead audio, and warm-up does not cure it (2026-11-02)
+- All-NaN audio from a healthy latent; 3 of 3 fresh processes at the first guided render. I first read this as gain 16384, then as process warm-up; both wrong as a full account, since a head first used after six warm-ups still gave bad cells. One request also came out unsteered in one run and steered in another. Cause not established; rare (2 of 1,715 cells unsteered). Corpus scan: 509 DC-like clips still in the served model-matrix manifest. MASTER section 5.

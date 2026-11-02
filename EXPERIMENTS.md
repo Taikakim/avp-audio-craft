@@ -1747,6 +1747,16 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   noisiest. Untested consequences: a larger effective batch (~48) late in training, or lr decay late, and/or sampling t toward the high
   end, should cost nothing in steering and may help; one seed, one recipe. **Probe fix needed:** `_gn_by_t` uses the step's LAST
   micro-batch, so with accumulation its halves are tiny; it should pool the step's micro-batches (or draw a separate probe batch of >= 16).
+- **E13x RESULT — exaggerated targets and gains to 32768 (W, ran 2026-10-29, read 2026-11-02; asked by Kim 10-29).** C3 ep10 vs production, 3 prompts x hold C / key-lift x 2 seeds. The loss is cosine, so only the target's SHAPE can push harder: 'contrast' = per-frame mean removed, 'sharp' = squared, then mean removed. Change vs the guided gain-0 render, scored against the plain chord: mid cos (strongest-class hit), gate fails of 12:
+
+  | C3 ep10 target | 2048 | 8192 | 16384 | 32768 |
+  |---|---|---|---|---|
+  | plain | +0.282 (0.195) 0 | +0.350 (0.222) 0 | +0.356 (0.199) 0 of 11 | +0.396 (0.251) 0 |
+  | contrast | +0.291 (0.196) 0 | +0.359 (0.212) 0 | +0.379 (0.299) 1 | +0.392 (0.227) 2 |
+  | sharp | +0.250 (0.152) 0 | +0.319 (0.289) 1 | +0.323 (0.393) 0 | +0.341 (**0.449**) 2 |
+
+  Production at 32768: plain +0.335 (0.156) 0 fails, contrast +0.330, sharp +0.302, so it catches up on cos only with about 16x the gain and stays far behind on hit. **Read:** more gain keeps paying slowly (no collapse by 32768; fails are CE drift, 1 latent level). Contrast adds next to nothing. **Sharp is the one that changes behaviour: frames landing on the target's strongest note nearly double (0.25 -> 0.45 at 32768) while frame cos falls**, i.e. it trades overall profile match for naming the note. Measured only, not heard. Page section 1c and 4 of files/evals/chroma_e13.html.
+  **Reliability fault found on the way (MASTER section 5):** the same request can decode to all-NaN audio from a finite latent, or come out unsteered. Dead: goa C g16384 s1234 (the first guided render of its process, 3 of 3 fresh processes hit it at the first render); that cell is absent (11 clips at 16384). After 6 warm-ups and ~30 renders S0_ep4 still came out bad on all 6 re-rendered cells, so those 6 keep their 10-28 clips. Inert: goa key-lift g16384 s1234 reads -0.000 with z std equal to the baseline's, while a probe of the same cell gave +0.246; this one is on the page as rendered. Size at gain >= 2048 on retrained heads: 2 of 1,715 cells unsteered, so means stand, single clips may not. Re-rendering 35 first-in-process cells moved the median clip 0.005 but a few a lot (one C2 clip +0.390 -> +0.070). Cause not established. Renderer now has an audio check and a 6-render warm-up (the warm-up does not cure it); dead clip and old versions in the run dir's _quarantine_dead/.
 
 ### E14 — Batch engineering: composition and ordering of minibatches for the control heads — **PLANNED 2026-10-21 (CONTINUITY, asked by Kim); REGISTERED ONLY, not scheduled**
 - **Why:** the LatCH trainer batches iid (`random_split`, `DataLoader(shuffle=True, drop_last=True)`); nothing in DISCOVERIES, knowledge.md or this file
