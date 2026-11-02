@@ -50,7 +50,7 @@ claim, including ones already in this file, against both corrections.
 
 ## A. Optimizer & training dynamics (why recent models broke)
 
-### A1 — Step-resolution trajectory: batch vs optimizer (walk vs drift) — **local DONE; LUMI leg was pending, outcome not recorded here; LUMI reported unavailable 2026-09-25, and a 2026-11-02 sacct check was refused (key), so it could not be verified**
+### A1 — Step-resolution trajectory: batch vs optimizer (walk vs drift) — **local DONE; LUMI leg was pending, outcome not recorded here; the allocation closed 2026-08-23 (WORKLOG) and a 2026-11-02 sacct check was refused (key), so it could not be verified**
 - **Question:** is the "broken AdamW" signature (epoch displacements at the 1/√n random-walk floor; rank-1
   spike in B·A) a BATCH effect or an OPTIMIZER effect?
 - **Findings so far (C 08-18/19):** AdamW bs1 = accum8: update autocorr 0.9^τ then 0, gradient window-SNR
@@ -72,7 +72,7 @@ claim, including ones already in this file, against both corrections.
 - **Next variants (POTENTIAL):** inverse-sqrt decay (EDM2 Config E); `snr_beta` ≫ momentum window; per-neuron
   directional prior (see D4).
 
-### A3 — Stock-Stability sanity matrix (AdamW LoRA/DoRA r16, 7 datasets, 1 GCD each + 8-GPU DDP) — **SUBMITTED on LUMI (21353159/60/61); outcome not recorded here; LUMI reported unavailable 2026-09-25, and a 2026-11-02 sacct check was refused (key), so it could not be verified**
+### A3 — Stock-Stability sanity matrix (AdamW LoRA/DoRA r16, 7 datasets, 1 GCD each + 8-GPU DDP) — **SUBMITTED on LUMI (21353159/60/61); outcome not recorded here; the allocation closed 2026-08-23 (WORKLOG) and a 2026-11-02 sacct check was refused (key), so it could not be verified**
 - **Question:** Kim: "is stability's AdamW code broken?" — does the stock recipe give listenable models per
   dataset, and does 8× DDP at matched effective batch change the outcome?
 - **Gate:** trajectory stats (`eval/compare_trajectory_stats.py`) + soups + Kim's ears; pull before scratch purge.
@@ -201,7 +201,7 @@ claim, including ones already in this file, against both corrections.
   place a systematic bug could still hide — which is exactly what this entry's AdamW-vs-Fusion
   contrast tests, at matched everything, for the first time.
 
-### A12 — The 5e-5 replicate: Kim's auditioned operating point, carried to every corpus — **SUBMITTED 2026-08-22 (ep24 wave: 21447819/20/21/22 → probe 21447823); outcome not recorded here; LUMI reported unavailable 2026-09-25, and a 2026-11-02 sacct check was refused (key), so it could not be verified**
+### A12 — The 5e-5 replicate: Kim's auditioned operating point, carried to every corpus — **LANDED by 2026-08-23 per WORKLOG (ep24 2x2 hit TIMEOUT at 12h, about ep15, 8 rungs per arm; jobs 21447819/20/21/22 → probe 21447823)**
 
 **Trigger (Kim direct, 2026-08-22, listening to `renders/length_variant/` on the drive as it pulled):**
 the 5e-5 clips beat 1e-4, 2e-4 shows degradation, and — the observation that actually motivated
@@ -532,7 +532,7 @@ trains without one becomes another unauditioned family — that is exactly how A
   soup vs single-replica cells (the averaging-rescue quantification); spectral repair on a128
   queued behind G's checkpoint pull.
 
-### B8 — Suomisoundi T512 anchor-clean + caption-probs drift postmortem (W+C, 2026-08-21) — **SUBMITTED, outcome not recorded here; LUMI reported unavailable 2026-09-25, and a 2026-11-02 sacct check was refused (key), so it could not be verified: 21430198 (torchrun, PROBS_OVERRIDE=0.25,0.45,0.30); the cancelled 21428358/59 partials kept as soup input, see A10**
+### B8 — Suomisoundi T512 anchor-clean + caption-probs drift postmortem (W+C, 2026-08-21) — **SUBMITTED, outcome not recorded here; the allocation closed 2026-08-23 (WORKLOG) and a 2026-11-02 sacct check was refused (key), so it could not be verified: 21430198 (torchrun, PROBS_OVERRIDE=0.25,0.45,0.30); the cancelled 21428358/59 partials kept as soup input, see A10**
 - W's audit found winning_fleet's suomi tuple 0,0.9,0.1 was C's drift from the ratified
   0.25/0.45/0.30 (Kim 08-18) — zero t1 share = the corpus-anchor token "suomisoundi" never
   trains. F confirmed the drifted probs LIVE in the four running T1024 arms' own logs (a45 s1/s2 +
@@ -1352,7 +1352,7 @@ industrial, 2 goa) — use the **granite** tier (268/300 goa) or the hinted pros
   Q5–Q7 (gated on a Phase-B head). Their `measure_contour_codes.py` was NOT in the zip — ask the
   external agent or re-derive if Q2 (min H(A|B) on real audio) is picked up.
 
-### D14 — Cross-prompt a2a bracket at high noise, across model families — **SUBMITTED 2026-08-22 (21457563); outcome not recorded here; LUMI reported unavailable 2026-09-25, and a 2026-11-02 sacct check was refused (key), so it could not be verified**
+### D14 — Cross-prompt a2a bracket at high noise, across model families — **LANDED by 2026-08-23 per WORKLOG (21457563; 21 GB, 8 families)**
 
 **Kim's spec, verbatim in intent:** bracket a2a transformations with noising values **random in
 [0.5, 0.9]**; take **T4096 crops** from our datasets; a2a them with **a random prompt taken from
