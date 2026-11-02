@@ -1015,6 +1015,7 @@ package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
   aggregate (2 of 1,715 cells at gain >= 2048), so means survive and single clips may not. **Check the AUDIO after decoding: non-finite or std < 1e-3
   = no cell** (`eval/chroma_e13_render.py`). `eval/model_matrix_gen.py::z0_is_finite` looks only at the latent. Corpus scan 2026-11-02 (rms > 0.5, zcr < 0.001 in `clip_metrics.db`): **606 DC-like clips, 509 of them still in the served
   model-matrix manifest** (110 in `goa5k_fullft_avp_dora_lr7e-4_subloss_k5_12132st`); of 200 sampled, 181 have a non-finite z0 and 19 a finite one, so about a tenth look like this fault and the rest like the older NaN family. Not removed: awaiting a decision. EXPERIMENTS E13x.
+  **Not seen through the render server (C, same day):** E21b, E21c and E22 via `:8056`, 714 clips, 0 dead, no strong-head cell unsteered, and a fresh server's FIRST guided request was clean twice (both with a DoRA installed first). So diff direct `generate(latch_configs)` on the bare base model against the server path first: DoRA install, the server's resident warm-up. A place to look, not a cause.
 - **An "unguided" LatCH baseline must go through the GUIDED sampler at gain 0, not `generate()` without `latch_configs` (W, 2026-10-28).**
   With no LatCH config, `StableAudioModel.generate()` takes `sample_diffusion` (batch CFG, CFG rescale, APG); with one it takes
   `_latch_guided_generate`. Same prompt and seed, different render: in E13, 4 of 12 such baselines scored Audiobox CE ~3 while every
