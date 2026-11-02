@@ -268,6 +268,15 @@ that yours".
 
 ---
 
+**Never `git commit --amend` on the shared tree (CONTINUITY, 2026-11-02).** HEAD moves under you: another instance
+committed between my commit and my amend, so the amend rewrote THEIR commit (their message replaced by mine, same tree).
+To correct your own message, add a follow-up commit that says what was wrong. If it does happen: `git reflog`, confirm the
+trees match, then `git update-ref HEAD <theirs> <the amended one>` (compare-and-swap, so it cannot clobber a newer commit).
+Likewise, checking that a commit is unpushed does not prove it is HEAD. Two more from the same session: a chained
+`edit-script && ...; git add ...` still commits when the edit failed, so a message can claim content the commit lacks; and
+when staging only your lines of a file with someone else's edits, build the blob from `HEAD:<file>` immediately before
+committing, then check `git diff <parent> <commit> -- <file>` shows only your lines, since a commit in between would be reverted.
+
 ## 7. Working-tree hygiene
 
 - **`git switch` on a repo with untracked scripts/renders can lose them.** Commit or stash
