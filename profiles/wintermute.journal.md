@@ -1201,3 +1201,6 @@ Reopened arm B on the view that E23 only tested cross-attention. Tested properly
 
 ## 2026-11-03 Melody from notes works, on the meter
 The August pianoroll fine-tune plays invented melodies once CFG scales the stream: fed pitch on 73% of frames vs 2.5% with no stream, 36/36, transposed crops follow too. The model had this since August; the eval held it back with the roll in both CFG branches. Not heard yet. EXPERIMENTS D15, `files/evals/pianoroll_melody.html`.
+
+## 2026-11-03 V8 retrain: gate fails, honest comparison favours it
+On the valid test (held-out patches, cue at another note), V8's extractor has tax 1.51 against the 1.25 gate, but beats Demucs (1.76) on MSE, cutoff and Mel-SSIM, with intervals clear of zero. Val loss still falling at epoch 20. No board. EXPERIMENTS S8.
