@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """hf_latch_gradnorm_probe.py — WINTERMUTE 2026-09-16.
 
 WHY: G's two bracket rounds (eval/hf_latch_bracket.py, WORKLOG 2026-09-16) found the
@@ -86,7 +87,7 @@ FPS = 44100 / 4096
 HF_HEAD = ("/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/"
            "latch_sa3_rms_energy_air_best.pt")
 HF_TARGET_DB = -32.9611
-CKPT = ("/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep/"
+CKPT = ("/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep/"
         "epoch=6-step=2093.weights.ckpt")
 PROMPT = ("This track is a high-energy psytrance piece that blends classic Goa-trance "
           "hypnotic loops with the relentless drive of modern techno. Built around a "

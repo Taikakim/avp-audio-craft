@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 import json
 import os
 import torch
@@ -50,7 +51,7 @@ def get_chroma(audio, sr):
 def main():
     print("Starting V7 4-Track Smoke Test Pipeline (Fast Native Mode)...")
     
-    order_path = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0/order_used.json")
+    order_path = Path("/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0/order_used.json")
     all_clips = json.loads(order_path.read_text())
     # We want clips at index 2, 3, 4, 5
     # Which corresponds to stems folders "02", "03", "04", "05"
@@ -63,7 +64,7 @@ def main():
     
     for c in clips:
         idx = all_clips.index(c)
-        stem_dir = Path(f"/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_stems/{idx:02d}")
+        stem_dir = Path(f"/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_stems/{idx:02d}")
         
         c_stems = {}
         for n in NAMES:
@@ -136,8 +137,8 @@ def main():
         chroma_target = (chroma_A * ramp_down_chroma.unsqueeze(0).unsqueeze(0) + chroma_B * ramp_up_chroma.unsqueeze(0).unsqueeze(0)).float()
 
         
-        ckpt_a = "/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
-        ckpt_b = "/run/media/kim/Mantu/sa3_lora_runs/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt"
+        ckpt_a = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
+        ckpt_b = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt"
         
         print("Running LatCH + Dual-LoRA Inference...")
         try:
@@ -149,7 +150,7 @@ def main():
                 prompt_b="driving pulsating psytrance",
                 duration=W_sec,
                 chroma_target_tensor=chroma_target,
-                chroma_head_path="/run/media/kim/Mantu/sa3_lora_runs/cu_reward_renders/analysis/chroma_heads/latch_sa3_chroma_other_best.pt"
+                chroma_head_path="/run/media/kim/Mantu/sa3_lora_runs/__auditions/cu_reward_renders/analysis/chroma_heads/latch_sa3_chroma_other_best.pt"
             )
             other_out = other_out.numpy()
         except Exception as e:

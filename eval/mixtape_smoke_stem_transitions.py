@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """mixtape_smoke_stem_transitions.py — Stem-recomposed smoke transitions (Kim 2026-10-07).
 
 Architecture:
@@ -42,7 +43,7 @@ from stable_audio_3 import StableAudioModel
 from stable_audio_3.inference.longform import slerp
 
 SR = 44100
-BRIDGE_CKPT = "/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
+BRIDGE_CKPT = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
 FC_DRUM_CROSSOVER = 800.0
 
 
@@ -117,9 +118,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shift-samples", type=int, default=None)
     ap.add_argument("--trans-idx", type=int, default=1, help="Transition index (default 1: clip 01 -> 02)")
-    ap.add_argument("--stems-dir", default="/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_stems")
-    ap.add_argument("--phase0-dir", default="/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0")
-    ap.add_argument("--out-dir", default="/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_smoke")
+    ap.add_argument("--stems-dir", default="/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_stems")
+    ap.add_argument("--phase0-dir", default="/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0")
+    ap.add_argument("--out-dir", default="/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_smoke")
     ap.add_argument("--staging-dir", default="/home/kim/staging/kone-mixtape/smoke")
     ap.add_argument("--steps", type=int, default=24)
     ap.add_argument("--cfg-scale", type=float, default=6.0)

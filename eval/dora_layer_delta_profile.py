@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """dora_layer_delta_profile.py — where does a DoRA checkpoint actually change the model,
 per DiT block? (Kim ask 2026-07-21, following Zach@Stability's Discord claim that adapter
 changes concentrate in the middle layers — docs/ai-research/2026-07-21-zach-stability-discord-notes.md.)
@@ -24,7 +25,7 @@ import re
 import torch
 from safetensors import safe_open
 
-DEFAULT_CKPT = ("/run/media/kim/Mantu/sa3_lora_runs/fp32cmp_goa_t4096_bs4_lr1e4/"
+DEFAULT_CKPT = ("/run/media/kim/Mantu/sa3_lora_runs/__precision_compare/fp32cmp_goa_t4096_bs4_lr1e4/"
                 "epoch=4-step=6750.weights.ckpt")
 BASE_ST = glob.glob("/home/kim/.cache/huggingface/hub/models--stabilityai--"
                     "stable-audio-3-medium-base/snapshots/*/model.safetensors")

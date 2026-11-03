@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: filed from Kim's 2026-10-15 ask (Claude Sonnet 5.5 session; handle not asserted)
 """latch_onset_highgain.py -- extend the onset-LatCH matrix UPWARD in gain: target density 7, gains 4608..8192 step 512.
@@ -22,7 +23,7 @@ import sys
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 import latch_onset_matrix_ema as m  # noqa: E402
 
-HEAD = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE/E04ema_b32_ep20"
+HEAD = "/run/media/kim/Mantu/latch_sweep/__onsets/modular_2026-09-30/phaseE/E04ema_b32_ep20"
 OUT = "/run/media/kim/Mantu/sa3_control_runs/__onsets/latch_onset_highgain_20261015"
 
 ap = argparse.ArgumentParser()

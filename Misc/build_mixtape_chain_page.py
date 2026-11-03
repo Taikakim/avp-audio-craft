@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: GHOST-NOTE 2026-10-26 -- arms x0.75/x0.65 added
 # Last edited: GHOST-NOTE 2026-10-21 -- added relative-cut arms x0.92/x0.85/hf5/hf10/hf15 and letters to H; 2026-10-27 -- letters to I (9 arms), explainer mentions x0.85g
 # Owner: GHOST-NOTE (created 2026-11-03; adapted from build_mixtape_clamp_page.py)
@@ -6,7 +7,7 @@
 # Last edited: WINTERMUTE 2026-10-20 — optional EVALS_ROOT / AAC_BITRATE env (192k publish copies; defaults unchanged)
 # Last edited: WINTERMUTE 2026-10-21 — page Source line: no internal file name (public page), no fixed bitrate
 """build_mixtape_chain_page.py -> ~/evals_aac/<name>.html. Blind same-playhead page for the bass+body+air LatCH chain test (eval/mixtape_chain_smoke.py).
-Reads Mantu/sa3_lora_runs/mixtape_chain_smoke_2026-10-27/cells.jsonl; per clip the arms are ctl (unchanged), bb (bass+body), chain (bass+body+air), chain_anc (chain + guide_anchor 1.2).
+Reads Mantu/sa3_lora_runs/__mixtape/mixtape_chain_smoke_2026-10-27/cells.jsonl; per clip the arms are ctl (unchanged), bb (bass+body), chain (bass+body+air), chain_anc (chain + guide_anchor 1.2).
 Arm order is shuffled per clip (fixed seed) and labels are hidden until 'reveal'. Ratings 1-5 per arm kept in localStorage; 'export' copies JSON for kim_feedback.
 RUN: python3 Misc/build_mixtape_clamp_page.py   (needs ffmpeg; encodes AAC 256k, loudness-matched, into ~/evals_aac/<name>/. Args: <run dir under sa3_lora_runs> <page name>)"""
 import json, os, random, subprocess, sys

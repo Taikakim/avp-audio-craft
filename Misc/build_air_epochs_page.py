@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-15)
 """build_air_epochs_page.py -- listening page: where did air-head quality PEAK across epochs? One punch clip (seed 764), every finite per-epoch checkpoint of the overnight
 runs (O1-O5) + bracket A2. Data from eval/air_epoch_sweep.py (sweep.json, level-matched wavs) and each run's train.log (val loss per epoch).
@@ -9,15 +10,15 @@ from concurrent.futures import ThreadPoolExecutor
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
 from float_player import inject
-ON = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_overnight"
-A2 = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-14/A2_d512dp8_lr1e-2"
+ON = "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_overnight"
+A2 = "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-14/A2_d512dp8_lr1e-2"
 SW = f"{ON}/epoch_sweep"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac"); OUT = f"{STAGE}/air_epochs"; os.makedirs(OUT, exist_ok=True)
-FU = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_followup"
-LL = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_lowlr"
-SL = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_slow"
-BG = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_big"
-NS = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_nosf"
+FU = "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_followup"
+LL = "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_lowlr"
+SL = "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_slow"
+BG = "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_big"
+NS = "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_nosf"
 SRC = [(SW, "overnight")] + [(f"{x}/epoch_sweep", n) for x, n in ((FU, "followup"), (LL, "lowlr"), (SL, "slow"), (BG, "big"), (NS, "nosf")) if os.path.exists(f"{x}/epoch_sweep/sweep.json")]
 J = {"rows": [], "skipped": []}
 for d, _ in SRC:

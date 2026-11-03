@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """muscriptor_stem_probe.py — Gate #0 for the MIDI-frame-conditioner (Kim + CONTINUITY,
 2026-07-20): does MuScriptor actually transcribe BS-RoFormer/Demucs STEMS reliably, or is
 separator output "alien" to it? W's spec (2026-07-20-midi-frame-conditioner-design.md §4)
@@ -30,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from muscriptor_batch_goa import note_stats  # reuse the exact stats
 
 CORPUS = Path("/run/media/kim/Mantu/ai-music/Goa_Separated")
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/muscriptor_stem_probe"); OUT.mkdir(parents=True, exist_ok=True)
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__finetunes/muscriptor_stem_probe"); OUT.mkdir(parents=True, exist_ok=True)
 SOURCES = ["full_mix", "bass", "other"]
 N_TRACKS = 10
 WIN_START, WIN_DUR = 120.0, 60.0     # same 60 s window per source (matches the #41 methodology)

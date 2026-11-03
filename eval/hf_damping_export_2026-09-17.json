@@ -44,7 +44,7 @@
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_13__s2009__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_13__s2009__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_13__s2009__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_13__s2009__d48.wav",
     "hf_damping": true
   },
   {
@@ -68,13 +68,13 @@
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_15__s2011__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_15__s2011__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_15__s2011__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_15__s2011__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_15__s2011__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_15__s2011__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_15__s2011__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_15__s2011__d48.wav",
     "hf_damping": null
   },
   {
@@ -110,7 +110,7 @@
   {
     "id": "gf2_dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_10__s2006__d48",
     "file": "gf2_dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_10__s2006__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_10__s2006__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_10__s2006__d48.wav",
     "hf_damping": null
   },
   {
@@ -146,19 +146,19 @@
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_08__s2004__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_08__s2004__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_08__s2004__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_08__s2004__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_14__s2010__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_14__s2010__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_14__s2010__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_14__s2010__d48.wav",
     "hf_damping": null
   },
   {
     "id": "gf2_dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_11__s2007__d48",
     "file": "gf2_dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_11__s2007__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_11__s2007__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_11__s2007__d48.wav",
     "hf_damping": true
   },
   {
@@ -188,121 +188,121 @@
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_00__s1996__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_00__s1996__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_00__s1996__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_00__s1996__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_ref_avp__s2013__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_ref_avp__s2013__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_ref_avp__s2013__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_ref_avp__s2013__d48.wav",
     "hf_damping": null
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_03__s1999__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_03__s1999__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_03__s1999__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_03__s1999__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_08__s2004__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_08__s2004__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_08__s2004__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_08__s2004__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_13__s2009__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_13__s2009__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_13__s2009__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_13__s2009__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_ref_avp__s2013__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_ref_avp__s2013__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_ref_avp__s2013__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_ref_avp__s2013__d48.wav",
     "hf_damping": null
   },
   {
     "id": "gf2_dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_08__s2004__d48",
     "file": "gf2_dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_08__s2004__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_08__s2004__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_08__s2004__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_07__s2003__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_07__s2003__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_07__s2003__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_07__s2003__d48.wav",
     "hf_damping": false
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_06__s2002__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_06__s2002__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_06__s2002__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_06__s2002__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_09__s2005__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_09__s2005__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_09__s2005__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_09__s2005__d48.wav",
     "hf_damping": null
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_14__s2010__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_14__s2010__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_14__s2010__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_14__s2010__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_03__s1999__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_03__s1999__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_03__s1999__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_03__s1999__d48.wav",
     "hf_damping": false
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_01__s1997__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_01__s1997__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_01__s1997__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_01__s1997__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_01__s1997__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_01__s1997__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_01__s1997__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_01__s1997__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_02__s1998__d48",
     "file": "gf2_dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_02__s1998__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_02__s1998__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_02__s1998__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_ref_goa__s2012__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_ref_goa__s2012__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_ref_goa__s2012__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_ref_goa__s2012__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_10__s2006__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_10__s2006__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_10__s2006__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_10__s2006__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_04__s2000__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_04__s2000__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_04__s2000__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_04__s2000__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_02__s1998__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_02__s1998__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_02__s1998__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_02__s1998__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_02__s1998__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_02__s1998__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_02__s1998__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_02__s1998__d48.wav",
     "hf_damping": true
   },
   {
@@ -338,13 +338,13 @@
   {
     "id": "gf2_dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_07__s2003__d48",
     "file": "gf2_dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_07__s2003__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_07__s2003__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora16_avp_originals_earlyeps_ptm__ep2__cfg1__w100__gf_07__s2003__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_05__s2001__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_05__s2001__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_05__s2001__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_05__s2001__d48.wav",
     "hf_damping": true
   },
   {
@@ -422,13 +422,13 @@
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_00__s1996__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_00__s1996__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_00__s1996__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep6__cfg1__w100__gf_00__s1996__d48.wav",
     "hf_damping": true
   },
   {
     "id": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_09__s2005__d48",
     "file": "gf2_dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_09__s2005__d48.m4a",
-    "path": "/run/media/kim/Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_09__s2005__d48.wav",
+    "path": "/run/media/kim/Mantu/sa3_lora_runs/__genre_style/genre_fusion_probe_local/renders/dora128adj_avp_8ep_ptm__ep3__cfg1__w100__gf_09__s2005__d48.wav",
     "hf_damping": true
   },
   {

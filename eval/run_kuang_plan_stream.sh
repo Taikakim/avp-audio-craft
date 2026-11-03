@@ -1,4 +1,6 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-17)
@@ -18,7 +20,7 @@ SAO=/home/kim/Projects/SAO
 PY=$SAO/.venv/bin/python
 LPY=$SAO/.venv-rocm10-amd/bin/python
 AOUT=/run/media/kim/Mantu/sa3_control_runs/__film/film_precision_A_20261017
-POUT=/run/media/kim/Mantu/latch_sweep/kuang_plan_P_20261017
+POUT=/run/media/kim/Mantu/latch_sweep/__onsets/kuang_plan_P_20261017
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
 export PYTORCH_TUNABLEOP_ENABLED=0 PYTORCH_TUNABLEOP_TUNING=0 MIOPEN_FIND_MODE=2
 export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 NUMEXPR_NUM_THREADS=4
@@ -75,7 +77,7 @@ echo "$(date +%H:%M) P0: LatCH anchor with optimizer state"
 mkdir -p "$POUT/P0_E05_anchor"
 cat > "$POUT/run_meta.json" <<EOF
 {"purpose": "Test plan section P (docs/modular-opt-test-plan-2026-10-17.md): P0 = the Phase E E05 head recipe re-run with --save-opt-state / momentum spectra / grad-noise / per-group logs, so the P1 spectral probe can read the run's own momentum at the gradient point; P1 = that probe, read-only.",
- "recipe": "E05_depth8_ep20 (latch_sweep/modular_2026-09-30/phaseE_arms.txt): onset_per_beat_ts, latents_goa_bigset, 20 ep, modular Shampoo lr 1e-2, warmup 500, batch 16, radial brake 0.8, escape velocity, depth 8, val 5% by relpath, seed 0",
+ "recipe": "E05_depth8_ep20 (latch_sweep/__onsets/modular_2026-09-30/phaseE_arms.txt): onset_per_beat_ts, latents_goa_bigset, 20 ep, modular Shampoo lr 1e-2, warmup 500, batch 16, radial brake 0.8, escape velocity, depth 8, val 5% by relpath, seed 0",
  "result": null, "kim_feedback": null}
 EOF
 if [ ! -f "$POUT/P0_E05_anchor/DONE" ]; then

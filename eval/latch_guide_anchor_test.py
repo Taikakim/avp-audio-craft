@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 """latch_guide_anchor_test.py -- does the trajectory anchor stop LatCH from pushing loudness into distortion?
@@ -30,7 +31,7 @@ os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 
 OUT = "/run/media/kim/Mantu/sa3_control_runs/__latch/latch_guide_anchor_20261015"
-ONSET = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE/E04_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt"
+ONSET = "/run/media/kim/Mantu/latch_sweep/__onsets/modular_2026-09-30/phaseE/E04_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt"
 PROMPT, BPM, CFG, DUR, STEPS = "psytrance, 140 bpm", 140.0, 7.0, 20.0, 50
 SEEDS = (1234, 77)
 CONFIGS = (("alpha", 1.0), ("flat", 1.0), ("alpha", 0.2), ("flat", 0.2))

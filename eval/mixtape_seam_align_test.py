@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """mixtape_seam_align_test.py — Kim 2026-09-15: tests whether BPM-matching +
 a BAR-quantized (not fixed-seconds) crossfade window fixes the "galloping"
 rhythm problem Kim heard in the dual-conditioning test AND in the mixtape's
@@ -57,7 +58,7 @@ from stable_audio_3 import StableAudioModel  # noqa: E402
 from stable_audio_3.inference.longform import slerp  # noqa: E402
 from stable_audio_3.models.latch import load_latch_from_checkpoint  # noqa: E402
 
-BRIDGE_CKPT = "/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
+BRIDGE_CKPT = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
 ONSET_HEAD = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_onset_envelope_best.pt"
 ONSET_GAIN = 512.0  # per MASTER §5 sweep: energy-family heads operate ~512, not the 48-96 legacy default
 

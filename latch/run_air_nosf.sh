@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: GHOST-NOTE (created 2026-10-15)
 # Replicas WITHOUT Schedule-Free (Kim 2026-10-15: "these should be probably replicated without the schedule free component. We've been relying on it quite a lot."). `--no-mod-sf`: plain Muon/Shampoo
@@ -6,7 +7,7 @@
 # at lr 1e-2 (SF-free runs need a far smaller lr than SF's, Phase A/B: modular 1e-2 trains; 1e-1 would be reckless); QP64h = the faithful lr 1e-1 twin of P64 (expected to diverge; train_latch now stops at the first NaN epoch).
 # Runs after run_air_slow.sh (waits for /tmp/air_slow.done).
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_nosf
+OUT=/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_nosf
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0

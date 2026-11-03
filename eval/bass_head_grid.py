@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-16), derived from air_head_grid.py
 """bass_head_grid.py -- weight (gain) x target (value) matrices for the bass-head lr bracket's FINAL epochs (owner 2026-10-16: "all of these sound the same ... we could make
 weight x target matrices of the final eps"). The bass_lr.html sweep used the preset's own bass slot (value -10.0 dB, gain 8448), where every new head moved the <150 Hz share by <0.4 dB.
@@ -10,7 +11,7 @@ import soundfile as sf
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import punch_rating_server as P
 import latch_drift_check as DC
-RUN = "/run/media/kim/Mantu/latch_sweep/bass_lr_2026-10-16"
+RUN = "/run/media/kim/Mantu/latch_sweep/__bass/bass_lr_2026-10-16"
 OUT = f"{RUN}/grid"; os.makedirs(OUT, exist_ok=True)
 HEADS = {"production": None, "B2": f"{RUN}/B2_bass_d512_lr1e-2/latch_sa3_rms_energy_bass_ep10.pt", "B3": f"{RUN}/B3_bass_d512_lr1e-3/latch_sa3_rms_energy_bass_ep10.pt",
          "B4": f"{RUN}/B4_bass_d512_lr1e-4/latch_sa3_rms_energy_bass_ep10.pt"}

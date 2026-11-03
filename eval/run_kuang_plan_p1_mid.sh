@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: WINTERMUTE (created 2026-10-21)
 # run_kuang_plan_p1_mid.sh -- P1 spectral probe on P0's mid-run checkpoints (ep10, then ep5), after the B runner exits.
 # Why: on the final ep20 checkpoint every probe raised held-out loss (the run had overshot along its leading momentum
@@ -7,7 +8,7 @@
 set -u
 SAO=/home/kim/Projects/SAO
 LPY=$SAO/.venv-rocm10-amd/bin/python
-POUT=/run/media/kim/Mantu/latch_sweep/kuang_plan_P_20261017
+POUT=/run/media/kim/Mantu/latch_sweep/__onsets/kuang_plan_P_20261017
 DEADLINE=${DEADLINE:-$(date -d '06:45' +%s)}; [ "$DEADLINE" -lt "$(date +%s)" ] && DEADLINE=$((DEADLINE + 86400))
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
 export PYTORCH_TUNABLEOP_ENABLED=0 PYTORCH_TUNABLEOP_TUNING=0 MIOPEN_FIND_MODE=2

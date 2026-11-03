@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # "Everything" DoRA at 0.5x LR (Kim 2026-07-12: "prioritize the 0.5x LR run next").
 # Fills the gap in the everything LR sweep (had lr1x=2e-4, lr3x=6e-4; no low end).
 # Motivated by the training-length finding: lr3x overtrains hard, lr1x declines mildly,
@@ -40,7 +41,7 @@ $PY scripts/train_lora.py \
   --checkpoint_every_epochs 1 --gradient_clip_val 1.0 \
   --base_precision bf16 --no_demos --num_workers 6 --seed 42 \
   --exclude seconds_total \
-  --save_dir "$MANTU/sa3_lora_runs/dora128_everything_8ep_lr0.5x" \
+  --save_dir "$MANTU/sa3_lora_runs/__finetunes/dora128_everything_8ep_lr0.5x" \
   --name "dora128_everything_lr0.5x" --logger csv \
   > "$LOG/dora128_everything_lr0.5x.log" 2>&1
 echo "[everything_lr0.5x] done ($(date +%H:%M))"

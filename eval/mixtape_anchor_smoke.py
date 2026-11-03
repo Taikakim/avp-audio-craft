@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-20)
 """mixtape_anchor_smoke.py -- option 1 smoke test: re-render 5 distorted mixtape-audit clips with an air-head
 LatCH slot + latch_hparams guide_anchor, to see whether guide_anchor (std ceiling, latch_guided._anchor_std) removes
@@ -10,7 +11,7 @@ attached. Before the 249-clip run, test on the 5 clips with the highest hf_ratio
 Per clip: ctl (same checkpoint/prompt/seed, no head -- must reproduce the original), then the preset
 cleanest_air air slot (rms_energy_air, value -30.33, gain 8448 and a quarter of it, 2112) each with guide_anchor 0 / 1.2.
 All five clips are post-trained `medium` + base-trained DoRA (_ptm), so the render server must run `--model medium`
-(8 steps, cfg 1, pingpong). Output: Mantu/sa3_lora_runs/mixtape_anchor_smoke_2026-10-20/<clip>__<arm>.wav + cells.jsonl +
+(8 steps, cfg 1, pingpong). Output: Mantu/sa3_lora_runs/__mixtape/mixtape_anchor_smoke_2026-10-20/<clip>__<arm>.wav + cells.jsonl +
 run_meta.json. Judge by ear first (kim_feedback null); meters: hf_ratio, crest, raw peak.
 RUN (GPU lock held, server up with --model medium): SAO/.venv/bin/python eval/mixtape_anchor_smoke.py
 """

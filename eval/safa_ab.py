@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """safa_ab.py — SaFa latent-swap join vs slerp A/B on a long a2a render (task #27).
 
 Kim's diagnosis: slerp/averaging joins suppress high-frequency latent variance ->
@@ -36,7 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "control"))
 
 SRC = Path("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-analyzed/"
            "Aavepyora - Goddess Guerilla - Kaikki-Alla")
-CKPT = ("/run/media/kim/Mantu/sa3_lora_runs/dora128_everything_8ep_lr1x/"
+CKPT = ("/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128_everything_8ep_lr1x/"
         "epoch=7-step=12216.ckpt")
 PROMPT = ("goa trance, driving 16th-note bassline, acid leads, full arrangement, "
           "clean punchy production")

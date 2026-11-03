@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-27)
 """Builds the 17-clip relcut ORIGINAL mix (4 s equal-power crossfades, tracks RMS-matched, plain beat-agnostic joins) as mix.wav +
 cues.json, for the phone listening page (template: Misc/mixtape_mark_page.template.html; two big buttons 'this track sounds bad' /
@@ -7,7 +8,7 @@ cues.json, for the phone listening page (template: Misc/mixtape_mark_page.templa
 Usage: SAO/.venv/bin/python Misc/build_mixtape_mark_mix.py <outdir>   then ffmpeg -i mix.wav -c:a aac -b:a 192k mix.m4a ; replace __CUES__/__MIX_URL__ in the template."""
 import glob, json, sys
 import numpy as np, soundfile as sf
-D = "/run/media/kim/Mantu/sa3_lora_runs/mixtape_z0_relcut_2026-10-21/"
+D = "/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_z0_relcut_2026-10-21/"
 S = sys.argv[1].rstrip("/") + "/"
 XF, sr = 4.0, 44100
 n = int(XF * sr); t = np.linspace(0, np.pi / 2, n)[:, None]; fin, fout = np.sin(t), np.cos(t)

@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 import json
 import soundfile as sf
 import numpy as np
@@ -14,7 +15,7 @@ def load(path):
 # clip_A: fp32cmp_avp_t512_bs8_lr1e4_repr_ptm__ep7__cfg1__w100__rb_common_1__s225176290__st8
 # clip_B: dora128adj_avp_8ep_final_ptm__ep0__cfg1__w100__rb_common_1__s225176290__st8
 # Wait, let's look at order_used.json for the 10th transition
-order_path = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0/order_used.json")
+order_path = Path("/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0/order_used.json")
 clips = json.loads(order_path.read_text())
 clip_A = clips[9]
 clip_B = clips[10]

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-15)
 """air_epoch_sweep.py -- render ONE punch clip (seed 764, bass+body 'cleanest' preset + air head as 3rd slot, -10 dB, gain 24000) with EVERY finite per-epoch checkpoint of
-the overnight air-head runs (latch_sweep/air_head_2026-10-15_overnight O1-O5, plus the 1000-step bracket A2 for reference), to see WHERE QUALITY PEAKED.
+the overnight air-head runs (latch_sweep/__air/air_head_2026-10-15_overnight O1-O5, plus the 1000-step bracket A2 for reference), to see WHERE QUALITY PEAKED.
 WHY (Kim 2026-10-15): lr may have been too high for Schedule-Free+; the val loss alone does not say which epoch SOUNDS best. Per clip: air-band share vs the original,
 centroid, crest, click rate (screen only: biased by brightness), content drift (onset/hat rate, bpm). Checkpoints with non-finite weights are skipped and listed.
 Run (render server :8056 up, SAO/.venv):  .venv/bin/python eval/air_epoch_sweep.py      Output: <overnight>/epoch_sweep/ (clips/*.wav, sweep.json)
@@ -21,8 +22,8 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--dirs", nargs="*", default=None, help="run dirs holding latch_sa3_rms_energy_air_ep*.pt (default: the overnight O1-O5 + bracket A2)")
 ap.add_argument("--out", default=None)
 ARGS = ap.parse_args()
-ON = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_overnight"
-A2 = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-14/A2_d512dp8_lr1e-2"
+ON = "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_overnight"
+A2 = "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-14/A2_d512dp8_lr1e-2"
 OUT = ARGS.out or f"{ON}/epoch_sweep"
 DIRS = ARGS.dirs if ARGS.dirs else sorted(glob.glob(f"{ON}/O*")) + [A2]
 os.makedirs(f"{OUT}/clips", exist_ok=True)

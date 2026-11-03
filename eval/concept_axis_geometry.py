@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """concept_axis_geometry.py — per-feature axis + shape via Kim's iso-probability method
 (2026-08-01), replacing the crude diff-in-means concept map.
 
@@ -33,7 +34,7 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import cross_val_predict
 
-D = Path("/run/media/kim/Mantu/sa3_lora_runs/layer_activations_base")
+D = Path("/run/media/kim/Mantu/sa3_lora_runs/__misc/layer_activations_base")
 
 
 def load():

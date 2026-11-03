@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-11-03)
 # Last edited: WINTERMUTE 2026-11-03 -- decode inside generate(), never between renders (see below); throwaway first render, chunk controls
@@ -52,7 +53,7 @@ RUN = "mood_deconf_20261103"
 OUT = Path("/home/kim/evals_aac/control_runs") / RUN
 WAV = Path("/run/media/kim/Mantu/sa3_control_runs") / RUN
 SOURCE_TARGETS = Path("/home/kim/evals_aac/mood_finegrained/deconf_targets.json")
-HEAD_CKPT = "/run/media/kim/Mantu/latch_sweep/mood_56d_best_40ep_20261031/C3_mood_lr8e-4_b64_cos40/latch_sa3_effnet_moodtheme_ep40.pt"
+HEAD_CKPT = "/run/media/kim/Mantu/latch_sweep/__mood/mood_56d_best_40ep_20261031/C3_mood_lr8e-4_b64_cos40/latch_sa3_effnet_moodtheme_ep40.pt"
 SRC = HERE / "render_mood_deconfounded.py"
 
 FRAMES = 280

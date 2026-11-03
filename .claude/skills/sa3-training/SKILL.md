@@ -172,7 +172,7 @@ decision — and never assume two optimizers at matched loss produce interchange
   which moves 0.06 x lr). Good range **6e-3 to 1e-2** (+500 warmup); 3e-2 diverges. What wins over AdamW (~17% on the goa
   bigset density head) is **Schedule-Free**, not Shampoo (no measurable Shampoo gain). b16 > b32; d512 no gain.
   Recipe: `train_latch.py --optimizer modular --lr 1e-2 --mod-warmup 500 --batch-size 16`. Full table:
-  `Mantu/latch_sweep/modular_2026-09-30/REPORT.md`.
+  `Mantu/latch_sweep/__onsets/modular_2026-09-30/REPORT.md`.
   **⚠ NOISE FLOOR (2026-10-07 audit): a head-bracket difference under ~0.004 is NOT a result.** Two seeds at the same
   `--num-workers` differed by 0.0002, but re-running the same recipe at 16 workers instead of 8 moved it 0.1955 -> 0.1995
   - **Batch-size arms: match optimiser STEPS, not epochs (W 2026-10-07).** With a fixed epoch count b32 gets half and b8 twice the steps of b16, so "batch 32 worse / batch 8 equal" was a step-count artefact (equal steps: b32 parity at ~60% of the wall time). Also run until the leaders stop changing: 10-epoch head runs were still falling. docs/training-findings.md 2026-10-07 B1.

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """chroma384_eval.py -- control-response eval for 384-d same-chroma steering
 (spec: docs/superpowers/specs/2026-07-16-chroma384-eval-design.md).
 
@@ -84,7 +85,7 @@ def selftest(args):
     """Metric-direction sanity on the SHIPPED morph render (no GPU): the
     'coolest in 30 years' clip folded to F#m melody -> a T2 F#-minor target
     must out-cosine a wrong-key (C-major-ish) target."""
-    clip = "/run/media/kim/Mantu/sa3_lora_runs/chroma_morph_transitions/kaikki2angelic__w1024_nl42_chroma.wav"
+    clip = "/run/media/kim/Mantu/sa3_lora_runs/__chroma/chroma_morph_transitions/kaikki2angelic__w1024_nl42_chroma.wav"
     c12 = clip_chroma12(clip)
     fsharp = 6
     good = fold_to_12(t2_static(64, fsharp))

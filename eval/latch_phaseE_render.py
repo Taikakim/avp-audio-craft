@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-14)
 """latch_phaseE_render.py -- eval clips for every finished LatCH bracket arm (onset_per_beat_ts density heads), same seed/prompt as an unsteered baseline.
 
@@ -21,8 +22,8 @@ os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
 os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 
-PHASE = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE"
-OUT = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE_eval_clips"
+PHASE = "/run/media/kim/Mantu/latch_sweep/__onsets/modular_2026-09-30/phaseE"
+OUT = "/run/media/kim/Mantu/latch_sweep/__onsets/modular_2026-09-30/phaseE_eval_clips"
 FEATURE = "onset_per_beat_ts"
 KS = [-1.0, 1.0, 2.0]
 GAINS = [512.0, 2048.0]

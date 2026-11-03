@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Last edited: KUANG 2026-10-15 -- block profile: warn when blend "interp" meets adapter types that ignore it (adapter mixer phase 1)
 # Last edited: WINTERMUTE 2026-10-15 -- latch_hparams "guide_schedule" (alpha|flat) passed through to the guided samplers
@@ -179,9 +180,9 @@ def _default_scan_root():
 
 DORA_REGISTRY = {
     "none": None,
-    "hof": f"{_MANTU}/sa3_lora_runs/sa3-goa-dora-47s-b4-cont/x20b3ygb/checkpoints/epoch=3-step=5400.ckpt",
-    "newstack": f"{_MANTU}/sa3_lora_runs/dora16_goa_newstack_8ep/epoch=3-step=5400.ckpt",
-    "evr1x": f"{_MANTU}/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt",
+    "hof": f"{_MANTU}/sa3_lora_runs/__finetunes/sa3-goa-dora-47s-b4-cont/x20b3ygb/checkpoints/epoch=3-step=5400.ckpt",
+    "newstack": f"{_MANTU}/sa3_lora_runs/__finetunes/dora16_goa_newstack_8ep/epoch=3-step=5400.ckpt",
+    "evr1x": f"{_MANTU}/sa3_lora_runs/__finetunes/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt",
 }
 FILM_DEFAULT_CKPT = (f"{_MANTU}/sa3_control_runs/"
                      "__onsets/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt")

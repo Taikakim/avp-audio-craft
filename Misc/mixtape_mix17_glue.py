@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-28)
 # Last edited: GHOST-NOTE 2026-10-28 -- content guard (per-second RMS, drops clips with >2 s below -45 dB or < 60 s unbroken content from the start)
 """Glue used for the 17-original v7c mix (EXPERIMENTS F7 step 2): part 1 = madmom downbeats of the 3x-extended clips (db17.py), part 2 = content guard + BPM order + stem symlinks + per-clip entry/exit bounds (prep.py). Run order: eval/mixtape_lengthen_only.py -> eval/mixtape_v7_separate.py -> part 1 -> part 2 -> eval/render_v7_smoketest.py --band-swap --clash-aware --no-generate --assemble-mix --tempo-source kicks --phase-mode kicks --tempo-plan --w-bars 16 --clips 0:N. Paths were /tmp/m17/*."""
@@ -20,7 +21,7 @@ import json, sys, os, numpy as np, soundfile as sf
 sys.path.insert(0, "/home/kim/Projects/SAO/eval")
 import mixtape_v7_dsp as dsp
 O = json.load(open("/tmp/mix17_order_len3x.json")); DB = json.load(open("/tmp/m17/downbeats_native.json"))
-ST = "/run/media/kim/Mantu/sa3_lora_runs/mixtape_mix17_stems"
+ST = "/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_mix17_stems"
 rows = []
 for i, c in enumerate(O):
     d = DB[c["id"]]; rows.append(dict(c, old=i, bpm=float(dsp.fit_bpm(d)), n_db=len(d)))

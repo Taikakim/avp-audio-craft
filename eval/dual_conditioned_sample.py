@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """dual_conditioned_sample.py — Kim 2026-09-15: a reusable module for
 generating ONE clip whose TEXT conditioning and LoRA weights blend
 continuously from (prompt_a, checkpoint_a) to (prompt_b, checkpoint_b)
@@ -109,8 +110,8 @@ if __name__ == "__main__":
     model = StableAudioModel.from_pretrained("medium-base", device="cuda")
     audio, sr = dual_conditioned_generate(
         model,
-        ckpt_a="/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt",
-        ckpt_b="/run/media/kim/Mantu/sa3_lora_runs/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt",
+        ckpt_a="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt",
+        ckpt_b="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt",
         prompt_a="2020s goa trance, melodic mood, 148 bpm",
         prompt_b="mid 90s goa trance, techno, space dark mood, 140 bpm",
         duration=60.0, steps=24, seed=1234,

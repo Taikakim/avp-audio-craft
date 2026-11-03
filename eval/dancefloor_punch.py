@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """dancefloor_punch.py — AudioCommons timbral (depth/hardness/booming/roughness) +
 a TRANSIENT-CLARITY composite (crest factor, HPSS percussive ratio, attack slope).
 Gauges dance-floor impact / punch, which spectral centroid + Audiobox CE miss
@@ -34,11 +35,11 @@ def measure(f):
 
 # representative clip set across the axes that matter for punch
 SETS = {
- "cfg_sweep": glob.glob("/run/media/kim/Mantu/sa3_lora_runs/avp_cfg_sweep/*.wav"),
- "orig_ladder": glob.glob("/run/media/kim/Mantu/sa3_lora_runs/avp_board_seeds/r16_originals__*__kimlong__s1234__st10.wav") +
-                glob.glob("/run/media/kim/Mantu/sa3_lora_runs/avp_board_seeds/r16_originals__*__kimlong__s1234.wav"),
- "armG": glob.glob("/run/media/kim/Mantu/sa3_lora_runs/avp_board_armG/*__trigdesc__s1234__st10.wav"),
- "r64": glob.glob("/run/media/kim/Mantu/sa3_lora_runs/avp_board_r64/*__kimlong__s1234__st10.wav"),
+ "cfg_sweep": glob.glob("/run/media/kim/Mantu/sa3_lora_runs/__auditions/avp_cfg_sweep/*.wav"),
+ "orig_ladder": glob.glob("/run/media/kim/Mantu/sa3_lora_runs/__auditions/avp_board_seeds/r16_originals__*__kimlong__s1234__st10.wav") +
+                glob.glob("/run/media/kim/Mantu/sa3_lora_runs/__auditions/avp_board_seeds/r16_originals__*__kimlong__s1234.wav"),
+ "armG": glob.glob("/run/media/kim/Mantu/sa3_lora_runs/__auditions/avp_board_armG/*__trigdesc__s1234__st10.wav"),
+ "r64": glob.glob("/run/media/kim/Mantu/sa3_lora_runs/__auditions/avp_board_r64/*__kimlong__s1234__st10.wav"),
 }
 rows = []
 for grp, files in SETS.items():
@@ -49,6 +50,6 @@ for grp, files in SETS.items():
         mc = re.search(r'cfg(\d+\.\d+)', f); m["cfg"] = float(mc.group(1)) if mc else None
         rows.append(m)
         print(f"[{grp}] {os.path.basename(f)[:45]:45s} depth={m.get('depth')} hard={m.get('hardness')} crest={m['crest_db']:.1f} perc={m['perc_ratio']:.2f}", flush=True)
-OUT="/run/media/kim/Mantu/sa3_lora_runs/avp_board_seeds/ANALYSIS/dancefloor_punch.json"
+OUT="/run/media/kim/Mantu/sa3_lora_runs/__auditions/avp_board_seeds/ANALYSIS/dancefloor_punch.json"
 json.dump(rows, open(OUT,"w"), indent=1)
 print(f"[done] {len(rows)} clips -> {OUT}", flush=True)

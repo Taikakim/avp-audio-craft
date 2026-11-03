@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """steer_orthogonal_ab_analyze.py — meter pass for the Gram-Schmidt steering A/B
 (task #58; companion to eval/steer_orthogonal_ab.py; RUN WITH THE mir VENV).
 
@@ -9,7 +10,7 @@ zcr — the buzz signatures). Aggregates per arm across seeds and prints the ver
 table: does GS hold the protected axis at its solo value where naive addition drifts it?
 
   mir/bin/python eval/steer_orthogonal_ab_analyze.py \
-      --dir /run/media/kim/Mantu/sa3_lora_runs/concept_steering/orthogonal_ab
+      --dir /run/media/kim/Mantu/sa3_lora_runs/__chroma/concept_steering/orthogonal_ab
 """
 import argparse
 import json

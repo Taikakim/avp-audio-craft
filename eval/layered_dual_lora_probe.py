@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """layered_dual_lora_probe.py — Kim 2026-09-16: three small, cheap probes answering
 questions raised about dual_conditioned_sample.py's text+weight crossfade:
 
@@ -64,8 +65,8 @@ from stable_audio_3.inference.sampling import build_schedule  # noqa: E402
 from stable_audio_3.models.lora.model import LoRAParametrization, set_lora_strength  # noqa: E402
 from dual_conditioned_sample import dual_conditioned_generate  # noqa: E402
 
-CKPT_A = "/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
-CKPT_B = "/run/media/kim/Mantu/sa3_lora_runs/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt"
+CKPT_A = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
+CKPT_B = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt"
 PROMPT_A = "2020s goa trance, melodic mood, 148 bpm"
 PROMPT_B = "mid 90s goa trance, techno, space dark mood, 140 bpm"
 DURATION = 24.0

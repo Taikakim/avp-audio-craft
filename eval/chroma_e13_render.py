@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: WINTERMUTE (created 2026-10-28)
 """chroma_e13_render.py -- EXPERIMENTS E13: does the same_chroma head retrained under the ModularOptimizer steer
 chords better than the production head (AdamW, EMA 0.999, depth 4, 20 ep, train-loss selected)?
@@ -53,7 +54,7 @@ from chroma_steer_render import build_target_raw, _chroma12_per_frame  # noqa: E
 from harmonic import same_chroma as sc  # noqa: E402
 
 OUT = Path("/home/kim/evals_aac/control_runs/chroma_e13_20261028")
-RETRAIN = Path("/run/media/kim/Mantu/latch_sweep/chroma_retrain_2026-10-16")
+RETRAIN = Path("/run/media/kim/Mantu/latch_sweep/__chroma/chroma_retrain_2026-10-16")
 PROD = SAO / "stable-audio-3" / "latch_weights_sa3_medium" / "latch_sa3_same_chroma_best.pt"
 ARMS = {"C2": "C2_chroma_d512_lr1e-2", "C3": "C3_chroma_d512_lr1e-3", "C4": "C4_chroma_d512_lr1e-4"}
 WEIGHTS = {"ema1": "", "ema025": "_ema0.25", "online": "_online"}
@@ -83,7 +84,7 @@ def heads():
 
 
 # E13b (latch/run_chroma_size.sh): onset recipe and bigger / deeper heads, EMA 1 ep only (E13: EMA, short EMA and online steer alike)
-SIZE_DIR = Path("/run/media/kim/Mantu/latch_sweep/chroma_size_2026-10-28")
+SIZE_DIR = Path("/run/media/kim/Mantu/latch_sweep/__chroma/chroma_size_2026-10-28")
 SIZE_ARMS = {"S0": "S0_onset_recipe_d256_L8", "S1": "S1_c3_d512_L12", "S2": "S2_c3_d768_L8"}
 SIZE_EPOCHS = (4, 8, 10, 12)
 SIZE_SCREEN = {"gains": [512, 2048], "targets": ["C", "keylift"], "seeds": [1234, 5678]}

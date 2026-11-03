@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """interval_cfg_ab.py — interval-CFG mid-band recovery A/B (task #26, Kim-scheduled
 2026-07-19 via F; gap-audit win #2, Kynkaanniemi et al. adapted to SA3 flow-t units).
@@ -43,7 +44,7 @@ from sa3_control.audio_io import save_audio  # noqa: E402
 from stable_audio_3 import StableAudioModel  # noqa: E402
 
 TRACK = "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-flac/009 goddess guerrilla (2006)/Aavepyora - Goddess Guerilla - Kaikki-Alla.flac"
-CKPT = "/run/media/kim/Mantu/sa3_lora_runs/dora16_goa_newstack_8ep/epoch=3-step=5400.weights.ckpt"
+CKPT = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora16_goa_newstack_8ep/epoch=3-step=5400.weights.ckpt"
 OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__misc/interval_cfg_ab")
 PROMPT, STEPS, CFG = "aggressive upbeat goa trance", 24, 6.0
 SEG_START = 60.0
@@ -103,7 +104,7 @@ def main():
         "steps": STEPS, "cfg": CFG, "seeds": SEEDS, "noise_levels": NLS,
         "intervals": {k: list(v) for k, v in INTERVALS.items()},
         "interval_semantics": "guidance fires iff interval[0] <= t <= interval[1]; sigma=t in [0,1], high noise = t~1 (dit.py:479)",
-        "baselines": "matched 60-155s slices of sa3_lora_runs/a2a_kaikkialla_newstack (unguided full-track ladder, same ckpt/prompt/seed/steps/cfg)",
+        "baselines": "matched 60-155s slices of sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack (unguided full-track ladder, same ckpt/prompt/seed/steps/cfg)",
         "readout": "melodic_movement_ladder metrics (chroma_flux/pc_trans_rate/pc_entropy/pc_active) adapted to the 95s clips; W co-scores per the task spec",
         "renders": renders, "result": None, "kim_feedback": None}, indent=2))
     print(f"[all done] {len(renders)} renders -> {OUT}", flush=True)

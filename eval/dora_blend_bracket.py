@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-15)
 """dora_blend_bracket.py -- asymmetric DoRA-vs-base blending across DiT blocks on the punch clips (owner's idea 2026-10-15: "mix some of the original model back in in the latter layers
 where the texture is created", on the DoRA alone and/or on top of the LatCH steering). The 'cleanest' punch preset = DoRA (strength 0.45) + bass/body LatCH; the profile multiplies the
 DoRA strength per block (render server dora.block_strengths, dora.blend). Two blend semantics: default = scale only the low-rank direction (magnitude stays full); 'interp' = true weight
 interpolation W + s(W_dora - W). Per clip: air-band share vs the original, centroid / flatness / crest, click screen (biased by brightness), onset/hat/bpm drift vs the unprofiled render.
-Run (render server up WITH the profile patch):  .venv/bin/python eval/dora_blend_bracket.py     Output: Mantu2/latch_sweep/dora_blend_2026-10-15/ (clips/*.wav, bracket.json)
+Run (render server up WITH the profile patch):  .venv/bin/python eval/dora_blend_bracket.py     Output: Mantu2/latch_sweep/__misc/dora_blend_2026-10-15/ (clips/*.wav, bracket.json)
 """
 import json, os, shutil, sys
 import numpy as np
@@ -13,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import punch_rating_server as P
 import latch_drift_check as DC
 
-OUT = "/run/media/kim/Mantu/latch_sweep/dora_blend_2026-10-15"
+OUT = "/run/media/kim/Mantu/latch_sweep/__misc/dora_blend_2026-10-15"
 os.makedirs(f"{OUT}/clips", exist_ok=True)
 SEEDS = [764, 1337, 3017, 3050]
 pre = P.load_presets()

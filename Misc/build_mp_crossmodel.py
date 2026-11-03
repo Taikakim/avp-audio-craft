@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """
 build_mp_crossmodel.py -- append the cross-model checkpoint-pulldown section to mp.html.
 
@@ -27,7 +28,7 @@ import json
 import re
 from pathlib import Path
 
-MANTU_RUN_META = Path("/run/media/kim/Mantu/sa3_lora_runs/mp_crossmodel/run_meta.json")
+MANTU_RUN_META = Path("/run/media/kim/Mantu/sa3_lora_runs/__auditions/mp_crossmodel/run_meta.json")
 RECIPES = Path("/home/kim/Projects/SAO/eval/mp_checkpoint_recipes.json")
 MP_HTML = Path("/home/kim/riffer-evals/mp.html")
 CLIPS_DIR = Path("/home/kim/riffer-evals/clips_mp_crossmodel")

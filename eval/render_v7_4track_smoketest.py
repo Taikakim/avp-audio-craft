@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 import json
 import os
 import torch
@@ -49,7 +50,7 @@ def get_chroma(audio, sr):
 def main():
     print("Starting V7 4-Track Smoke Test Pipeline (Fast Native Mode)...")
     
-    order_path = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0/order_used.json")
+    order_path = Path("/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0/order_used.json")
     clips = json.loads(order_path.read_text())[2:6]
     bounds = json.loads(Path("/tmp/bounds_structural.json").read_text())
     

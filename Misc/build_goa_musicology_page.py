@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """build_goa_musicology_page.py — the Goa MIDI musicology page (Kim ask 2026-07-13:
 "write a page about the results and put it on the webpage... how the bass centers vs
 leads/voices in the higher registers, and the role of (implied) harmony").
@@ -22,7 +23,7 @@ from pathlib import Path
 
 import statistics as st
 
-SRC = Path("/run/media/kim/Mantu/sa3_lora_runs/muscriptor_goa_midis/musicology")
+SRC = Path("/run/media/kim/Mantu/sa3_lora_runs/__finetunes/muscriptor_goa_midis/musicology")
 OUT = Path("/home/kim/evals_aac/goa_musicology.html")
 
 DEGREES = ["1", "b2", "2", "b3", "3", "4", "b5", "5", "b6", "6", "b7", "7"]

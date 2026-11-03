@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """mixtape_v7_phase0_align_stretch.py — DJ mix v7 Phase 0 & Phase 1 implementation.
 
 - Phase 0: Outpaint clips to >= 2x length for longer 16-bar transition windows.
@@ -51,7 +52,7 @@ def get_structural_peaks(audio_path, sr=22050):
 def main():
     print("[v7 Phase 0] Initializing DJ Mix v7 Alignment and Stretching Script")
     
-    order_file = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v6_rerender/work48b/order_final.json")
+    order_file = Path("/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v6_rerender/work48b/order_final.json")
     if not order_file.exists():
         print("Could not find order_final.json. Exiting.")
         return
@@ -62,7 +63,7 @@ def main():
     clips = [c for c in clips if c.get('bpm', 140) > 120][:5]
     print(f"Loaded {len(clips)} valid clips after filtering.")
     
-    out_dir = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0")
+    out_dir = Path("/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0")
     out_dir.mkdir(parents=True, exist_ok=True)
     
     TRANSITION_BARS = 16

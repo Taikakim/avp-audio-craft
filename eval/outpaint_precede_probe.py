@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """outpaint_precede_probe.py — Kim 2026-09-15: for each test clip, generate a
 15s continuation (outpaint past the end) and a 15s lead-in (inpaint before the
 start), each in 4 variants (orig prompt/orig seed, orig prompt/new seed,
@@ -34,19 +36,19 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 CLIPS = {
     "A": dict(name="dora128adj_avp_8ep_final_ptm__rb_bracket_0",
               path="/home/kim/evals_aac/model_matrix/dora128adj_avp_8ep_final_ptm__ep0__cfg1__w100__rb_bracket_0__s1102008041__st8__d48.m4a",
-              ckpt="/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt",
+              ckpt="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt",
               prompt="2020s goa trance, melodic mood, 148 bpm", seed=1102008041),
     "B": dict(name="dora128adj_avp_aug10_lr1e4_ptm__rb_bracket_0",
               path="/home/kim/evals_aac/model_matrix/dora128adj_avp_aug10_lr1e4_ptm__ep74__cfg1__w100__rb_bracket_0__s1102008041__st8__d48.m4a",
-              ckpt="/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_aug10_lr1e4/epoch=74-step=3000.weights.ckpt",
+              ckpt="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_aug10_lr1e4/epoch=74-step=3000.weights.ckpt",
               prompt="2020s goa trance, melodic mood, 148 bpm", seed=1102008041),
     "C": dict(name="fp32cmp_avp_t512_bs8_lr1e4_repr_ptm__rb_common_1",
               path="/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4_repr_ptm__ep7__cfg1__w100__rb_common_1__s225176290__st8__d48.m4a",
-              ckpt="/run/media/kim/Mantu/sa3_lora_runs/fp32cmp_avp_t512_bs8_lr1e4_repr/epoch=7-step=2392.ckpt",
+              ckpt="/run/media/kim/Mantu/sa3_lora_runs/__precision_compare/fp32cmp_avp_t512_bs8_lr1e4_repr/epoch=7-step=2392.ckpt",
               prompt="mid 90s goa trance, melodic space mood, 140 bpm", seed=225176290),
     "D": dict(name="dora16_avp_familiarity_8ep_ptm__rb_rare_8",
               path="/home/kim/evals_aac/model_matrix/dora16_avp_familiarity_8ep_ptm__ep4__cfg1__w100__rb_rare_8__s278158216__st8__d48.m4a",
-              ckpt="/run/media/kim/Mantu/sa3_lora_runs/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt",
+              ckpt="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt",
               prompt="mid 90s goa trance, techno, space dark mood, 140 bpm", seed=278158216),
 }
 FOREIGN = {"A": "B", "B": "C", "C": "D", "D": "A"}

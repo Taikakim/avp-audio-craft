@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-14)
 # Last edited: WINTERMUTE 2026-10-14 — drop run_meta related.heads (drive path) from the page data; floating transport bar
 """build_latch_phaseE_page.py -- listening/evaluation page for the Phase E LatCH density heads (E5 bracket), built from eval/latch_phaseE_render.py's clips.
@@ -22,13 +23,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
 from float_player import inject
 
-BR = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30"
+BR = "/run/media/kim/Mantu/latch_sweep/__onsets/modular_2026-09-30"
 CLIPS = f"{BR}/phaseE_eval_clips"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 OUTDIR = os.path.join(STAGE, "latch_phaseE")
 DRIFT = os.environ.get("PHASEE_DRIFT", "/tmp/battery/phaseE_drift.json")
 if not os.path.exists(DRIFT):
-    DRIFT = f"/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/head_checks_2026-10-14/phaseE_drift.json"
+    DRIFT = f"/run/media/kim/Mantu/latch_sweep/__onsets/modular_2026-09-30/head_checks_2026-10-14/phaseE_drift.json"
 os.makedirs(OUTDIR, exist_ok=True)
 
 man = json.load(open(f"{CLIPS}/manifest.json"))["cells"]

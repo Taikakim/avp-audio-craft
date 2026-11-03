@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """mixtape_portfolio_clips.py — Kim 2026-09-17: extracts a size-budgeted set of audio
 for the "Custom Stable Audio 3 model portfolio" page. The full 76-transition, ~50min
 mixtape cannot fit the Artifact page budget (64MB total / 15MB per file) at a
@@ -15,7 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-RENDER_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v5_clean")
+RENDER_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v5_clean")
 PAIRS_JSON = Path(
     "/tmp/claude-1000/-home-kim-Projects-SAO-stable-audio-3/"
     "cd7a9ba8-7c77-4763-a269-4b41c0eb857d/scratchpad/mixtape_pairs.json")

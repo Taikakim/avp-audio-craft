@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """
 build_layer_map_page.py -- readable report page for the layer-mapping run
@@ -34,7 +35,7 @@ OUT = Path.home() / ".cache/evals_aac/renders/layer_map_2026-07-10/index.html"
 # steers. Clips staged under steer/. run_meta carries layers + held-out AUC; the
 # measured Essentia delta is read from run_meta["result"] when CONTINUITY persists it
 # (chat-only == lost, per MASTER), else the cell shows AUC + "listen".
-STEER_SRC = Path("/run/media/kim/Mantu/sa3_lora_runs/concept_steering")
+STEER_SRC = Path("/run/media/kim/Mantu/sa3_lora_runs/__chroma/concept_steering")
 STEER_FEATURES = ("mt_dark", "mt_uplifting", "mt_relaxing", "onset_density")
 STEER_BLURB = {
     "mt_dark": "darkness / minor-key gloom",

@@ -1,6 +1,6 @@
 {
  "parent": "fullft_goa_t4096",
- "ckpt": "/run/media/kim/Mantu/sa3_lora_runs/fullft_goa_t4096/epoch=7-step=10800.weights.ckpt",
+ "ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft_goa_t4096/epoch=7-step=10800.weights.ckpt",
  "n_modules": 229,
  "class_summary": {
   "other": {

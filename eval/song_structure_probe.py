@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """song_structure_probe.py — Kim 2026-09-15: can SA3 conjure a whole song?
 
 Per clip: generate a fresh "intro sequence" and "outro" txt2audio clip (same
@@ -37,16 +39,16 @@ SEAM_HALF_SEC = 30.0  # 60s total mask width per seam, 30s into each neighbor
 
 CLIPS = {
     "A": dict(path="/home/kim/evals_aac/model_matrix/dora128adj_avp_8ep_final_ptm__ep0__cfg1__w100__rb_bracket_0__s1102008041__st8__d48.m4a",
-              ckpt="/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt",
+              ckpt="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt",
               prompt="2020s goa trance, melodic mood, 148 bpm", seed=1102008041, steps=8, cfg=1.0),
     "B": dict(path="/home/kim/evals_aac/model_matrix/dora128adj_avp_aug10_lr1e4_ptm__ep74__cfg1__w100__rb_bracket_0__s1102008041__st8__d48.m4a",
-              ckpt="/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_aug10_lr1e4/epoch=74-step=3000.weights.ckpt",
+              ckpt="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_aug10_lr1e4/epoch=74-step=3000.weights.ckpt",
               prompt="2020s goa trance, melodic mood, 148 bpm", seed=1102008041, steps=8, cfg=1.0),
     "C": dict(path="/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4_repr_ptm__ep7__cfg1__w100__rb_common_1__s225176290__st8__d48.m4a",
-              ckpt="/run/media/kim/Mantu/sa3_lora_runs/fp32cmp_avp_t512_bs8_lr1e4_repr/epoch=7-step=2392.ckpt",
+              ckpt="/run/media/kim/Mantu/sa3_lora_runs/__precision_compare/fp32cmp_avp_t512_bs8_lr1e4_repr/epoch=7-step=2392.ckpt",
               prompt="mid 90s goa trance, melodic space mood, 140 bpm", seed=225176290, steps=8, cfg=1.0),
     "D": dict(path="/home/kim/evals_aac/model_matrix/dora16_avp_familiarity_8ep_ptm__ep4__cfg1__w100__rb_rare_8__s278158216__st8__d48.m4a",
-              ckpt="/run/media/kim/Mantu/sa3_lora_runs/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt",
+              ckpt="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt",
               prompt="mid 90s goa trance, techno, space dark mood, 140 bpm", seed=278158216, steps=8, cfg=1.0),
 }
 

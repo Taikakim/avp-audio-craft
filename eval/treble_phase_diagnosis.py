@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """treble_phase_diagnosis.py — locate the HF-treble failure (Kim 2026-08-01: "the single
 thing keeping outputs from being producer-relevant"). Autopsy BEFORE fix (Kim's directive):
 three candidate homes, different fix each — codec discard / DiT collapse / decoder improv.
@@ -34,9 +35,9 @@ from scipy.signal import stft
 from stable_audio_3 import StableAudioModel
 
 CORPUS = Path("/run/media/kim/Mantu/ai-music/Goa_Separated")
-LADDER = Path("/run/media/kim/Mantu/sa3_lora_runs/phase_shift_sweep")
+LADDER = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/phase_shift_sweep")
 GEN_Z0 = "/run/media/kim/Mantu/sa3_control_runs/**/*.z0.npy"      # saved generations
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/treble_diagnosis")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__misc/treble_diagnosis")
 SR = 44100
 CLIP_S = 10.0
 HF_HZ = 8000

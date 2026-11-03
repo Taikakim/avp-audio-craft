@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """hf_latch_bracket.py — Kim 2026-09-16: brackets the rms_energy_air LatCH head's
 gain and end_pct on ONE flagged clip (dora128adj_avp_8ep ep6, kl_0 prompt, seed 1000,
 post-trained medium, 8 steps/cfg1 -- matching the original render's exact config for
@@ -28,7 +29,7 @@ FPS = 44100 / 4096
 
 HF_HEAD = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_rms_energy_air_best.pt"
 HF_TARGET_DB = -32.9611
-CKPT = "/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep/epoch=6-step=2093.weights.ckpt"
+CKPT = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep/epoch=6-step=2093.weights.ckpt"
 PROMPT = ("This track is a high-energy psytrance piece that blends classic Goa-trance "
           "hypnotic loops with the relentless drive of modern techno. Built around a "
           "pounding 4/4 kick, the production is polished and high-fidelity, employing a "

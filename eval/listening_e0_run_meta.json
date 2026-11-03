@@ -5,7 +5,7 @@
  "clips": [
   {
    "id": "L01",
-   "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl60.wav",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack/a2a_nl60.wav",
    "tier": "fresh_hi",
    "excerpt_start_sec": 230.7,
    "excerpt_dur": 90.0,
@@ -19,7 +19,7 @@
   },
   {
    "id": "L02",
-   "path": "/run/media/kim/Mantu/sa3_lora_runs/newcap8_promptstyle_longform/evr1x__aggr_xfade_s4242to1234.wav",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/newcap8_promptstyle_longform/evr1x__aggr_xfade_s4242to1234.wav",
    "tier": "fresh_lo",
    "excerpt_start_sec": 69.1,
    "excerpt_dur": 90.0,
@@ -33,7 +33,7 @@
   },
   {
    "id": "L03",
-   "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl70.wav",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl70.wav",
    "tier": "fresh_hi",
    "excerpt_start_sec": 221.5,
    "excerpt_dur": 90.0,
@@ -47,7 +47,7 @@
   },
   {
    "id": "L04",
-   "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl90.wav",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl90.wav",
    "tier": "fresh_hi",
    "excerpt_start_sec": 221.5,
    "excerpt_dur": 90.0,
@@ -61,7 +61,7 @@
   },
   {
    "id": "L05",
-   "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl70.wav",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack/a2a_nl70.wav",
    "tier": "fresh_lo",
    "excerpt_start_sec": 230.7,
    "excerpt_dur": 90.0,
@@ -75,7 +75,7 @@
   },
   {
    "id": "L06",
-   "path": "/run/media/kim/Mantu/sa3_lora_runs/newcap8_promptstyle_longform/evr1x__aggr_xfade_s1234to4242.wav",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/newcap8_promptstyle_longform/evr1x__aggr_xfade_s1234to4242.wav",
    "tier": "fresh_lo",
    "excerpt_start_sec": 69.1,
    "excerpt_dur": 90.0,
@@ -89,7 +89,7 @@
   },
   {
    "id": "L07",
-   "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl80.wav",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl80.wav",
    "tier": "fresh_hi",
    "excerpt_start_sec": 221.5,
    "excerpt_dur": 90.0,
@@ -117,7 +117,7 @@
   },
   {
    "id": "L09",
-   "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_nl55/breathing.wav",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/breathing_kaikkialla_evr1x_nl55/breathing.wav",
    "tier": "fresh_hi",
    "excerpt_start_sec": 230.7,
    "excerpt_dur": 90.0,
@@ -159,7 +159,7 @@
   },
   {
    "id": "L12",
-   "path": "/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl65/dual_lora.wav",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/promptarc_single_kaikkialla_nl65/dual_lora.wav",
    "tier": "ambiguous",
    "excerpt_start_sec": 230.7,
    "excerpt_dur": 90.0,
@@ -173,7 +173,7 @@
   },
   {
    "id": "L13",
-   "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_v2/breathing.wav",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/breathing_kaikkialla_evr1x_v2/breathing.wav",
    "tier": "ambiguous",
    "excerpt_start_sec": 230.7,
    "excerpt_dur": 90.0,
@@ -187,7 +187,7 @@
   },
   {
    "id": "L14",
-   "path": "/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl05/dual_lora.wav",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/promptarc_single_kaikkialla_nl05/dual_lora.wav",
    "tier": "fresh_hi",
    "excerpt_start_sec": 230.7,
    "excerpt_dur": 90.0,

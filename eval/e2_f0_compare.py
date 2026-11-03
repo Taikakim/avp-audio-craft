@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: WINTERMUTE (created 2026-11-03)
 """e2_f0_compare.py -- EXPERIMENTS E2: the lead f0 head retrained under the modular recipe against the current one, same grid, same prompts and seeds.
   shapes   up, down, arch, valley at gains 512, 2048, 8192: the same 'follow' score as E4b (corr with target minus corr with mirror; chance 0, max 2)
@@ -26,7 +27,7 @@ import e4b_f0_shapes as B
 
 OUT = Path("/home/kim/evals_aac/control_runs/e2_f0_compare_20261103")
 E4 = B.E4
-ARMS = {"old": B.HEAD, "new": Path("/run/media/kim/Mantu/latch_sweep/f0_modular_2026-11-03/E2_c3_d512_L8/latch_sa3_f0_other_ep12.pt")}
+ARMS = {"old": B.HEAD, "new": Path("/run/media/kim/Mantu/latch_sweep/__f0/f0_modular_2026-11-03/E2_c3_d512_L8/latch_sa3_f0_other_ep12.pt")}
 GAINS = (512, 2048, 8192)
 PERIODS = (10.0, 5.0, 2.5)
 PGAIN = 8192

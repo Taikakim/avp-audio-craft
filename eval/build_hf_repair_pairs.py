@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """build_hf_repair_pairs.py — cache (degraded, target) pairs for HF-reconstruction-filter
 training (part 1/3 of the SA3 HF-repair post-net pipeline).
 
@@ -55,7 +56,7 @@ DEFAULT_CORPUS = [
     "/run/media/kim/Mantu/ai-music/Punk",
     "/run/media/kim/Mantu/ai-music/Peaceful",
 ]
-DEFAULT_CACHE = "/run/media/kim/Mantu/sa3_lora_runs/hf_repair_pairs"
+DEFAULT_CACHE = "/run/media/kim/Mantu/sa3_lora_runs/__hf_corruption/hf_repair_pairs"
 AUDIO_EXTS = {".flac", ".wav", ".ogg", ".mp3", ".m4a"}
 
 

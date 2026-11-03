@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """hf_clarity_diagnosis.py — HF CLARITY (not metallic-ness) diagnosis (Kim 2026-08-01:
 "lack of clarity, like 128kbps MP3 late 90s; the ear DOES decode airy-region info").
 
@@ -46,7 +47,7 @@ from scipy.signal import butter, sosfiltfilt, hilbert, welch
 from stable_audio_3 import StableAudioModel
 
 CORPUS = Path("/run/media/kim/Mantu/ai-music/Goa_Separated")
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/hf_clarity")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__hf_corruption/hf_clarity")
 SR = 44100
 CLIP_S = 8.0
 N_TRACKS = 12

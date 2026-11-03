@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: WINTERMUTE (created 2026-10-15)
 # Last edited: WINTERMUTE 2026-10-24 -- advisory ring column (eval/ring_score.py -> ring_score.json): per cell + max per gain; not in the gate
 # Last edited: WINTERMUTE 2026-10-24 -- fractional gains/densities in clip names (0.5/s) via num(); whole numbers unchanged
@@ -53,7 +54,7 @@ _ap.add_argument("--only-order", action="store_true", help="show only the heads 
 ARGS = _ap.parse_args()
 
 SRC = "/run/media/kim/Mantu/sa3_control_runs"
-BR = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30"
+BR = "/run/media/kim/Mantu/latch_sweep/__onsets/modular_2026-09-30"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 SUB = ARGS.sub
 DB = os.path.join(HERE, "..", "eval", "clip_metrics.db")

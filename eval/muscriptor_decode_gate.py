@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """muscriptor_decode_gate.py -- the REQUIRED local gate for the MuScriptor LUMI batch
 (spec: docs/superpowers/specs/2026-07-17-muscriptor-lumi-batch.md).
 
@@ -30,7 +31,7 @@ from pathlib import Path
 
 import numpy as np
 
-SAMPLE = Path("/run/media/kim/Mantu/sa3_lora_runs/muscriptor_goa_midis")
+SAMPLE = Path("/run/media/kim/Mantu/sa3_lora_runs/__finetunes/muscriptor_goa_midis")
 LATENTS = Path("/run/media/kim/Kosmos/latents/latents_sa3")
 OUT = Path("/home/kim/Projects/SAO/eval/muscriptor_gate.json")
 CROP_SEC = 4096 / 10.7666

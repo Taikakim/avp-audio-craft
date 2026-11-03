@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 import json
 import soundfile as sf
 import numpy as np
@@ -10,7 +11,7 @@ def load(path):
         y = np.vstack([y, y])
     return y, sr
 
-phase0_dir = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0")
+phase0_dir = Path("/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0")
 order_path = phase0_dir / "order_used.json"
 clips = json.loads(order_path.read_text())[:5]
 

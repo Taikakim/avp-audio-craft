@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: unconfirmed, likely Antigravity/KUANG (kone-mixtape v7 stem pipeline, 2026-10-08); not W, C or G
 # One-off: cross-correlate two adjacent mixtape_v7_phase0 clips to find their beat offset.
 import json
@@ -5,9 +6,9 @@ import numpy as np
 import soundfile as sf
 from scipy.signal import correlate, find_peaks
 
-with open('/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0/order_used.json') as f:
+with open('/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0/order_used.json') as f:
     order = json.load(f)
-with open('/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0/run_meta.json') as f:
+with open('/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0/run_meta.json') as f:
     meta = json.load(f)
 
 k = 10

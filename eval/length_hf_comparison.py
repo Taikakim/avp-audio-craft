@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """length_hf_comparison.py — does render LENGTH itself (short ~20s vs native t2048/190s vs
 native t4096/380s) correlate with reduced HF crispness / punch, independent of prompt content?
 
@@ -52,7 +53,7 @@ SR = 44100
 MATRIX = Path("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/renders/matrix_cells")
 NATIVE = Path("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/renders/native_cells")
 FAMILIES = ["fullft_goa_t4096", "fullft_avp_t4096", "fullft_goa_t2048", "fullft_avp_t2048"]
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/length_hf_comparison")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__hf_corruption/length_hf_comparison")
 
 
 def load_mono(path):

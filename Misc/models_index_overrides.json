@@ -185,7 +185,7 @@
       }
     ],
     "purpose": "CONTINUITY, 2026-07-05, Kim's overnight order: comparison DoRA testing the newly-built tiered-caption system (scripts/caption_tools.py, era-fronted T1 templates + tier sampler) -- mirrors the existing sa3-goa-dora-47s-r128-fusion baseline (r128 dora-rows fusion lr2e-4 bs4 47s beat-aware) exactly except for the new caption sidecar, 5ep, isolating the caption-quality variable.",
-    "purpose_evidence": "WORKLOG.md ~1754-1758 (2026-07-05 CONTINUITY: 'caption system BUILT+TESTED (Kim's overnight order)... Comparison DoRA staged... LAUNCHED 05:17 ... -> Mantu/sa3_lora_runs/dora128_47s_newcaptions_5ep')",
+    "purpose_evidence": "WORKLOG.md ~1754-1758 (2026-07-05 CONTINUITY: 'caption system BUILT+TESTED (Kim's overnight order)... Comparison DoRA staged... LAUNCHED 05:17 ... -> Mantu/sa3_lora_runs/__finetunes/dora128_47s_newcaptions_5ep')",
     "purpose_confidence": "strong"
   },
   "dora128adj_avp_8ep": {
@@ -6994,7 +6994,7 @@
   },
   "soups_ladder_2026-08-19": {
     "purpose": "C1 \u2014 temporal soups of the healthy ladders, rendered T256+T1024 at cfg7/w1 and scored; the verdict feeds C2 (quality-weighted soups).",
-    "purpose_source": "EXPERIMENTS.md:595 heading \"C1 - Temporal soups of the healthy ladders, rendered T256+T1024 cfg7/w1, scored\" + EXPERIMENTS.md:597 (\"Soups: Mantu/sa3_lora_runs/soups_ladder_2026-08-19/. Verdict feeds C2.\")",
+    "purpose_source": "EXPERIMENTS.md:595 heading \"C1 - Temporal soups of the healthy ladders, rendered T256+T1024 cfg7/w1, scored\" + EXPERIMENTS.md:597 (\"Soups: Mantu/sa3_lora_runs/__misc/soups_ladder_2026-08-19/. Verdict feeds C2.\")",
     "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
     "purpose_evidence": "UNRECORDED \u2014 predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
     "purpose_confidence": "unrecorded"

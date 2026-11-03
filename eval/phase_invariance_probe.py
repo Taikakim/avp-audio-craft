@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """phase_invariance_probe.py — how phase/translation-invariant are SAME latents?
 (Kim's design 2026-08-01: content-preserving CIRCULAR shift; per-dim change; real signals.)
 
@@ -36,8 +37,8 @@ import torch
 from stable_audio_3 import StableAudioModel
 
 CORPUS = Path("/run/media/kim/Mantu/ai-music/Goa_Separated")
-EIG = Path("/run/media/kim/Mantu/sa3_lora_runs/e1_pretest/corpus_eigbasis.npz")
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/phase_invariance")
+EIG = Path("/run/media/kim/Mantu/sa3_lora_runs/__misc/e1_pretest/corpus_eigbasis.npz")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/phase_invariance")
 SR = 44100
 CLIP_S = 8.0
 FRAME = 4096

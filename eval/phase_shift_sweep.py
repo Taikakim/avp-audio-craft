@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """phase_shift_sweep.py — G2b: sub-frame phase coding in SAME (Kim's design 2026-07-31:
 "sweep through a clip sample by sample... one sample forward at a time, at least for
 100ms or the frame length").
@@ -41,7 +42,7 @@ import torch
 
 from stable_audio_3 import StableAudioModel
 
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/phase_shift_sweep")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/phase_shift_sweep")
 CORPUS = Path("/run/media/kim/Mantu/ai-music/Goa_Separated")
 SR = 44100
 CLIP_S = 10.0

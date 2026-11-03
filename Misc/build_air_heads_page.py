@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-15)
 # Last edited: WINTERMUTE 2026-10-15 — floating transport bar (float_player.inject)
 """build_air_heads_page.py -- listening page: the retrained air-RMS heads vs the production AdamW head, 4 seeds x 2 guidance gains.
@@ -14,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
 from float_player import inject
 
-AH = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-14"
+AH = "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-14"
 CMP = f"{AH}/compare"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 OUT = os.path.join(STAGE, "air_heads")

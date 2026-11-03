@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # run_chroma_avp_retrain.sh -- Retrain the new 384-d SAME-chroma conditioning head
 # under the ModularOptimizer on the AVP augmented dataset and Goa+AVP combined dataset.
 # Architecture: DiT conditioning head on SA3 latents, dim 512, depth 8.
@@ -12,7 +13,7 @@
 #   bash latch/run_chroma_avp_retrain.sh
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/chroma_retrain_avp_20261029
+OUT=/run/media/kim/Mantu/latch_sweep/__chroma/chroma_retrain_avp_20261029
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 

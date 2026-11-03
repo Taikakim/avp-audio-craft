@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 import json
 import os
 import torch
@@ -53,7 +54,7 @@ def demucs_clip(wav_path, out_dir):
 def main():
     print("Starting V7 4-Track Smoke Test Pipeline (Full Demucs Version)...")
     
-    order_path = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0/order_used.json")
+    order_path = Path("/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0/order_used.json")
     all_clips = json.loads(order_path.read_text())
     clips = all_clips[1:5]
     bounds = json.loads(Path("/tmp/bounds_structural.json").read_text())
@@ -66,7 +67,7 @@ def main():
     NAMES = ["drums", "bass", "other", "vocals"]
     
     for c in clips:
-        tmp_path = f"/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0/tmp_{c['id']}.wav"
+        tmp_path = f"/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0/tmp_{c['id']}.wav"
         stem_dir = Path(stems_out_dir) / "htdemucs_ft" / Path(tmp_path).stem
         if not stem_dir.exists():
             print(f"Demucsing {c['id']}...")
@@ -140,8 +141,8 @@ def main():
         ramp_down_chroma = torch.linspace(1, 0, chroma_len)
         chroma_target = (chroma_A * ramp_down_chroma.unsqueeze(0).unsqueeze(0) + chroma_B * ramp_up_chroma.unsqueeze(0).unsqueeze(0)).float()
         
-        ckpt_a = "/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
-        ckpt_b = "/run/media/kim/Mantu/sa3_lora_runs/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt"
+        ckpt_a = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
+        ckpt_b = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt"
         
         print("Running LatCH + Dual-LoRA Inference...")
         try:
@@ -153,7 +154,7 @@ def main():
                 prompt_b="driving pulsating psytrance",
                 duration=W_sec,
                 chroma_target_tensor=chroma_target,
-                chroma_head_path="/run/media/kim/Mantu/sa3_lora_runs/cu_reward_renders/analysis/chroma_heads/latch_sa3_chroma_other_best.pt"
+                chroma_head_path="/run/media/kim/Mantu/sa3_lora_runs/__auditions/cu_reward_renders/analysis/chroma_heads/latch_sa3_chroma_other_best.pt"
             )
             other_out = other_out.numpy()
             if other_out.shape[-1] < L:

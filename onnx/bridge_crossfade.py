@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """On-manifold crossfade (Kim): inpaint 20s/40s bridge + audio-crossfade then
 audio2audio-refine the seam at init_noise 0.2/0.3/0.4. Memory-defensive (shares
 VRAM with W's pipeline): crop latents before decode, empty_cache, per-render try."""
@@ -9,7 +10,7 @@ import numpy as np, torch
 from stable_audio_3 import StableAudioModel
 from sa3_control.audio_io import save_audio
 OUT="/home/kim/Projects/SAO/renders_bridge"; os.makedirs(OUT, exist_ok=True)
-CKPT="/run/media/kim/Mantu/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt"
+CKPT="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt"
 LAT_A="/run/media/kim/Kosmos/latents/latents_sa3/000100.npy"; LAT_B="/run/media/kim/Kosmos/latents/latents_sa3/001200.npy"
 PROMPT="goa trance"
 sam=StableAudioModel.from_pretrained("medium-base", device="cuda"); sam.load_lora([CKPT])

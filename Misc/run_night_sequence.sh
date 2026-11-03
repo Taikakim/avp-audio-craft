@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Night sequence 2026-07-07 (Kim: transitions before the training chain).
 # g175 grid (already running) -> transition_lab -> familiarity smoke -> overnight chain.
 set -u
@@ -20,7 +21,7 @@ note "g175 grid done; starting transition_lab"
 
 # 2. transitions (Kim listens in the morning)
 $PY ../eval/transition_lab.py \
-  --out-dir /run/media/kim/Mantu/sa3_lora_runs/newcap8_transitions \
+  --out-dir /run/media/kim/Mantu/sa3_lora_runs/__finetunes/newcap8_transitions \
   > "$SAO/logs/transition_lab.log" 2>&1
 note "transition_lab done (exit $?) -> newcap8_transitions"
 

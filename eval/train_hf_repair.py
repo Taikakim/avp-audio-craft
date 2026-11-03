@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """train_hf_repair.py — train a small Snake-conv post-net to restore HF detail lost by the
 frozen SAME codec (part 2/3 of the SA3 HF-repair pipeline).
 
@@ -20,7 +21,7 @@ Held-out split read from the manifest's is_val flag. Checkpoints per epoch + csv
 Run (SA3 venv; small net, trains fast on GPU, works on CPU for smoke tests):
   FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE \
     stable-audio-3/.venv/bin/python eval/train_hf_repair.py \
-      --pairs-dir /run/media/kim/Mantu/sa3_lora_runs/hf_repair_pairs \
+      --pairs-dir /run/media/kim/Mantu/sa3_lora_runs/__hf_corruption/hf_repair_pairs \
       --epochs 40 --lr 3e-4 --hf-weight 2.0
 
 HFRepairNet and MultiResSTFTLoss are imported by eval_hf_repair.py — single source here.
@@ -196,8 +197,8 @@ def param_count(m):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--pairs-dir", default="/run/media/kim/Mantu/sa3_lora_runs/hf_repair_pairs")
-    ap.add_argument("--out-dir", default="/run/media/kim/Mantu/sa3_lora_runs/hf_repair_runs/v1")
+    ap.add_argument("--pairs-dir", default="/run/media/kim/Mantu/sa3_lora_runs/__hf_corruption/hf_repair_pairs")
+    ap.add_argument("--out-dir", default="/run/media/kim/Mantu/sa3_lora_runs/__hf_corruption/hf_repair_runs/v1")
     ap.add_argument("--epochs", type=int, default=40)
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--batch-size", type=int, default=8)

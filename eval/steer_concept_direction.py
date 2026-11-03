@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """steer_concept_direction.py — inject diff-in-means concept directions into the SA3
 DiT residual stream during sampling (Phase 3; papers/arxiv-2505.18186.md, Kim ask
 2026-07-11: "the 'happy' etc qualifiers might be very cool if we could steer by them").
@@ -35,7 +36,7 @@ from sa3_control.audio_io import save_audio               # noqa: E402
 from stable_audio_3 import StableAudioModel               # noqa: E402
 from extract_layer_activations import get_blocks          # noqa: E402
 
-DUMP = Path("/run/media/kim/Mantu/sa3_lora_runs/layer_activations_base")
+DUMP = Path("/run/media/kim/Mantu/sa3_lora_runs/__misc/layer_activations_base")
 SIG_KEYS = {0.2: "s20", 0.5: "s50", 0.8: "s80"}
 
 

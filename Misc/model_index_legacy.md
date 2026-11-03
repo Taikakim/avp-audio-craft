@@ -281,7 +281,7 @@ Created by [mutate_weights.py](file:///home/kim/Projects/SAO/stable-audio-3/scri
 - **Verdict:** Stage1 complete (324 cells, 2 seeds). FusionCC advantage **replicates**.
 
 ### sa3_multihead_bracket ⭐ 4-knob validated
-- **Location:** `Mantu/sa3_lora_runs/sa3_multihead_bracket/`
+- **Location:** `Mantu/sa3_lora_runs/__misc/sa3_multihead_bracket/`
 - **Contents:** 12 WAV renders + `manifest.json` + `run_meta.json`
 - **Verdict:** "4-knob composition VERIFIED: energy guidance steers hard ON TOP of the full stack — hi-lo spread +15.2 dB @512, +23.4 dB @1024, monotone, direction correct"
 
@@ -301,5 +301,5 @@ python control/sa3_control/multi_adapter_onset_eval.py \
     --densities "5,6,7,8,9,10" \
     --onset-gains "1.0,2.0,3.0" \
     --style-gains "0.25,0.5,1.0" \
-    --out-dir /run/media/kim/Mantu/sa3_lora_runs/sa3_multihead_bracket
+    --out-dir /run/media/kim/Mantu/sa3_lora_runs/__misc/sa3_multihead_bracket
 ```

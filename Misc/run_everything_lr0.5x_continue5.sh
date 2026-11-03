@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Continue the "everything" 0.5x-LR DoRA for 5 MORE epochs (Kim 2026-07-14:
 # "continue the last .5x DoRA for 5 more epochs").
 #
@@ -26,9 +27,9 @@ export PYTHONPATH=$SA3:$SA3/scripts:$SAO/control
 MANTU=/run/media/kim/Mantu
 FT=$SAO/../mir/data/feature_tables
 LOG=$SAO/logs
-SRC=$MANTU/sa3_lora_runs/dora128_everything_8ep_lr0.5x
+SRC=$MANTU/sa3_lora_runs/__finetunes/dora128_everything_8ep_lr0.5x
 WARM=$SRC/epoch=7-step=12216.ckpt
-OUT=$MANTU/sa3_lora_runs/dora128_everything_8ep_lr0.5x_cont5
+OUT=$MANTU/sa3_lora_runs/__finetunes/dora128_everything_8ep_lr0.5x_cont5
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2
 cd "$SA3" || exit 1
 

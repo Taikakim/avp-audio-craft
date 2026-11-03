@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """
 build_rarity_page.py -- column-layout eval page for rarity_gen_set (task #33: the
 StoryScope-transfer rarity meter).
@@ -31,7 +32,7 @@ import json
 import statistics
 from pathlib import Path
 
-SRC_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/rarity_gen_set")
+SRC_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/__misc/rarity_gen_set")
 OUT = Path("/home/kim/riffer-evals/rarity.html")
 CLIPS = "../renders/rarity_gen_set"  # reuse the already-served set — no 148MB duplicate (W 2026-07-10)
 

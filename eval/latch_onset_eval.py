@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-14)
 # Last edited: WINTERMUTE 2026-10-22 -- --heads name=path / --prefix / --notes / --device (render any checkpoints; skips arms already rendered)
 # Last edited: WINTERMUTE 2026-10-23 -- --out-root (renders off the full Mantu drive)
@@ -25,7 +26,7 @@ os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
 os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 
-PHASE = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE"
+PHASE = "/run/media/kim/Mantu/latch_sweep/__onsets/modular_2026-09-30/phaseE"
 OUT = "/run/media/kim/Mantu/sa3_control_runs"
 FEATURE = "onset_per_beat_ts"
 

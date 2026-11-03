@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """rarity_lite_score.py — production-invariant rarity-lite scoring (#33, C owns).
 
 Kim's rarity board wants per-clip rarity + delta-to-base. I flagged the confound earlier:
@@ -62,7 +63,7 @@ def knn_rarity(feats, k=8):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dir", default="/run/media/kim/Mantu/sa3_lora_runs/rarity_gen_set")
+    ap.add_argument("--dir", default="/run/media/kim/Mantu/sa3_lora_runs/__misc/rarity_gen_set")
     ap.add_argument("--k", type=int, default=8)
     args = ap.parse_args()
     d = Path(args.dir)

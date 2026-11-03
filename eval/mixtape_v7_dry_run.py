@@ -1,9 +1,10 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 import json
 from pathlib import Path
 
 def main():
-    out_dir = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0")
+    out_dir = Path("/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0")
     out_dir.mkdir(parents=True, exist_ok=True)
     
     clips = [f"clip_id_{i}" for i in range(41)]

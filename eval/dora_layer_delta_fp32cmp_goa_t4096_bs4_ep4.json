@@ -1,5 +1,5 @@
 {
- "ckpt": "/run/media/kim/Mantu/sa3_lora_runs/fp32cmp_goa_t4096_bs4_lr1e4/epoch=4-step=6750.weights.ckpt",
+ "ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__precision_compare/fp32cmp_goa_t4096_bs4_lr1e4/epoch=4-step=6750.weights.ckpt",
  "per_matrix": [
   {
    "key": "model.postprocess_conv",

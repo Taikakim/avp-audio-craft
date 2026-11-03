@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """Beat-aligned bridge v3 (Kim): mid-sample two BEAT-rich same-BPM latents,
 downbeat-phase-aligned, 8-bar & 16-bar crossfades in a ~1min arrangement,
 audio2audio-refined seam pasted back. All arrangement math in numpy."""
@@ -10,7 +11,7 @@ from scipy.signal import find_peaks
 from stable_audio_3 import StableAudioModel
 from sa3_control.audio_io import save_audio
 OUT="/home/kim/Projects/SAO/renders_beatbridge2"; os.makedirs(OUT, exist_ok=True)
-CKPT="/run/media/kim/Mantu/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt"
+CKPT="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt"
 LD="/run/media/kim/Kosmos/latents/latents_sa3"; A_ID,B_ID="002859","002500"; BPM=143.0
 sam=StableAudioModel.from_pretrained("medium-base", device="cuda"); sam.load_lora([CKPT])
 sr=sam.model.sample_rate; ds=int(sam.model.pretransform.downsampling_ratio)

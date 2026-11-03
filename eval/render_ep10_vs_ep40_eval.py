@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """render_ep10_vs_ep40_eval.py -- renders comparison clips for the new 40-epoch head
 (ep40 online/final and ep40_ema0.25) vs historical ep10 across 6 representative choice models.
@@ -27,8 +28,8 @@ from harmonic import same_chroma as sc
 import chroma_steer_render as CSR
 from sa3_control.audio_io import save_audio
 
-HEAD_EP40 = "/run/media/kim/Mantu/latch_sweep/chroma_retrain_best_40ep_20261030/C3_best_lr8e-4_b64_cos40/latch_sa3_same_chroma_ep40.pt"
-HEAD_EMA = "/run/media/kim/Mantu/latch_sweep/chroma_retrain_best_40ep_20261030/C3_best_lr8e-4_b64_cos40/latch_sa3_same_chroma_ep40_ema0.25.pt"
+HEAD_EP40 = "/run/media/kim/Mantu/latch_sweep/__chroma/chroma_retrain_best_40ep_20261030/C3_best_lr8e-4_b64_cos40/latch_sa3_same_chroma_ep40.pt"
+HEAD_EMA = "/run/media/kim/Mantu/latch_sweep/__chroma/chroma_retrain_best_40ep_20261030/C3_best_lr8e-4_b64_cos40/latch_sa3_same_chroma_ep40_ema0.25.pt"
 
 OUT_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/__chroma/ep10_vs_ep40_chroma")
 OUT_AAC_DIR = Path("/home/kim/evals_aac/ep10_vs_ep40_chroma")

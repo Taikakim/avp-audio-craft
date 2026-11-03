@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """lowend_guidance_ab.py — can low-end guidance fix the clips Kim called harsh?
 
@@ -66,7 +67,7 @@ import torch
 from stable_audio_3 import StableAudioModel
 
 HEADS = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium"
-RUNS = "/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep"
+RUNS = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep"
 OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__latch/lowend_guidance_ab_2026-09-17")
 
 # head standardisation, read from the checkpoints (NOT guessed)

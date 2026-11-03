@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """build_clarity_audit_page.py — self-contained audit page for the codec clarity ladder
 (hf_clarity_diagnosis.py). Places the frozen SA3 SAME round-trip on the SAME axis as real
 MP3 and our audition-serving m4a/AAC, in producer units, with a hold-the-moment /
@@ -13,7 +14,7 @@ Then W rsyncs the OUT dir to /files/audit/codec-clarity/ (relative audio paths r
 import json
 from pathlib import Path
 
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/hf_clarity")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__hf_corruption/hf_clarity")
 
 # display order + human labels; SAME first (the subject), then the codec anchors low->high
 VORDER = ["original", "SAME", "mp3_128", "m4a_128", "m4a_192", "mp3_320", "m4a_320"]

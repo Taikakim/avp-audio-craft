@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 import sys
 sys.path.insert(0, "/home/kim/Projects/mir/src")
 import json
@@ -10,7 +11,7 @@ from preprocessing.bs_roformer_sep import load_audio, load_bs_roformer, separate
 NAMES = ["drums", "bass", "other", "vocals"]
 
 def main():
-    order_path = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0/order_used.json")
+    order_path = Path("/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0/order_used.json")
     all_clips = json.loads(order_path.read_text())
     clips = all_clips[1:5]
     
@@ -26,7 +27,7 @@ def main():
             continue
         stem_dir.mkdir(parents=True, exist_ok=True)
         
-        p = f"/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0/tmp_{c['id']}.wav"
+        p = f"/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0/tmp_{c['id']}.wav"
         print(f"BS-Roformer extracting: {c['id']}")
         
         audio, sr = load_audio(p, ac.sample_rate)

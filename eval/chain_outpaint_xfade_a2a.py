@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """chain_outpaint_xfade_a2a.py — Kim 2026-09-15: addresses two complaints
 about the inpaint-based transitions (RMS drop at the seam, abrupt-sounding
 change) with a different construction:
@@ -47,13 +48,13 @@ from stable_audio_3 import StableAudioModel  # noqa: E402
 from stable_audio_3.inference.longform import slerp  # noqa: E402
 
 FPS = 44100 / 4096
-CHROMA_HEAD = ("/run/media/kim/Mantu/sa3_lora_runs/cu_reward_renders/analysis/"
+CHROMA_HEAD = ("/run/media/kim/Mantu/sa3_lora_runs/__auditions/cu_reward_renders/analysis/"
                "chroma_heads/latch_sa3_chroma_other_best.pt")
 CHROMA_GAIN = 2048.0
 HF_HEAD = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_rms_energy_air_best.pt"
 HF_TARGET_DB = -32.9611  # the head's own std_mean -- "the average"
 HF_GAIN = 512.0  # moderate authority per the MASTER §5 sweep; avoid overdriving
-BRIDGE_CKPT = "/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
+BRIDGE_CKPT = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
 
 
 def load(track):

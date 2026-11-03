@@ -1,6 +1,6 @@
 [
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl40.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl40.wav",
   "dur": 444.1,
   "r_max": 0.979787151578726,
   "line_frac_8s": 0.7116413916146298,
@@ -9,7 +9,7 @@
   "det_soft": 0.008546037627036028
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl50.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl50.wav",
   "dur": 444.1,
   "r_max": 0.9802694016885316,
   "line_frac_8s": 0.7789919714540589,
@@ -18,7 +18,7 @@
   "det_soft": 0.008539545173850612
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl60.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl60.wav",
   "dur": 444.1,
   "r_max": 1.0000000000000007,
   "line_frac_8s": 0.8512488849241748,
@@ -27,7 +27,7 @@
   "det_soft": 0.010769281182730628
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl70.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl70.wav",
   "dur": 444.1,
   "r_max": 0.9999999999999997,
   "line_frac_8s": 0.8695361284567351,
@@ -36,7 +36,7 @@
   "det_soft": 0.009275136983982003
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl80.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl80.wav",
   "dur": 444.1,
   "r_max": 1.000000000000001,
   "line_frac_8s": 0.9422390722569135,
@@ -45,7 +45,7 @@
   "det_soft": 0.006954913937476276
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl90.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl90.wav",
   "dur": 444.1,
   "r_max": 1.0000000000000007,
   "line_frac_8s": 0.8097680642283676,
@@ -54,7 +54,7 @@
   "det_soft": 0.009162443150455857
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl40.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl40.wav",
   "dur": 444.1,
   "r_max": 0.980316605857982,
   "line_frac_8s": 0.7062890276538805,
@@ -63,7 +63,7 @@
   "det_soft": 0.008587786720578926
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl50.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl50.wav",
   "dur": 444.1,
   "r_max": 0.9864351162384295,
   "line_frac_8s": 0.7805530776092774,
@@ -72,7 +72,7 @@
   "det_soft": 0.008688943241153062
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl60.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl60.wav",
   "dur": 444.1,
   "r_max": 1.0,
   "line_frac_8s": 0.8349687778768956,
@@ -81,7 +81,7 @@
   "det_soft": 0.011041996472834107
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl70.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl70.wav",
   "dur": 444.1,
   "r_max": 1.0,
   "line_frac_8s": 0.8719892952720785,
@@ -90,7 +90,7 @@
   "det_soft": 0.008003758247717345
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl80.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl80.wav",
   "dur": 444.1,
   "r_max": 1.0,
   "line_frac_8s": 0.8316235504014273,
@@ -99,7 +99,7 @@
   "det_soft": 0.008907669706085966
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl90.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl90.wav",
   "dur": 444.1,
   "r_max": 1.0,
   "line_frac_8s": 0.9185994647636039,
@@ -108,7 +108,7 @@
   "det_soft": 0.009453362893550834
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl20.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack/a2a_nl20.wav",
   "dur": 459.4,
   "r_max": 0.7941924127925233,
   "line_frac_8s": 0.5249584026622296,
@@ -117,7 +117,7 @@
   "det_soft": 0.012438007032626361
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl30.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack/a2a_nl30.wav",
   "dur": 459.4,
   "r_max": 0.839013998843261,
   "line_frac_8s": 0.5438851913477537,
@@ -126,7 +126,7 @@
   "det_soft": 0.01235593516223566
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl40.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack/a2a_nl40.wav",
   "dur": 459.4,
   "r_max": 0.8698158925681048,
   "line_frac_8s": 0.5680116472545758,
@@ -135,7 +135,7 @@
   "det_soft": 0.010745242930007191
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl50.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack/a2a_nl50.wav",
   "dur": 459.4,
   "r_max": 0.8981290643320461,
   "line_frac_8s": 0.6349833610648918,
@@ -144,7 +144,7 @@
   "det_soft": 0.009723089208058044
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl60.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack/a2a_nl60.wav",
   "dur": 459.4,
   "r_max": 0.92835627462431,
   "line_frac_8s": 0.7387687188019967,
@@ -153,7 +153,7 @@
   "det_soft": 0.01331482686446029
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl70.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack/a2a_nl70.wav",
   "dur": 459.4,
   "r_max": 0.8150291851799155,
   "line_frac_8s": 0.3689683860232945,
@@ -162,7 +162,7 @@
   "det_soft": 0.015849773497663967
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x/baseline_fixed_nl.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/breathing_kaikkialla_evr1x/baseline_fixed_nl.wav",
   "dur": 459.4,
   "r_max": 0.7531918345163671,
   "line_frac_8s": 0.6335274542429284,
@@ -171,7 +171,7 @@
   "det_soft": 0.01691398927043355
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x/breathing.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/breathing_kaikkialla_evr1x/breathing.wav",
   "dur": 459.4,
   "r_max": 0.7531918345163671,
   "line_frac_8s": 0.6335274542429284,
@@ -180,7 +180,7 @@
   "det_soft": 0.01691398927043355
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_nl55/breathing.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/breathing_kaikkialla_evr1x_nl55/breathing.wav",
   "dur": 459.4,
   "r_max": 0.9044150053481832,
   "line_frac_8s": 0.8049084858569051,
@@ -189,7 +189,7 @@
   "det_soft": 0.012644932525698123
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_v2/baseline_fixed_nl.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/breathing_kaikkialla_evr1x_v2/baseline_fixed_nl.wav",
   "dur": 459.4,
   "r_max": 0.8696574424117602,
   "line_frac_8s": 0.742928452579035,
@@ -198,7 +198,7 @@
   "det_soft": 0.01593522964220838
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_v2/breathing.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/breathing_kaikkialla_evr1x_v2/breathing.wav",
   "dur": 459.4,
   "r_max": 0.8920166497404798,
   "line_frac_8s": 0.7190099833610649,
@@ -207,7 +207,7 @@
   "det_soft": 0.015873271898600338
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_v3/breathing.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/breathing_kaikkialla_evr1x_v3/breathing.wav",
   "dur": 459.4,
   "r_max": 0.7762962006368085,
   "line_frac_8s": 0.49625623960066556,
@@ -216,7 +216,7 @@
   "det_soft": 0.01166265421427833
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/dual_lora_promptarc_kaikkialla/dual_lora.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/dual_lora_promptarc_kaikkialla/dual_lora.wav",
   "dur": 459.4,
   "r_max": 0.9294473034999997,
   "line_frac_8s": 0.7333610648918469,
@@ -225,7 +225,7 @@
   "det_soft": 0.016112989148801847
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/layered_lora_promptarc_nl75/staggered.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/layered_lora_promptarc_nl75/staggered.wav",
   "dur": 459.4,
   "r_max": 0.8894587989421681,
   "line_frac_8s": 0.5357737104825291,
@@ -234,7 +234,7 @@
   "det_soft": 0.018232050455318193
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl05/dual_lora.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/promptarc_single_kaikkialla_nl05/dual_lora.wav",
   "dur": 459.4,
   "r_max": 0.898070389736867,
   "line_frac_8s": 0.7997088186356073,
@@ -243,7 +243,7 @@
   "det_soft": 0.013574467780564637
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl06/dual_lora.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/promptarc_single_kaikkialla_nl06/dual_lora.wav",
   "dur": 459.4,
   "r_max": 0.9178558188817276,
   "line_frac_8s": 0.6988352745424293,
@@ -252,7 +252,7 @@
   "det_soft": 0.01728965170120492
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl45/dual_lora.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/promptarc_single_kaikkialla_nl45/dual_lora.wav",
   "dur": 459.4,
   "r_max": 0.8823294766774501,
   "line_frac_8s": 0.7616472545757071,
@@ -261,7 +261,7 @@
   "det_soft": 0.01127661027081285
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/newcap8_promptstyle_longform/base__aggr_xfade_s1234to4242.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/newcap8_promptstyle_longform/base__aggr_xfade_s1234to4242.wav",
   "dur": 190.2,
   "r_max": 0.845036676702554,
   "line_frac_8s": 0.5558441558441558,
@@ -270,7 +270,7 @@
   "det_soft": 0.013551885238995918
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/newcap8_promptstyle_longform/base__aggr_xfade_s4242to1234.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/newcap8_promptstyle_longform/base__aggr_xfade_s4242to1234.wav",
   "dur": 190.2,
   "r_max": 0.8999763849665003,
   "line_frac_8s": 0.6662337662337663,
@@ -279,7 +279,7 @@
   "det_soft": 0.014452230732989464
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/newcap8_promptstyle_longform/evr1x__aggr_xfade_s1234to4242.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/newcap8_promptstyle_longform/evr1x__aggr_xfade_s1234to4242.wav",
   "dur": 190.2,
   "r_max": 0.563612423666943,
   "line_frac_8s": 0.17792207792207793,
@@ -288,7 +288,7 @@
   "det_soft": 0.01375021423390541
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/newcap8_promptstyle_longform/evr1x__aggr_xfade_s4242to1234.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/newcap8_promptstyle_longform/evr1x__aggr_xfade_s4242to1234.wav",
   "dur": 190.2,
   "r_max": 0.6778352589700507,
   "line_frac_8s": 0.21948051948051947,
@@ -297,7 +297,7 @@
   "det_soft": 0.01204648777856102
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/chroma_morph_transitions/angelic2vapaus__w1024_nl35_chroma.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__chroma/chroma_morph_transitions/angelic2vapaus__w1024_nl35_chroma.wav",
   "dur": 209.2,
   "r_max": 0.7697600548973126,
   "line_frac_8s": 0.5410885805763074,
@@ -306,7 +306,7 @@
   "det_soft": 0.01640012366249335
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/chroma_morph_transitions/angelic2vapaus__w1024_nl35_plain.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__chroma/chroma_morph_transitions/angelic2vapaus__w1024_nl35_plain.wav",
   "dur": 209.2,
   "r_max": 0.7681293209069835,
   "line_frac_8s": 0.5538954108858057,
@@ -315,7 +315,7 @@
   "det_soft": 0.016440167817188697
  },
  {
-  "path": "/run/media/kim/Mantu/sa3_lora_runs/chroma_morph_transitions/angelic2vapaus__w1024_nl42_chroma.wav",
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/__chroma/chroma_morph_transitions/angelic2vapaus__w1024_nl42_chroma.wav",
   "dur": 209.2,
   "r_max": 0.830636129633832,
   "line_frac_8s": 0.5880469583778015,

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-16)
 # Owner's ask (2026-10-16): "a by the book pure Muon baseline at 1e-3 and 1e-4, just to see what we are competing against". Bass head, same data/arch/schedule as run_bass_lr.sh (d512 dp8, 10 epochs,
 # EMA half-life 1 ep, every epoch saved, wandb offline) but with NOTHING of ours: M3/M4 = NVIDIA Emerging-Optimizers Muon (--optimizer muon_ref: Muon on hidden 2-D, AdamW on the rest, one lr),
 # A3/A4 = plain AdamW (--optimizer adamw, default betas, wd 0.01) as the second baseline. lr 1e-3 and 1e-4 each. Compare with B3/B4 (modular+SF, same lrs) and B2 (lr 1e-2).
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/bass_baselines_2026-10-16
+OUT=/run/media/kim/Mantu/latch_sweep/__bass/bass_baselines_2026-10-16
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0 WANDB_MODE=offline WANDB_DIR=$OUT

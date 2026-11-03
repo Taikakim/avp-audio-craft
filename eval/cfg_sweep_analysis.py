@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """cfg_sweep_analysis.py — CFG-vs-training-stage analysis (Kim's away-run).
 Similarity metrics on avp_cfg_sweep: (1) STYLE SIMILARITY to Kim's real catalog
 (cosine of a musical feature vector to the real-avp centroid), (2) EMPTY-vs-PROMPTED
@@ -37,7 +38,7 @@ real = np.array(real_vecs)
 print(f"[ref] {len(real)} real avp tracks", flush=True)
 
 # CFG-sweep clips
-clips = sorted(glob.glob("/run/media/kim/Mantu/sa3_lora_runs/avp_cfg_sweep/*.wav"))
+clips = sorted(glob.glob("/run/media/kim/Mantu/sa3_lora_runs/__auditions/avp_cfg_sweep/*.wav"))
 gen = {}
 for f in clips:
     y, sr = load(f); gen[os.path.basename(f)] = fvec(y, sr)
@@ -73,6 +74,6 @@ for (ck, cfg), d in bykey.items():
     if "empty" in d and "kimlong" in d:
         a, b = (d["empty"]-mu)/sd, (d["kimlong"]-mu)/sd
         conv[f"{ck}|cfg{cfg}"] = float(np.dot(a,b)/(np.linalg.norm(a)*np.linalg.norm(b)+1e-9))
-OUT="/run/media/kim/Mantu/sa3_lora_runs/avp_board_seeds/ANALYSIS/cfg_sweep_similarity.json"
+OUT="/run/media/kim/Mantu/sa3_lora_runs/__auditions/avp_board_seeds/ANALYSIS/cfg_sweep_similarity.json"
 json.dump({"rows":rows,"empty_vs_kimlong":conv,"n_real":len(real)}, open(OUT,"w"), indent=1)
 print(f"[done] {len(rows)} clips, {len(conv)} convergence pairs -> {OUT}", flush=True)

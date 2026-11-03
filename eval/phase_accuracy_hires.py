@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """phase_accuracy_hires.py — 1000-point phase-accuracy vs frequency curve (Kim 2026-08-01,
 high-res follow-up to the 8-point octave ladder).
 
@@ -30,7 +31,7 @@ import torch
 
 from stable_audio_3 import StableAudioModel
 
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/phase_accuracy_hires")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/phase_accuracy_hires")
 SR = 44100
 CLIP_S = 6.0
 N_FREQS = 1000

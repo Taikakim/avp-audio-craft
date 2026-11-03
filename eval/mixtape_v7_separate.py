@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-07)
 """mixtape_v7_separate.py — BS-RoFormer 4-stem separation of the v7 mix clips (spec S1/S4 input).
 
@@ -9,7 +10,7 @@ untouched clip, spec S4). Also measures the S1 numbers: residual level re the mi
 
 RUN (mir venv, GPU; take the lock first with Misc/gpu_guard.sh, hold it across the whole batch):
   ROCR_VISIBLE_DEVICES=0 /home/kim/Projects/mir/mir/bin/python eval/mixtape_v7_separate.py \\
-      --order <mixtape_v7_phase0>/order_used.json --out-dir <Mantu>/sa3_lora_runs/mixtape_v7_stems
+      --order <mixtape_v7_phase0>/order_used.json --out-dir <Mantu>/sa3_lora_runs/__mixtape/mixtape_v7_stems
 Output per clip: <out>/<NN>/{full_mix,drums,bass,other,vocals,residual}.wav and <out>/stems_report.json.
 """
 import argparse

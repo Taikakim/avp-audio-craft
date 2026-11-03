@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """chain_gapfill_full.py — Kim 2026-09-15 (v2 of the concept): both clips stay
 FULLY INTACT, placed end-to-end with a genuine 10s empty gap inserted between
 them (not carved out of either clip); the gap is masked and generated, with
@@ -30,10 +31,10 @@ from harmonic.same_chroma import compute_same_chroma  # noqa: E402
 from stable_audio_3 import StableAudioModel  # noqa: E402
 
 FPS = 44100 / 4096
-CHROMA_HEAD = ("/run/media/kim/Mantu/sa3_lora_runs/cu_reward_renders/analysis/"
+CHROMA_HEAD = ("/run/media/kim/Mantu/sa3_lora_runs/__auditions/cu_reward_renders/analysis/"
                "chroma_heads/latch_sa3_chroma_other_best.pt")
 CHROMA_GAIN = 2048.0
-BRIDGE_CKPT = "/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
+BRIDGE_CKPT = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
 
 
 def load(track):

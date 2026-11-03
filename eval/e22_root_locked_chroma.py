@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: CONTINUITY (created 2026-10-29)
 """e22_root_locked_chroma.py -- EXPERIMENTS E22: steer a chord SHAPE (colour) while the root stays where the prompt and
@@ -29,7 +30,7 @@ OUT = "/run/media/kim/Mantu/sa3_control_runs/__chroma/e22_root_locked_chroma_202
 BASE = "/run/media/kim/Mantu/sa3_control_runs/__chroma/e21b_transposition_canon_20261028"
 REF_C = {"hpcp": (BASE, "hpcp"), "same_chroma_e13": ("/run/media/kim/Mantu/sa3_control_runs/__chroma/e21c_same_chroma_gain_20261029",
                                                      "same_chroma_e13")}
-C3 = "/run/media/kim/Mantu/latch_sweep/chroma_retrain_2026-10-16/C3_chroma_d512_lr1e-3/latch_sa3_same_chroma_ep10.pt"
+C3 = "/run/media/kim/Mantu/latch_sweep/__chroma/chroma_retrain_2026-10-16/C3_chroma_d512_lr1e-3/latch_sa3_same_chroma_ep10.pt"
 HEADS = {"hpcp": ("latch_sa3_hpcp_best.pt", 12), "same_chroma_e13": (C3, 384)}
 SHAPES = {"maj": "", "min": "m", "sus4": "sus4", "dim": "dim"}
 MODES = ("rotinv", "locked")

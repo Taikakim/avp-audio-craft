@@ -1,10 +1,11 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: unconfirmed, likely Antigravity/KUANG (kone-mixtape v7 stem pipeline, 2026-10-08); not W, C or G
 # One-off check of downbeat alignment between two adjacent mixtape_v7_phase0 clips.
 import json
 from pathlib import Path
 import numpy as np
 
-phase0 = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0")
+phase0 = Path("/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0")
 with open(phase0 / 'order_used.json') as f:
     order = json.load(f)
 
@@ -16,7 +17,7 @@ dbc = json.loads((phase0 / "downbeats_native.json").read_text())
 db1 = np.array(dbc[c1_id])
 db2 = np.array(dbc[c2_id])
 
-bounds = json.loads(Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v6_rerender/work48b/bounds.json").read_text())
+bounds = json.loads(Path("/run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v6_rerender/work48b/bounds.json").read_text())
 bk1 = bounds[c1_id]
 bk2 = bounds[c2_id]
 

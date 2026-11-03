@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: WINTERMUTE (created 2026-10-28)
 # E13b, second half. The shared stable-audio-3 checkout was switched from feature/sa3-drum-sep to main (June, 247 commits behind)
 # at 07:38 while S0 was training, so S1/S2 and the eval must not import stable_audio_3 from it. This waits for the first runner
@@ -7,7 +8,7 @@
 # editable install in both venvs (checked 2026-10-28).
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/chroma_size_2026-10-28
+OUT=/run/media/kim/Mantu/latch_sweep/__chroma/chroma_size_2026-10-28
 export PYTHONPATH=/home/kim/Projects/SAO-worktrees/sa3-latch-gn
 while pgrep -f "^/bin/bash latch/run_chroma_size.sh" > /dev/null; do sleep 60; done
 grep -v "	deferred$" "$OUT/SUMMARY.tsv" > "$OUT/SUMMARY.tsv.tmp" && mv "$OUT/SUMMARY.tsv.tmp" "$OUT/SUMMARY.tsv"

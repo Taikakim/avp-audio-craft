@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """muscriptor_batch_goa.py — MIDI extraction over a 5% random sample of Goa_Separated
 (Kim 2026-07-11: "extract midis from a 5% random selection of our goa set. I'm almost
 certain it fails on the legato passages.")
@@ -25,7 +26,7 @@ from pathlib import Path
 import numpy as np
 
 CORPUS = Path("/run/media/kim/Mantu/ai-music/Goa_Separated")
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/muscriptor_goa_midis")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__finetunes/muscriptor_goa_midis")
 FRACTION = 0.05
 SEED = 42
 

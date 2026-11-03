@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: GHOST-NOTE (created 2026-10-27)
 """mixtape_chain_smoke.py -- does the bass+body+air LatCH chain (the "graininess fix" from the punch work) clean up the
@@ -13,7 +14,7 @@ Per clip, same checkpoint/prompt/seed: ctl (no head, must reproduce the original
 chain_anc (chain + latch_hparams guide_anchor 1.2, the loudness cap). CAVEAT: the bass/body/air target values were tuned on the
 punch model at 30 steps / cfg 9, not on these clips at 8 steps; if the chain over- or under-steers, retune the values, do not
 conclude the chain does not work. Judge by ear at matched loudness first (kim_feedback null); meters: hf_ratio, crest, raw peak, rms.
-Output: Mantu/sa3_lora_runs/mixtape_chain_smoke_2026-10-27/<clip>__<arm>.wav + cells.jsonl + run_meta.json.
+Output: Mantu/sa3_lora_runs/__mixtape/mixtape_chain_smoke_2026-10-27/<clip>__<arm>.wav + cells.jsonl + run_meta.json.
 RUN (GPU lock held, render server up with --model medium): SAO/.venv/bin/python eval/mixtape_chain_smoke.py
 """
 import json, os, shutil, sys

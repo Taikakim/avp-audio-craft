@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — ignore __theme folders in family and run identity
 """The model database behind the SA3 inference picker.
 
 A database of models keyed by ABSOLUTE CHECKPOINT PATH -- which is the piece that
@@ -205,7 +206,7 @@ def record_for(path: str, root: Root, overrides: dict,
     p = Path(path)
     base = Path(root.path)
     rel = p.relative_to(base)
-    parts = rel.parts
+    parts = tuple(p for p in rel.parts if not p.startswith("__"))   # __theme folders are not part of a run's identity
     family_dir = parts[0] if len(parts) > 1 else ""
     arm = p.parent.name if p.parent != base else family_dir
 
@@ -351,7 +352,7 @@ def reapply_curation(rec: dict, root: "Root", overrides: dict,
         rel = Path(path).relative_to(Path(root.path))
     except ValueError:
         return rec
-    parts = rel.parts
+    parts = tuple(p for p in rel.parts if not p.startswith("__"))   # __theme folders are not part of a run's identity
     family_dir = parts[0] if len(parts) > 1 else ""
     arm = Path(path).parent.name if len(parts) > 1 else family_dir
     prov = rec.setdefault("provenance", {})

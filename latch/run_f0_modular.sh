@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: WINTERMUTE (created 2026-11-03)
 # run_f0_modular.sh -- EXPERIMENTS E2: the lead f0 head retrained under the modular recipe that gave same_chroma about 10x the steering (E13 C3), to see whether
 # it also moves the temporal ceiling found in D16 (the current head is AdamW, d256, depth 4). Same data, voiced weighting and source-track split as val30_f0_other.
 # A 20-step smoke test first. Stops under 20 GB free. About 1 h.
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/f0_modular_2026-11-03
+OUT=/run/media/kim/Mantu/latch_sweep/__f0/f0_modular_2026-11-03
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 mkdir -p "$OUT"

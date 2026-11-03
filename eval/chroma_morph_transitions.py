@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """chroma_morph_transitions.py — real-track transitions with chroma-morph steering
 (Kim 2026-07-07).
 
@@ -55,7 +56,7 @@ FPS = 44100 / 4096
 # NOTE 2026-09-15: "Mantu1" was an old mount label; the drive was consolidated
 # into "Mantu" at some point and Mantu1 no longer exists. Paths below fixed to
 # match current mounts (verified present under Mantu).
-CHROMA_HEAD = ("/run/media/kim/Mantu/sa3_lora_runs/cu_reward_renders/analysis/"
+CHROMA_HEAD = ("/run/media/kim/Mantu/sa3_lora_runs/__auditions/cu_reward_renders/analysis/"
                "chroma_heads/latch_sa3_chroma_other_best.pt")
 CHROMA_GAIN = 2048.0
 MIR_VENV_PY = "/home/kim/Projects/mir/.venv/bin/python"
@@ -192,7 +193,7 @@ def encode(model, audio, sr):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-dir", type=Path, required=True)
-    ap.add_argument("--ckpt", default="/run/media/kim/Mantu/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt")
+    ap.add_argument("--ckpt", default="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt")
     ap.add_argument("--windows", default="512,1024", help="crossfade lengths (latent frames)")
     ap.add_argument("--noise-levels", default="0.35,0.42,0.5,0.55")
     ap.add_argument("--seg-sec", type=float, default=75.0, help="audio per side of the junction")

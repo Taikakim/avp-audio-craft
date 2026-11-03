@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """concept_directions.py — diff-in-means concept directions from the DiT layer dumps.
 
 Phase 2 of the concept-direction steering experiment (papers/arxiv-2505.18186.md,
@@ -24,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-DUMP = Path("/run/media/kim/Mantu/sa3_lora_runs/layer_activations_base")
+DUMP = Path("/run/media/kim/Mantu/sa3_lora_runs/__misc/layer_activations_base")
 SIGMAS = ["s20", "s50", "s80"]
 Q = 0.25  # quartiles
 

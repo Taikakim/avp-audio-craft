@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — ignore __theme folders in run identity
 """Model census — every checkpoint we own, local and on LUMI, in one reviewable table.
 
 WHY (Kim 2026-08-25): "I'm not going to resume from everything, and some of the older
@@ -101,7 +102,7 @@ def load_local(rescan: bool = False) -> dict[str, dict]:
         if base:
             try:
                 rel = Path(m["path"]).relative_to(base)
-                parts = list(rel.parts)
+                parts = [p for p in rel.parts if not p.startswith("__")]   # __theme folders are not part of a run's identity
                 while parts and parts[0] in ("runs", "lumi_runs"):
                     parts = parts[1:]
                 key = "/".join(parts[:-1]) or "(root)"

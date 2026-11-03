@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: GHOST-NOTE (created 2026-10-15)
 # NOTE 2026-10-15: b8 x accum4 (same effective batch 32): b16 x2 at d512 OOM-ed (A2b died in epoch 2 with 14.8 GB allocated). A2c = the A2 recipe re-run (replaces the OOM-ed A2b) so EMA 0.5 / EMA 2 / online come from one trajectory.
@@ -6,7 +7,7 @@
 # at lr 2e-3 and 5e-3 (1e-2 = A2/A2b, 1e-3 = A4 already exist). Saves EMA 0.5 ep + EMA 2 ep + online weights every epoch. Question: does a lower lr stretch the glitch-free window past
 # the ~3 epochs the owner heard at lr 1e-2 (overnight O5)? Runs AFTER run_air_followup.sh (waits for /tmp/air_followup.done), stops the render server for the GPU, then restarts it and renders the epoch sweep.
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_lowlr
+OUT=/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_lowlr
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0

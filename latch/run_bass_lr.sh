@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: GHOST-NOTE (created 2026-10-16)
 # Owner's ask (2026-10-16): "our LRs have been quite high ... try 1e-3 and 1e-4 for something we know steers well like the bass or mid head. Log interesting things, EMA at maybe one epoch
@@ -7,7 +8,7 @@
 # Each epoch saves EMA half-life 1 ep (main ep<N>.pt), EMA 0.25 ep, and online (Schedule-Free average) weights. Full tiered telemetry (per-layer norms, distance from init, trajectory)
 # goes to wandb in OFFLINE mode (nothing leaves the machine; `wandb sync` later if wanted). Runs after run_air_slow.sh; run_air_nosf.sh waits for /tmp/air_bass.done (written only if every arm exits 0).
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/bass_lr_2026-10-16
+OUT=/run/media/kim/Mantu/latch_sweep/__bass/bass_lr_2026-10-16
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0 WANDB_MODE=offline WANDB_DIR=$OUT

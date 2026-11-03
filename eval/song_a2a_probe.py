@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """song_a2a_probe.py — Kim 2026-09-15, stage 2: take the finished song-structure
 composites (song_structure_probe.py's output) and run audio-to-audio at
 init_noise_level 0.5 and 0.75, each through a few DIFFERENT models (not the
@@ -29,13 +31,13 @@ NOISE_LEVELS = [0.5, 0.75]
 
 CLIPS = {
     "A": dict(prompt="2020s goa trance, melodic mood, 148 bpm", seed=1102008041, steps=8, cfg=1.0,
-              ckpt="/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"),
+              ckpt="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"),
     "B": dict(prompt="2020s goa trance, melodic mood, 148 bpm", seed=1102008041, steps=8, cfg=1.0,
-              ckpt="/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_aug10_lr1e4/epoch=74-step=3000.weights.ckpt"),
+              ckpt="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_aug10_lr1e4/epoch=74-step=3000.weights.ckpt"),
     "C": dict(prompt="mid 90s goa trance, melodic space mood, 140 bpm", seed=225176290, steps=8, cfg=1.0,
-              ckpt="/run/media/kim/Mantu/sa3_lora_runs/fp32cmp_avp_t512_bs8_lr1e4_repr/epoch=7-step=2392.ckpt"),
+              ckpt="/run/media/kim/Mantu/sa3_lora_runs/__precision_compare/fp32cmp_avp_t512_bs8_lr1e4_repr/epoch=7-step=2392.ckpt"),
     "D": dict(prompt="mid 90s goa trance, techno, space dark mood, 140 bpm", seed=278158216, steps=8, cfg=1.0,
-              ckpt="/run/media/kim/Mantu/sa3_lora_runs/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt"),
+              ckpt="/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt"),
 }
 
 

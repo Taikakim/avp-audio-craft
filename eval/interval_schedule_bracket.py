@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """interval_schedule_bracket.py -- Kim's overnight ask (2026-07-12/13, via CONTINUITY,
 "THE BIG ONE"): DoRA sigma-interval x cfg x weight bracket sweep on the two most recent
 r128 checkpoints. Kim specified the interval bracket in STEP-COUNT FRACTIONS (0=start of
@@ -59,7 +60,7 @@ MODELS = {
     },
     "avp": {
         "label": "dora128adj_avp_aug10_lr1e4",
-        "ckpt": Path("/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_aug10_lr1e4/epoch=74-step=3000.ckpt"),
+        "ckpt": Path("/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_aug10_lr1e4/epoch=74-step=3000.ckpt"),
         "ckpt_tag": "ep74",
     },
 }

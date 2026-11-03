@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """build_e1_pilot_page.py — eval page for the E1 anti-loop steering pilot.
 
@@ -27,7 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
 
 RUN = Path("/run/media/kim/Mantu/sa3_control_runs/__misc/e1_pilot_20260716")
-BASE = Path("/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack")
+BASE = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack")
 STAGE = Path.home() / "evals_aac"
 CLIPS = STAGE / "e1_pilot"
 CLIPS.mkdir(parents=True, exist_ok=True)

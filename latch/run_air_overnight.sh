@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: GHOST-NOTE (created 2026-10-15)
 # Overnight air-RMS head runs at 4x the bracket length (4000 optimizer steps = 25 epochs of 160), Kim 2026-10-15: keep the lr>=5e-2 runs (which DIVERGED in epoch 1: loss 0.81 vs 0.076,
@@ -6,7 +7,7 @@
 # run: warmup 1 ep (was 0.25), damping armed at 4 ep (was 1) or 2 ep ("halved"), EMA half-life 2 ep (was 0.5), cosine LR 17.5->25 (the 7->10 of a 10-epoch run), overtraining wd sqrt(epoch).
 # New guards: --grad-clip 1.0 (SNR gate dropped: Kim, it behaved as a plain lr multiplier in the DoRA ablation), O2 tracks EMA half-lives 1/2/4 epochs in ONE run, b64 arms at lr 3e-2, eigh failure keeps the previous preconditioner. Waits for /tmp/air_chain.done, stops the render server for the GPU, restarts it at the end.
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_overnight
+OUT=/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_overnight
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0

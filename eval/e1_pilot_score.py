@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """Score E1 pilot: guided arms vs nl-matched unguided ladder baselines (audio mode)."""
 import json, sys
@@ -8,7 +9,7 @@ import numpy as np, librosa
 from recurrence_meter import calibrate_source, dynamics_stats
 
 PILOT = Path("/run/media/kim/Mantu/sa3_control_runs/__misc/e1_pilot_20260716")
-BASE = Path("/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack")
+BASE = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack")
 KEYS = ["r_max", "line_frac_8s", "line_frac_16s", "l_max_sec", "det_soft"]
 
 def stats(p):

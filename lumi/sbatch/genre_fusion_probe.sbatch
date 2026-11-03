@@ -1,7 +1,8 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # genre_fusion_probe.sbatch — LUMI generalization probe (GHOST-NOTE 2026-08-21, Kim direct).
 #
-# WHY: local scoping (Mantu/sa3_lora_runs/genre_fusion_2026-08-21/) found our best DoRA soup
+# WHY: local scoping (Mantu/sa3_lora_runs/__genre_style/genre_fusion_2026-08-21/) found our best DoRA soup
 # holds onto trance/electronic character under an out-of-distribution "thrash metal" prompt,
 # while the plain post-trained base model goes fully literal-metal with no electronic character
 # at all. This job checks whether that generalization-vs-collapse signal is systematic across

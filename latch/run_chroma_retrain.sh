@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-16)
 # run_chroma_retrain.sh -- the same_chroma LatCH head (other-stem SAME chroma, 384-ch, cosine loss) retrained under the modular
@@ -12,7 +13,7 @@
 #   bash latch/run_chroma_retrain.sh        (run in background)
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/chroma_retrain_2026-10-16
+OUT=/run/media/kim/Mantu/latch_sweep/__chroma/chroma_retrain_2026-10-16
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0 WANDB_MODE=offline WANDB_DIR=$OUT

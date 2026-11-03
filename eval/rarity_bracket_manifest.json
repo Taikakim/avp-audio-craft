@@ -1611,7 +1611,7 @@
   },
   "dora128_300trk__59h2y4zo": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/dora128_300trk/dora128_300trk/59h2y4zo",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128_300trk/dora128_300trk/59h2y4zo",
    "picks": [
     "epoch=6-step=35.ckpt"
    ],
@@ -1635,7 +1635,7 @@
   },
   "adamw_lr1e-4": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01",
    "picks": [
     "epoch=162-step=6000.ckpt"
    ],
@@ -1643,7 +1643,7 @@
   },
   "adamw_lr3e-4_step2000": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01",
    "picks": [
     "epoch=54-step=2000.ckpt"
    ],
@@ -1651,7 +1651,7 @@
   },
   "adamw_scratch_step5000": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01",
    "picks": [
     "epoch=135-step=5000.ckpt"
    ],
@@ -1659,7 +1659,7 @@
   },
   "fusion_autoscale_lr1e-4": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01",
    "picks": [
     "epoch=81-step=3000.ckpt"
    ],
@@ -1667,7 +1667,7 @@
   },
   "fusion_autoscale_lr1e-6_full": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01",
    "picks": [
     "epoch=81-step=3000.ckpt"
    ],
@@ -1675,7 +1675,7 @@
   },
   "fusion_autoscale_lr5e-6_full3h": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01",
    "picks": [
     "epoch=81-step=3000.ckpt"
    ],
@@ -1683,7 +1683,7 @@
   },
   "fusion_autoscale_lr5e6_bs2": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01",
    "picks": [
     "epoch=79-step=12000.ckpt"
    ],
@@ -1691,7 +1691,7 @@
   },
   "fusion_autoscale_lr5e6_control2": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01",
    "picks": [
     "epoch=81-step=3000.ckpt"
    ],
@@ -1699,7 +1699,7 @@
   },
   "sa3-goa-dora-47s-b4-cont__x20b3ygb": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-b4-cont/x20b3ygb",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/sa3-goa-dora-47s-b4-cont/x20b3ygb",
    "picks": [
     "epoch=4-step=6750.weights.ckpt"
    ],
@@ -1707,7 +1707,7 @@
   },
   "sa3-goa-dora-47s-b4__vjnnndnu": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-b4/vjnnndnu",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/sa3-goa-dora-47s-b4/vjnnndnu",
    "picks": [
     "epoch=2-step=4050.weights.ckpt"
    ],
@@ -1715,7 +1715,7 @@
   },
   "sa3-goa-dora-47s-r128-adamw__dq0egegi": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-r128-adamw/dq0egegi",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/sa3-goa-dora-47s-r128-adamw/dq0egegi",
    "picks": [
     "epoch=7-step=10800.weights.ckpt"
    ],
@@ -1723,7 +1723,7 @@
   },
   "sa3-goa-dora-47s-r128-fusion-caut__qy50uilf": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-r128-fusion-caut/sa3-goa-dora-47s-r128-fusion-caut/qy50uilf",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/sa3-goa-dora-47s-r128-fusion-caut/sa3-goa-dora-47s-r128-fusion-caut/qy50uilf",
    "picks": [
     "epoch=7-step=10800.weights.ckpt"
    ],
@@ -1731,7 +1731,7 @@
   },
   "sa3-goa-dora-47s-r128-fusion__mqe3ne49": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-r128-fusion/mqe3ne49",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/sa3-goa-dora-47s-r128-fusion/mqe3ne49",
    "picks": [
     "epoch=7-step=10800.weights.ckpt"
    ],
@@ -1739,7 +1739,7 @@
   },
   "sa3-goa-dora-47s-r64__i8nygj4y": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-r64/i8nygj4y",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/sa3-goa-dora-47s-r64/i8nygj4y",
    "picks": [
     "epoch=7-step=10800.weights.ckpt"
    ],
@@ -1747,7 +1747,7 @@
   },
   "sa3-goa-dora-47s__2ankrkoh": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s/2ankrkoh",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/sa3-goa-dora-47s/2ankrkoh",
    "picks": [
     "epoch=0-step=5400.ckpt"
    ],
@@ -1809,7 +1809,7 @@
   },
   "fullft_ladder_A_control": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01/fullft_autoscale_2026-09-04",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01/fullft_autoscale_2026-09-04",
    "picks": [
     "epoch=39-step=3000.ckpt"
    ],
@@ -1819,7 +1819,7 @@
   },
   "fullft_ladder_B_autoscale": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01/fullft_autoscale_2026-09-04",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01/fullft_autoscale_2026-09-04",
    "picks": [
     "epoch=39-step=3000.ckpt"
    ],
@@ -1829,7 +1829,7 @@
   },
   "fullft_ladder_C_dual": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01/fullft_autoscale_2026-09-04",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01/fullft_autoscale_2026-09-04",
    "picks": [
     "epoch=39-step=3000.ckpt"
    ],
@@ -1838,7 +1838,7 @@
    "_root_note": "Root repointed 2026-09-08 (GHOST-NOTE): the NVMe copy at /home/kim/fullft_autoscale_2026-09-04 was freed, so every render pass printed [skip-missing] for both epochs. All six checkpoints (2 epochs x 3 arms, ~11 GB each) are intact on Mantu under this campaign dir. The arm dir is 'C_dual'; the label keeps its fullft_ prefix because model_matrix_gen keys is_fullft on the label, not the path."
   },
   "lion_lr1e-5": {
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01",
    "picks": [
     "epoch=399-step=6000.ckpt"
    ],
@@ -1850,7 +1850,7 @@
    "_note": "DO NOT RE-ADD PICKS. Kim 2026-09-08: 'the clips for the dual run were utterly degraded, I think one of the LRs was too large. so I removed them.' He listened, judged it, and DELETED all 6 checkpoints (58 GB) himself -- the weights are gone on purpose, not lost. Registering picks here would only produce [skip-missing] noise on every render pass. The run's verdict is preserved in its run_meta.json (spectral_lr 1e-3 destabilises full-FT: median train loss 2.1-2.7 vs 0.79 baseline, 38% of logged steps spiking >5, peak 15832.9). Kept as an empty entry so the deletion is a recorded decision rather than an unexplained absence."
   },
   "lion_lr5e-5-batch32": {
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/fusion_autoscale_vs_adamw_2026-09-01",
    "picks": [
     "epoch=222-step=2000.ckpt",
     "epoch=444-step=4000.ckpt",
@@ -2131,7 +2131,7 @@
   },
   "ablation_goa5k_a00_full": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/ablation_goa5k_2026-09-26",
    "picks": [
     "step=1011.ckpt"
    ],
@@ -2139,7 +2139,7 @@
   },
   "ablation_goa5k_a01_no_snr": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/ablation_goa5k_2026-09-26",
    "picks": [
     "step=1011.ckpt"
    ],
@@ -2147,7 +2147,7 @@
   },
   "ablation_goa5k_a02_no_brake": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/ablation_goa5k_2026-09-26",
    "picks": [
     "step=1011.ckpt"
    ],
@@ -2155,7 +2155,7 @@
   },
   "ablation_goa5k_a03_no_vadd": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/ablation_goa5k_2026-09-26",
    "picks": [
     "step=1011.ckpt"
    ],
@@ -2163,7 +2163,7 @@
   },
   "ablation_goa5k_a04_additive_mag": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/ablation_goa5k_2026-09-26",
    "picks": [
     "step=1011.ckpt"
    ],
@@ -2171,7 +2171,7 @@
   },
   "ablation_goa5k_a05_no_shampoo": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/ablation_goa5k_2026-09-26",
    "picks": [
     "step=1011.ckpt"
    ],
@@ -2179,7 +2179,7 @@
   },
   "ablation_goa5k_a06_no_sf": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/ablation_goa5k_2026-09-26",
    "picks": [
     "step=1011.ckpt"
    ],
@@ -2187,7 +2187,7 @@
   },
   "ablation_goa5k_a07_no_normuon": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/ablation_goa5k_2026-09-26",
    "picks": [
     "step=1011.ckpt"
    ],
@@ -2195,7 +2195,7 @@
   },
   "ablation_goa5k_a08_no_subspace": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/ablation_goa5k_2026-09-26",
    "picks": [
     "step=1011.ckpt"
    ],
@@ -2203,7 +2203,7 @@
   },
   "ablation_goa5k_a09_plain_adamw": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/ablation_goa5k_2026-09-26",
    "picks": [
     "step=1011.ckpt"
    ],
@@ -2211,7 +2211,7 @@
   },
   "ablation_goa5k_a10_full_lr5e-4": {
    "tier": "single",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/ablation_goa5k_2026-09-26",
    "picks": [
     "step=1011.ckpt"
    ],
@@ -2311,7 +2311,7 @@
    ],
    "witness": [],
    "reason": "CONTINUITY 2026-09-28, Kim's ask: epoch soups of fp32cmp_avp_t4096_bs1_lr1e4 (DoRA r128, only ep3/7/14/21/35 still on disk), merged to full weights by eval/ladder_soup_fullft.py. soup_mean = plain mean of the 5 (mean epoch 16); soup_filtered = same, dropping at most one detrended-outlier epoch per value (changes ~10 edge matrices 13-37%, rest <1%); soup_ep14_ep21 = pair mean. mean vs filtered is the by-ear test of whether those outliers are the glitches.",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fullft"
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft"
   },
   "fullft_soup_fp32cmp_avp_t4096_bs1_no35": {
    "tier": "full",
@@ -2322,7 +2322,7 @@
    ],
    "witness": [],
    "reason": "CONTINUITY 2026-09-29: the fp32cmp_avp_t4096_bs1_lr1e4 epoch soups WITHOUT ep35. The 5-epoch soups (fullft_soup_fp32cmp_avp_t4096_bs1) rendered with z0 std ~2.4: ep35's latent-facing layers (preprocess/postprocess_conv, late to_local_embed) moved 8-28x between ep21 and ep35, which ep35 compensates internally but an average does not. soup_mean = mean of ep3/7/14/21 (mean epoch 11), soup_filtered = same with the at-most-one-epoch filter, soup_ep7_ep14 = pair.",
-   "root": "/run/media/kim/Mantu/sa3_lora_runs/fullft"
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft"
   },
   "goa5k_fullft_avp_dora_lr7e-4_subloss_k5_12132st": {
    "tier": "full",

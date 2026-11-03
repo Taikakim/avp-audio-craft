@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """eval_hf_repair.py — evaluate a trained HF-repair post-net on the MP3-clarity ladder
 (part 3/3 of the SA3 HF-repair pipeline).
 
@@ -22,7 +23,7 @@ HEADLINE printed: air-band (8-16 kHz) env_corr, SAME-only vs SAME+postnet vs mp3
 Run (SA3 venv, GPU for the SAME leg on generated clips; ffmpeg needed for mp3 anchors):
   FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE \
     stable-audio-3/.venv/bin/python eval/eval_hf_repair.py \
-      --ckpt /run/media/kim/Mantu/sa3_lora_runs/hf_repair_runs/v1/best.pt
+      --ckpt /run/media/kim/Mantu/sa3_lora_runs/__hf_corruption/hf_repair_runs/v1/best.pt
 """
 import os
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
@@ -44,7 +45,7 @@ sys.path.insert(0, str(HERE))
 from train_hf_repair import HFRepairNet  # noqa: E402  (torch-only, safe on CPU)
 
 SR = 44100
-DEFAULT_PAIRS = "/run/media/kim/Mantu/sa3_lora_runs/hf_repair_pairs"
+DEFAULT_PAIRS = "/run/media/kim/Mantu/sa3_lora_runs/__hf_corruption/hf_repair_pairs"
 DEFAULT_GEN_GLOB = "/run/media/kim/Mantu/sa3_control_runs/**/*.wav"
 
 
@@ -111,7 +112,7 @@ def main():
     ap.add_argument("--n-pairs", type=int, default=40, help="max held-out pairs to eval")
     ap.add_argument("--n-gen", type=int, default=20, help="max generated clips to eval")
     ap.add_argument("--gen-crop-seconds", type=float, default=4.0)
-    ap.add_argument("--out", default="/run/media/kim/Mantu/sa3_lora_runs/hf_repair_runs/eval_results.json")
+    ap.add_argument("--out", default="/run/media/kim/Mantu/sa3_lora_runs/__hf_corruption/hf_repair_runs/eval_results.json")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--no-mp3", action="store_true", help="skip mp3 anchors (no ffmpeg)")
     args = ap.parse_args()

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-15)
 """air_epoch_metrics.py -- DSP + Audiobox metrics for the per-epoch air-head sweep clips (eval/air_epoch_sweep.py).
 Kim 2026-10-15: "calculate PQ, zero crossings, spectral centroid and flux, crest, RMS and whitening for the clips". Whitening = spectral flatness (clip_metrics 'flatness').
@@ -9,7 +10,7 @@ Measured on the LEVEL-MATCHED wavs (original and bass+body unmatched), so loudne
 Audit note: PQ comes from a model that has not been validated against Kim's ratings here; treat as a screen.
 """
 import json, os, sys, glob
-SW = os.environ.get("SWEEP_DIR", "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_overnight/epoch_sweep")  # override for other sweeps
+SW = os.environ.get("SWEEP_DIR", "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_overnight/epoch_sweep")  # override for other sweeps
 def files():
     out = {}
     for p in sorted(glob.glob(f"{SW}/clips/*.wav")):

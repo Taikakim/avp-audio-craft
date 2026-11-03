@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """goa_midi_musicology.py — musicological analysis of the MuScriptor Goa MIDIs
 (Kim ask 2026-07-13: "run a musicological analysis for the extracted Goa midis...
 look first if there's an established method for this, how to encode the structure").
@@ -32,7 +33,7 @@ Bars are forced 4/4 (Goa is universally 4/4; madmom DOWNBEATS sometimes locks 3/
 trance — observed on the sample track — so downbeats only VOTE on bar phase, capped to
 4-beat grouping).
 
-Outputs (Mantu/sa3_lora_runs/muscriptor_goa_midis/musicology/):
+Outputs (Mantu/sa3_lora_runs/__finetunes/muscriptor_goa_midis/musicology/):
   <track>.musicology.json   per-track features + structure
   corpus_summary.md         corpus-level distributions
   run_meta.json             manifest-v2 sidecar
@@ -49,7 +50,7 @@ from pathlib import Path
 import mido
 import numpy as np
 
-MIDI_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/muscriptor_goa_midis")
+MIDI_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/__finetunes/muscriptor_goa_midis")
 CORPUS = Path("/run/media/kim/Mantu/ai-music/Goa_Separated")
 OUT = MIDI_DIR / "musicology"
 

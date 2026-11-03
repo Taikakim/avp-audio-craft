@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """Validate Foote section boundaries vs MuScriptor MIDI-derived sections (157 tracks).
 MuScriptor: section_lens_bars -> cumulative bar indices -> downbeat times (our grid).
 Metric: MIREX-style boundary F @ 3s and @ 1.7s (~1 bar). mir venv or any numpy python."""
@@ -6,7 +7,7 @@ import json
 from pathlib import Path
 import numpy as np
 
-MUS = Path("/run/media/kim/Mantu/sa3_lora_runs/muscriptor_goa_midis/musicology")
+MUS = Path("/run/media/kim/Mantu/sa3_lora_runs/__finetunes/muscriptor_goa_midis/musicology")
 import os
 SEC = Path(os.environ.get("SEC_DIR", "/run/media/kim/Kosmos/section_labels"))
 GOA = Path("/run/media/kim/Mantu/ai-music/Goa_Separated")

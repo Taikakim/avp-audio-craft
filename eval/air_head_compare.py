@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-15)
-"""air_head_compare.py -- the retrained air-RMS heads (modular optimiser bracket, latch_sweep/air_head_2026-10-14) vs the production AdamW head, on a few seeds.
+"""air_head_compare.py -- the retrained air-RMS heads (modular optimiser bracket, latch_sweep/__air/air_head_2026-10-14) vs the production AdamW head, on a few seeds.
 
 WHY (Kim 2026-10-14/15): the production rms_energy_air head glitches at large guidance weights and changes content, unlike the bass/mid/body heads. This renders
 bass+body (fixed, as in the punch 'cleanest' preset) + each air head as a third slot at -10 dB, gain {8448, 24000}, and measures per clip: air-band share vs the
@@ -15,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import punch_rating_server as P
 import latch_drift_check as DC
 
-AH = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-14"
+AH = "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-14"
 OUT = f"{AH}/compare"
 os.makedirs(OUT, exist_ok=True)
 HEADS = {"old_adamw": "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_rms_energy_air_best.pt"}

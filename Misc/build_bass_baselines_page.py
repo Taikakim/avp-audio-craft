@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-17), derived from build_bass_lr_page.py
 """build_bass_baselines_page.py -- listening page for the by-the-book bass baselines (latch/run_bass_baselines.sh): M3/M4 pure Muon lr 1e-3/1e-4, A3/A4 plain AdamW lr 1e-3/1e-4, every saved epoch
 (EMA 1 ep, EMA 0.25 ep, online = Schedule-Free average) swapped into the punch preset's bass slot. Data: eval/bass_epoch_sweep.py (sweep.json + level-matched wavs), train.log val loss.
@@ -9,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
 from float_player import inject
-RUN = "/run/media/kim/Mantu/latch_sweep/bass_baselines_2026-10-16"
+RUN = "/run/media/kim/Mantu/latch_sweep/__bass/bass_baselines_2026-10-16"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac"); OUT = f"{STAGE}/bass_baselines"; os.makedirs(OUT, exist_ok=True)
 J = json.load(open(f"{RUN}/epoch_sweep/sweep.json")); rows = J["rows"]
 INFO = {"M4": "pure Muon, lr 1e-4", "M3": "pure Muon, lr 1e-3", "A4": "AdamW, lr 1e-4", "A3": "AdamW, lr 1e-3"}

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-16)
 """build_bass_grid_page.py -- listening page for eval/bass_head_grid.py: bass head (production, B2 lr 1e-2, B3 lr 1e-3, B4 lr 1e-4; final epoch) x target value x weight (gain multiple),
 on the punch 'cleanest' preset, seeds 764 and 3050. Run: python3 Misc/build_bass_grid_page.py -> ~/evals_aac/bass_grid.html (+ bass_grid/*.m4a, AAC 256k). No checkpoint filenames or drive paths."""
@@ -7,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
 from float_player import inject
-RUN = "/run/media/kim/Mantu/latch_sweep/bass_lr_2026-10-16/grid"
+RUN = "/run/media/kim/Mantu/latch_sweep/__bass/bass_lr_2026-10-16/grid"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac"); OUT = f"{STAGE}/bass_grid"; os.makedirs(OUT, exist_ok=True)
 rows = json.load(open(f"{RUN}/grid.json"))
 base = {r["seed"]: r["bass_share_db"] for r in rows if r["arm"] == "base"}

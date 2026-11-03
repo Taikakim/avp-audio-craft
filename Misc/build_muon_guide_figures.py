@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: WINTERMUTE (created 2026-10-21)
 """Figures for the blog post "Muon and derivatives: a DIY survival guide" -> blog/assets/muon-survival-guide/*.png.
 
@@ -25,7 +26,7 @@ OUT = Path("/home/kim/Projects/SAO/blog/assets/muon-survival-guide")
 UUID = Path("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/film_precision_A_20261017_overflow")
 B = UUID / "kuang_plan_B_20261021"
 UNIT = UUID / "unit_matched_20261021"
-P0 = Path("/run/media/kim/Mantu/latch_sweep/kuang_plan_P_20261017/P0_E05_anchor")
+P0 = Path("/run/media/kim/Mantu/latch_sweep/__onsets/kuang_plan_P_20261017/P0_E05_anchor")
 
 C_SPEC, C_SCAL, C_COL, C_ADAM = "#3b6ea8", "#c0504d", "#8a8a8a", "#d9a441"
 plt.rcParams.update({"font.size": 10, "axes.spines.top": False, "axes.spines.right": False, "figure.dpi": 130})

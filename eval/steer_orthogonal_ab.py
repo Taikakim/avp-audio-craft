@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """steer_orthogonal_ab.py — Gram-Schmidt orthogonalized dual-direction steering A/B
 (task #58, Kim direct 2026-07-30; tests arXiv 2605.31295's orthogonalization claim on
 SA3 — graduates its paper-verdicts row from untested).
@@ -24,7 +25,7 @@ sigma-matched direction bucket {0.2,0.5,0.8}. z0 latents saved next to every ren
 
 Run (SA3 venv, GPU, hold SAO/.gpu.lock):
   FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE .venv/bin/python eval/steer_orthogonal_ab.py \
-      --out-dir /run/media/kim/Mantu/sa3_lora_runs/concept_steering/orthogonal_ab
+      --out-dir /run/media/kim/Mantu/sa3_lora_runs/__chroma/concept_steering/orthogonal_ab
 """
 import os
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
@@ -44,7 +45,7 @@ from sa3_control.audio_io import save_audio               # noqa: E402
 from stable_audio_3 import StableAudioModel               # noqa: E402
 from extract_layer_activations import get_blocks          # noqa: E402
 
-DUMP = Path("/run/media/kim/Mantu/sa3_lora_runs/layer_activations_base")
+DUMP = Path("/run/media/kim/Mantu/sa3_lora_runs/__misc/layer_activations_base")
 SIG_KEYS = {0.2: "s20", 0.5: "s50", 0.8: "s80"}
 FEAT_A = "mt_dark"          # the "style" axis
 FEAT_B = "onset_density"    # the "rhythm" axis

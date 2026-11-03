@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # run_best_mood_train_40ep.sh -- Train 56-dim continuous Mood LatCH conditioning head
 # (effnet_moodtheme_ts, 56 classes, cosine loss, dim 512, depth 8) with our validated best recipe:
 #   - 0.8x LR: 8e-4 (0.0008)
@@ -13,7 +14,7 @@
 #   bash latch/run_best_mood_train_40ep.sh
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/mood_56d_best_40ep_20261031
+OUT=/run/media/kim/Mantu/latch_sweep/__mood/mood_56d_best_40ep_20261031
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 

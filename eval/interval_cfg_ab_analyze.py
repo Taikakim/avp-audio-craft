@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """interval_cfg_ab_analyze.py — melodic-movement readout for the interval-CFG A/B
 (task #26; companion to eval/interval_cfg_ab.py; RUN WITH THE mir VENV).
@@ -24,7 +25,7 @@ from core.file_utils import read_audio  # noqa: E402
 import librosa  # noqa: E402
 
 DIR = Path("/run/media/kim/Mantu/sa3_control_runs/__misc/interval_cfg_ab")
-BASE_LADDER = Path("/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack")
+BASE_LADDER = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack")
 SR = 22050
 
 

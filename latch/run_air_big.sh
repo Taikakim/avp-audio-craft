@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: GHOST-NOTE (created 2026-10-15)
 # Owner's idea after listening to the epoch sweep (2026-10-15): O2 (lr 1e-1, EMA half-life 4 ep) at ONE epoch sounded bright and only a bit grainy; try that recipe at d512 with a BIG batch
@@ -6,7 +7,7 @@
 # P64m = insurance (2026-10-15, owner: "enough to get them to finish even the 8ep run cleanly"): the same recipe at lr 3e-2 in case lr 1e-1 diverges; train_latch now stops at the first NaN epoch.
 # Each epoch saves EMA 4 ep (main), EMA 2 ep, EMA 0.5 ep and online weights. Runs after run_air_lowlr.sh; run_air_slow.sh waits for /tmp/air_big.done.
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_big
+OUT=/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_big
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0

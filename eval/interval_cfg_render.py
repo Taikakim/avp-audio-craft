@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """interval_cfg_render.py -- interval-CFG grid (task #26 melody angle, 2026-07-23).
 
 HYPOTHESIS (from the P2 finding, eval/musicology/hook_pilot_cfg_axis_2026-07-22.md):
@@ -28,7 +29,7 @@ of 20 s @ steps24. Resumable (skips existing wavs). GPU under the fleet mutex
 (.gpu.lock, handle CONTINUITY-icfg, --pid-aware), acquired per model block and
 released between blocks so co-queued agents can interleave.
 
-Outputs: /run/media/kim/Mantu/sa3_lora_runs/interval_cfg_2026-07-23/renders/*.wav
+Outputs: /run/media/kim/Mantu/sa3_lora_runs/__misc/interval_cfg_2026-07-23/renders/*.wav
 (+ .z0.npy per standing directive) + manifest.jsonl + run_meta.json. The SAO-tree
 experiment dir eval/musicology/interval_cfg_2026-07-23/ symlinks renders/ (eval audio
 never lives in the SAO tree, MASTER section 4).

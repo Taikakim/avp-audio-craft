@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """build_evals.py — turn the served eval dumps into described, playable pages.
 
@@ -579,10 +580,10 @@ RENDERS_SOURCE_ROOTS = [f"{MANTU}/sa3_lora_runs"]  # root+name join, like SOURCE
 # (checkpoints + lightning_logs sit alongside the renders) -- lets the staged/
 # landing name stay the descriptive run name instead of the generic subfolder name.
 RENDERS_SOURCE_ALIASES = {
-    "dora16_goa_newstack_8ep": f"{MANTU}/sa3_lora_runs/dora16_goa_newstack_8ep/renders_cpu",
+    "dora16_goa_newstack_8ep": f"{MANTU}/sa3_lora_runs/__finetunes/dora16_goa_newstack_8ep/renders_cpu",
     # staged/landing name avoids the A2A_LADDER_RE auto-routing collision (a
     # literal "a2a_" prefix), but the real source dir keeps CONTINUITY's name.
-    "memo_ckpt_a2a_test": f"{MANTU}/sa3_lora_runs/a2a_memo_test",
+    "memo_ckpt_a2a_test": f"{MANTU}/sa3_lora_runs/__a2a_longform/a2a_memo_test",
 }
 
 def find_renders_source_dir(name):

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """mood_score_layeract_crops.py — continuous Essentia mood scores for the 150 crops
 behind the DiT layer-activation dumps (Kim 2026-07-11: steer by 'happy' etc).
 
@@ -24,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-DUMP_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/layer_activations_base")
+DUMP_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/__misc/layer_activations_base")
 LATENT_DIR = Path("/run/media/kim/Kosmos/latents/latents_sa3")
 MODELS = Path("/home/kim/Projects/mir/models/essentia")
 OUT_CSV = DUMP_DIR / "crop_mood_scores.csv"

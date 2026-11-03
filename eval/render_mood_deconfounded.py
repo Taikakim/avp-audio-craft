@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """render_mood_deconfounded.py -- Conditional De-Confounding (Gaussian Kriging +
 Library-Floor Repulsion) test on the canonical fine-grained matrix prompt:
@@ -36,7 +37,7 @@ sys.path.insert(0, str(ROOT / "control"))
 from stable_audio_3 import StableAudioModel
 from sa3_control.audio_io import save_audio
 
-HEAD_CKPT = "/run/media/kim/Mantu/latch_sweep/mood_56d_best_40ep_20261031/C3_mood_lr8e-4_b64_cos40/latch_sa3_effnet_moodtheme_ep40.pt"
+HEAD_CKPT = "/run/media/kim/Mantu/latch_sweep/__mood/mood_56d_best_40ep_20261031/C3_mood_lr8e-4_b64_cos40/latch_sa3_effnet_moodtheme_ep40.pt"
 MOOD_NPY_DIR = Path("/run/media/kim/Mantu/latents_sa3_mood")
 METADATA_JSON = Path("/home/kim/Projects/mir/models/essentia/mtg_jamendo_moodtheme-discogs-effnet-1.json")
 

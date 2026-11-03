@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Weight-garden free-rein chain (Kim 2026-07-04: "generate clips at various
 # parameters... try with style/density guidance... 5EP LoRA on a glitched model
@@ -61,7 +62,7 @@ $PY scripts/train_lora.py \
   --duration 120 --num_workers 6 --seed 42 \
   --exclude seconds_total \
   --glitch "$GLITCH_TRAIN" \
-  --save_dir "$MANTU/sa3_lora_runs/dora16_glitchheal_5ep_2xlr" \
+  --save_dir "$MANTU/sa3_lora_runs/__finetunes/dora16_glitchheal_5ep_2xlr" \
   --name dora16_glitchheal --logger csv \
   > "$LOG/dora16_glitchheal.log" 2>&1
-note "glitch-heal training done (5ep 2xLR on drift_x005 base) -> sa3_lora_runs/dora16_glitchheal_5ep_2xlr"
+note "glitch-heal training done (5ep 2xLR on drift_x005 base) -> sa3_lora_runs/__finetunes/dora16_glitchheal_5ep_2xlr"

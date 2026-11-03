@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """e1_pretest_error_spectrum.py — E1 PRE-TEST (tier-0, Kim's lightweight-first directive;
 spec docs/superpowers/specs/2026-07-31-reality-structured-model-experiments.md).
 
@@ -32,7 +33,7 @@ import torch
 from stable_audio_3 import StableAudioModel
 
 LATENTS = Path("/run/media/kim/Kosmos/latents/latents_sa3")
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/e1_pretest")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__misc/e1_pretest")
 SIGMAS = [0.2, 0.5, 0.8]
 N_CROPS = 48
 EIG_CACHE = OUT / "corpus_eigbasis.npz"

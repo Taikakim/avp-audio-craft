@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """rope_dominance_probe.py — RoPE-frequency dominance diagnostic for the a2a loop
 attractor (task #60; UltraViCo 2511.20123 + LoL 2601.16914 convergent lead, F's papers
 sprint 2026-07-30, redone on SA3's 1D temporal RoPE per the model-specificity caveat).
@@ -40,15 +41,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "latch"))
 from stable_audio_3 import StableAudioModel          # noqa: E402
 from stable_audio_3.models.transformer import Attention  # noqa: E402
 
-LADDER = Path("/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_evr1x")
-CKPT = "/run/media/kim/Mantu/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt"
+LADDER = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/a2a_kaikkialla_evr1x")
+CKPT = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt"
 CLIPS = {"nl35": "nonloopy", "nl42": "nonloopy", "nl60": "loopy", "nl70": "loopy"}
 PROMPT = "aggressive upbeat goa trance"
 SEG = (60.0, 155.108)      # the day's standard window
 SIGMAS = [0.5, 0.8]
 MAX_LAG = 128
 N_QUERIES = 256
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/rope_dominance_probe")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__misc/rope_dominance_probe")
 
 
 def profile_from_qk(q, k, max_lag=MAX_LAG, n_queries=N_QUERIES):

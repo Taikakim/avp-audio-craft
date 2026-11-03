@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """Cumulative ablation of the shampoo-run recipe, down to a plain AdamW DoRA (W 2026-09-26).
 
 WHY: goa5k_r128_shampoo_subloss_k5_2026-09-26 and goa3_avp_r128_shampoo_b16_3e4_2026-09-25 move
@@ -25,7 +26,7 @@ import time
 from pathlib import Path
 
 SAO = Path("/home/kim/Projects/SAO")
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__finetunes/ablation_goa5k_2026-09-26")
 PY = str(SAO / ".venv/bin/python")
 TRAIN = str(SAO / "stable-audio-3/scripts/train_lora_modular.py")
 GUARD = str(SAO / "Misc/gpu_guard.sh")

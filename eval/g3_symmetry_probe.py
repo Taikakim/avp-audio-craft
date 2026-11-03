@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """g3_symmetry_probe.py — G3: latent symmetry discovery (reality-structured plan; the
 geometric program's make-or-break gate).
 
@@ -40,8 +41,8 @@ import torch
 from stable_audio_3 import StableAudioModel
 
 LATENTS = Path("/run/media/kim/Kosmos/latents/latents_sa3")
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/g3_symmetry")
-EIG = Path("/run/media/kim/Mantu/sa3_lora_runs/e1_pretest/corpus_eigbasis.npz")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__misc/g3_symmetry")
+EIG = Path("/run/media/kim/Mantu/sa3_lora_runs/__misc/e1_pretest/corpus_eigbasis.npz")
 SIGMA = 0.5
 N_CROPS = 16
 T_SLICE = 512

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Continue dora128_47s_newcaptions from ep5 (Kim 2026-07-12: "continue the
 # dora128_47s_newcaptions from the ep5 where it's now, until I think of something else").
 # ep5 = the _5ep run's last checkpoint (epoch=4-step=6750, 0-indexed epoch 4 = 5 epochs).
@@ -14,7 +15,7 @@ export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPE
 export PYTHONPATH=$SA3:$SA3/scripts:$SAO/control
 cd "$SA3" || exit 1
 FT=$SAO/../mir/data/feature_tables
-CKPT=/run/media/kim/Mantu/sa3_lora_runs/dora128_47s_newcaptions_5ep/epoch=4-step=6750.ckpt
+CKPT=/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128_47s_newcaptions_5ep/epoch=4-step=6750.ckpt
 # allow warm-starting from a later continuation checkpoint on relaunch (Monitor 1h chunks):
 # pass $1 = an explicit ckpt path to override (the latest saved cont epoch).
 [ $# -ge 1 ] && CKPT="$1"

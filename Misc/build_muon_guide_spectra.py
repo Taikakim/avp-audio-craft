@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: WINTERMUTE (created 2026-10-27)
 """Spectra of the two air-head clips in the Muon guide (section 9) -> blog/assets/muon-survival-guide/air_spectra.png and
 air_spectrogram_diff.png.
@@ -18,7 +19,7 @@ import soundfile as sf  # noqa: E402
 from scipy.signal import stft  # noqa: E402
 
 OUT = Path("/home/kim/Projects/SAO/blog/assets/muon-survival-guide")
-SRC = Path("/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_overnight/epoch_sweep/clips")
+SRC = Path("/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-15_overnight/epoch_sweep/clips")
 CLIPS = {"epoch 3": SRC / "O5_ep03.wav", "epoch 12": SRC / "O5_ep12.wav"}
 WIN, HOP, NFFT = 2048, 1024, 4096
 EXCERPT = (4.0, 22.0)          # the excerpt the guide plays

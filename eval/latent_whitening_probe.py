@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """latent_whitening_probe.py — de-risk Track B (post-hoc latent whitening) for FREE.
 
 The frozen-codec clarity plan (docs/clarity-recovery-plan-2026-08-02.md, Track B) proposes
@@ -21,7 +22,7 @@ Run: /home/kim/Projects/SAO/.venv/bin/python eval/latent_whitening_probe.py
 import os
 import numpy as np
 
-EIG = "/run/media/kim/Mantu/sa3_lora_runs/e1_pretest/corpus_eigbasis.npz"
+EIG = "/run/media/kim/Mantu/sa3_lora_runs/__misc/e1_pretest/corpus_eigbasis.npz"
 NOISE_FLOOR = 1.0   # velocity target adds isotropic unit-variance noise; data-var < 1 => swamped
 
 

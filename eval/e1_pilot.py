@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """e1_pilot.py -- E1 anti-loop guide pilot (validation plan 2026-07-15 §2-E1).
 
@@ -20,7 +21,7 @@ from sa3_control.audio_io import save_audio  # noqa: E402
 from stable_audio_3 import StableAudioModel  # noqa: E402
 
 TRACK = "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-flac/009 goddess guerrilla (2006)/Aavepyora - Goddess Guerilla - Kaikki-Alla.flac"
-CKPT = "/run/media/kim/Mantu/sa3_lora_runs/dora16_goa_newstack_8ep/epoch=3-step=5400.ckpt"
+CKPT = "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora16_goa_newstack_8ep/epoch=3-step=5400.ckpt"
 OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__misc/e1_pilot_20260716")
 PROMPT, SEED, STEPS, CFG = "aggressive upbeat goa trance", 1234, 24, 6.0
 import os as _os
@@ -62,7 +63,7 @@ def main():
                    "loop-prone a2a ladder?",
         "hypothesis": "sparse repellency fires only above the corpus q90 edge; expect movement at "
                       "nl60 (labeled loopy) and none-needed at nl50; lambda ladder finds authority.",
-        "baselines": "sa3_lora_runs/a2a_kaikkialla_newstack (identical track/ckpt/prompt/seed/steps/cfg, unguided)",
+        "baselines": "sa3_lora_runs/__a2a_longform/a2a_kaikkialla_newstack (identical track/ckpt/prompt/seed/steps/cfg, unguided)",
         "track": Path(TRACK).name, "checkpoint": CKPT, "prompt": PROMPT, "seed": SEED,
         "steps": STEPS, "cfg": CFG, "grid_nl_lambda": GRID,
         "guide": {"builtin": "recurrence", "edge_q90": EDGE, "hinge_width": WIDTH,

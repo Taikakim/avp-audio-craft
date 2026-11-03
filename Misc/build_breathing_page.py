@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """
 build_breathing_page.py -- standalone eval page for the #35 breathing-noise
 controller's GPU validations (breathing_kaikkialla_evr1x_nl55/ = v1, and
@@ -43,11 +44,11 @@ from build_evals import WAVEFORM_CSS, WAVEFORM_JS  # noqa: E402 -- the shared fl
 # (Kim, 2026-07-10: "remember to use the new fixed one").
 
 VERSIONS = [
-    ("v1", Path("/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_nl55"),
+    ("v1", Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/breathing_kaikkialla_evr1x_nl55"),
      "v1 — tier-1 validation (novelty-floor trigger only)"),
-    ("v2", Path("/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_v2"),
+    ("v2", Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/breathing_kaikkialla_evr1x_v2"),
      "v2 — full-range + source-break ducking (fixes Kim's v1 verdict)"),
-    ("v3", Path("/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_v3"),
+    ("v3", Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/breathing_kaikkialla_evr1x_v3"),
      "v3 — deep flush 0.05 + HF-static meter (finding: high nl IS the static; stays source-crisp)"),
 ]
 OUT = Path("/home/kim/riffer-evals/breathing.html")
@@ -183,10 +184,10 @@ def render_version(tag, src_dir, version_label):
     return "".join(parts)
 
 
-PROMPTARC_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl65")
-PROMPTARC_NL45_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl45")
-PROMPTARC_NL05_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl05")
-PROMPTARC_NL06_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl06")
+PROMPTARC_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/promptarc_single_kaikkialla_nl65")
+PROMPTARC_NL45_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/promptarc_single_kaikkialla_nl45")
+PROMPTARC_NL05_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/promptarc_single_kaikkialla_nl05")
+PROMPTARC_NL06_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/promptarc_single_kaikkialla_nl06")
 
 
 def render_promptarc():

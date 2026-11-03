@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: WINTERMUTE (created 2026-10-28)
 # EXPERIMENTS E13b: same_chroma head, (1) the onset-head recipe (E5 Phase E winner) and (2) bigger / deeper heads on the chroma recipe
 # that steered best in E13 (C3, lr 1e-3). Every arm logs gradient noise per flow-time bin and per model part (--log-grad-noise-t),
@@ -6,7 +7,7 @@
 # epoch saved. Trainer: the worktree branch wintermute/latch-gn-by-t (stable-audio-3), until it is merged.
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/chroma_size_2026-10-28
+OUT=/run/media/kim/Mantu/latch_sweep/__chroma/chroma_size_2026-10-28
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=/home/kim/Projects/SAO-worktrees/sa3-latch-gn/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0 WANDB_MODE=offline WANDB_DIR=$OUT

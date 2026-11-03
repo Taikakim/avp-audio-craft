@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-15)
 """air_head_grid.py -- value x gain grid for the retrained air heads A2 and A5 (Kim 2026-10-15: "request higher values but with less weight").
 Third slot on the punch 'cleanest' preset; values {-10, 0, +10} dB x gains {2048, 4096, 8448}; 4 seeds. Raw wavs -> air_head_2026-10-14/grid/; metrics as in air_head_compare
@@ -9,7 +10,7 @@ import soundfile as sf
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import punch_rating_server as P
 import latch_drift_check as DC
-AH = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-14"
+AH = "/run/media/kim/Mantu/latch_sweep/__air/air_head_2026-10-14"
 OUT = f"{AH}/grid"; os.makedirs(OUT, exist_ok=True)
 HD = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_rms_energy_air_%s_best.pt"
 HEADS = {"A2": HD % "a2", "A5": HD % "a5"}

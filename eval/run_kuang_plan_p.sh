@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: WINTERMUTE (created 2026-10-20)
 # Last edited: WINTERMUTE 2026-10-21 — P1 falls back to the last _epN.pt (P1 was skipped: no _best.pt is written)
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
@@ -10,7 +11,7 @@
 set -u
 SAO=/home/kim/Projects/SAO
 LPY=$SAO/.venv-rocm10-amd/bin/python
-POUT=/run/media/kim/Mantu/latch_sweep/kuang_plan_P_20261017
+POUT=/run/media/kim/Mantu/latch_sweep/__onsets/kuang_plan_P_20261017
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
 export PYTORCH_TUNABLEOP_ENABLED=0 PYTORCH_TUNABLEOP_TUNING=0 MIOPEN_FIND_MODE=2
 export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 NUMEXPR_NUM_THREADS=4

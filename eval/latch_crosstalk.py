@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-15)
 """latch_crosstalk.py -- how much does a band-RMS head's guidance step move the OTHER bands?  (Kim 2026-10-15: make heads that only change their own band; measure the entanglement first.)
 Mean guidance in latch_guided.py steps the CLEAN latent z0 along -grad(head loss) with the head queried at t=0, so that is what is measured here: for each head i,
@@ -7,12 +8,12 @@ g_i = d mean_t h_i(z) / dz on real training latents (ascending direction = 'rais
      z' = z + f*||z||*g_i/||g_i||  (f = 0.02, 0.05);  responses in dB via each head's std_std.
   B) AUDIT view (decoded audio = the instrument check): decode z and z' with SAME-L for a few crops, save RAW float wavs (no normalisation) as s<k>_<name>.wav in <out>/audit;
      then   mir/mir/bin/python eval/air_realised_levels.py <out>/audit   gives measured band RMS (dB) -> python eval/latch_crosstalk.py report <out>.
-Run (GPU free, SAO/.venv):  .venv/bin/python eval/latch_crosstalk.py run      Output: Mantu2/latch_sweep/crosstalk_2026-10-15/ (crosstalk.json, audit/*.wav)
+Run (GPU free, SAO/.venv):  .venv/bin/python eval/latch_crosstalk.py run      Output: Mantu2/latch_sweep/__misc/crosstalk_2026-10-15/ (crosstalk.json, audit/*.wav)
 Heads used: production bass/body/mid/air + the retrained air head A2. Latents: every 27th of the 5400 training crops (the heads saw 95% of them: a held-out split would be cleaner).
 """
 import glob, json, os, sys
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
-OUT = os.environ.get("CT_OUT", "/run/media/kim/Mantu/latch_sweep/crosstalk_2026-10-15")
+OUT = os.environ.get("CT_OUT", "/run/media/kim/Mantu/latch_sweep/__misc/crosstalk_2026-10-15")
 W = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium"
 HEADS = {"bass": f"{W}/latch_sa3_rms_energy_bass_best.pt", "body": f"{W}/latch_sa3_rms_energy_body_best.pt", "mid": f"{W}/latch_sa3_rms_energy_mid_best.pt",
          "air_prod": f"{W}/latch_sa3_rms_energy_air_best.pt", "air_A2": f"{W}/latch_sa3_rms_energy_air_a2_best.pt"}

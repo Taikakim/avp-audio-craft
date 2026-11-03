@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: GHOST-NOTE (created 2026-10-16)
 # Owner OK'd 2026-10-16: "the decorrelation test should be interesting". Bass head, the B2 recipe (modular+SF, lr 1e-2, d512 dp8, 10 epochs, EMA 1 ep, every epoch saved) plus a DeCov-style penalty on the
@@ -6,7 +7,7 @@
 # checkpoint under test): gradient cosine of the bass head with production body/mid/air heads, and the decoded-audio response of the other bands when bass is raised. Also val loss and, if worthwhile, the bass page/grid.
 # Order: 12-step smoke (aborts everything if the penalty does not run) -> D1, D2 -> cross-talk for B2, D1, D2 -> /tmp/bass_decorr.done (success only).
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/bass_decorr_2026-10-16
+OUT=/run/media/kim/Mantu/latch_sweep/__bass/bass_decorr_2026-10-16
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0 WANDB_MODE=offline WANDB_DIR=$OUT
@@ -32,7 +33,7 @@ for a in "D1_bass_decorr10|10" "D2_bass_decorr100|100"; do
   best=$(grep -oE "val=[0-9.]+" "$OUT/$name/train.log" | cut -d= -f2 | sort -g | head -1)
   printf '%s\t%s\t%s\t%s\trc=%s\n' "$name" "$((t1 - t0))" "${best:-NA}" "${last:-NA}" "$rc" >> "$OUT/SUMMARY.tsv"
 done
-B=/run/media/kim/Mantu/latch_sweep/bass_lr_2026-10-16
+B=/run/media/kim/Mantu/latch_sweep/__bass/bass_lr_2026-10-16
 for x in "B2|$B/B2_bass_d512_lr1e-2" "D1|$OUT/D1_bass_decorr10" "D2|$OUT/D2_bass_decorr100"; do
   n=${x%%|*}; d=${x#*|}
   [ -f "$OUT/ct_$n/audit/realised.json" ] && continue

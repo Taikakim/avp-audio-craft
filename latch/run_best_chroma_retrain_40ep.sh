@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # run_best_chroma_retrain_40ep.sh -- Retrain our winning E13 SAME-chroma conditioning head
 # (same_chroma, 384-ch other-stem, cosine loss, dim 512, depth 8) with:
 #   - 0.8x LR: 8e-4 (0.0008)
@@ -12,7 +13,7 @@
 #   bash latch/run_best_chroma_retrain_40ep.sh
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/latch_sweep/chroma_retrain_best_40ep_20261030
+OUT=/run/media/kim/Mantu/latch_sweep/__chroma/chroma_retrain_best_40ep_20261030
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 

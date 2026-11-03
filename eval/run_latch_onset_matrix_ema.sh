@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-15)
@@ -9,7 +10,7 @@
 set -u
 SAO=/home/kim/Projects/SAO
 PY=$SAO/.venv/bin/python
-HEAD_DIR=/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE/E04ema_b32_ep20
+HEAD_DIR=/run/media/kim/Mantu/latch_sweep/__onsets/modular_2026-09-30/phaseE/E04ema_b32_ep20
 OUT=/run/media/kim/Mantu/sa3_control_runs/__onsets/latch_onset_matrix_ema_20261015
 STAGE=$HOME/evals_aac/latch_onset_matrix_ema
 export ROCR_VISIBLE_DEVICES=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE

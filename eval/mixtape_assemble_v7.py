@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-07)
 """mixtape_assemble_v7.py — DJ mix v7, Phase 0: ONE integer-sample placement timeline, constant tempo
 inside every crossfade window, windows in bars, one constant phase shift per transition.
@@ -24,7 +25,7 @@ The mix is peak-normalised ONCE at the end (never per transition).
 USAGE (CPU only; run from the eval dir, not the SAO root, torchcodec shadow):
   cd /home/kim/Projects/SAO/eval && /home/kim/Projects/SAO/.venv/bin/python mixtape_assemble_v7.py \\
       --order .../work48b/order_final.json --bounds .../work48b/bounds.json --pairs .../work48b/pairs.json \\
-      --out-dir /run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0 [--drop-first] [--bars 12]
+      --out-dir /run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_v7_phase0 [--drop-first] [--bars 12]
 """
 import argparse
 import json

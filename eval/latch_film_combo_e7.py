@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 """latch_film_combo_e7.py -- EXPERIMENTS E7: onset LatCH x FiLM density adapter, density vs character drift.
@@ -33,7 +34,7 @@ import time
 
 OUT = "/run/media/kim/Mantu/sa3_control_runs/__film/latch_film_combo_e7_20261015"
 SERVER = "http://127.0.0.1:8056"
-HEAD = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE/E04ema_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt"
+HEAD = "/run/media/kim/Mantu/latch_sweep/__onsets/modular_2026-09-30/phaseE/E04ema_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt"
 PUNCH_PROMPT = ("90s psytrance, mystical aggressive goa trance,hypnotic, energetic, 143 bpm, the music consists of  "
                 "polivoks and korg analog leads and enigmatic organics pads. the bassline is a beefy moog snappy saw wave "
                 "16ths bass, and the drums have classic 909 kick and open hihat sounds. under everything  roland 303 style "

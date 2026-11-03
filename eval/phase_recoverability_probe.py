@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """phase_recoverability_probe.py — G2 of the reality-structured plan (spec
 docs/superpowers/specs/2026-07-31-reality-structured-model-experiments.md).
 
@@ -36,7 +37,7 @@ from scipy.signal import butter, hilbert, sosfiltfilt, resample_poly
 from stable_audio_3 import StableAudioModel
 
 CORPUS = Path("/run/media/kim/Mantu/ai-music/Goa_Separated")
-OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/phase_probe")
+OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/__a2a_longform/phase_probe")
 SEG = (60.0, 155.108)          # 95.108 s -> T=1024 latent frames
 N_TRACKS = 24
 BANDS = [(60, 120), (120, 250), (250, 500), (500, 1000),

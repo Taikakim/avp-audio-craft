@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-20)
 # Waits for the GPU (Antigravity), starts a render server on post-trained medium, runs eval/mixtape_anchor_smoke.py, stops the server, releases the lock.
 SAO=/home/kim/Projects/SAO
@@ -13,5 +14,5 @@ cd /tmp && $PY "$SAO/eval/mixtape_anchor_smoke.py" > /tmp/mixtape_anchor_smoke.l
 rc=$?
 kill $SPID 2>/dev/null; sleep 5; kill -9 $SPID 2>/dev/null
 "$SAO/Misc/gpu_guard.sh" release GHOST-NOTE >/dev/null 2>&1
-n=$(wc -l < /run/media/kim/Mantu/sa3_lora_runs/mixtape_anchor_smoke_2026-10-20/cells.jsonl 2>/dev/null)
+n=$(wc -l < /run/media/kim/Mantu/sa3_lora_runs/__mixtape/mixtape_anchor_smoke_2026-10-20/cells.jsonl 2>/dev/null)
 [ "$rc" = 0 ] && [ "${n:-0}" -ge 25 ] && echo "DONE n=$n" > /tmp/mixtape_anchor_smoke.done

@@ -1,6 +1,6 @@
 {
  "parent": "fullft_avp_t256",
- "ckpt": "/run/media/kim/Mantu/sa3_lora_runs/fullft_avp_t256/epoch=7-step=4784.weights.ckpt",
+ "ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft_avp_t256/epoch=7-step=4784.weights.ckpt",
  "n_modules": 229,
  "class_summary": {
   "other": {
