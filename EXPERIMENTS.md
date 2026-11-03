@@ -1446,7 +1446,8 @@ exactly this reason.)*
 - Both voices generalise (lead .245→.204, bass .191→.152 on 401 unseen tracks); EMA monotone; budget ≈20 ep
   with val-selection. Split BY SOURCE TRACK (every track has ≥2 crops). `latch/summarize_val_arms.py`.
 
-### E2 — AdaGC / decay / (MuonC?) bracket on the melody head at the established budget — **PLANNED (local, light)**
+### E2 — AdaGC / decay / (MuonC?) bracket on the melody head at the established budget — **Modular recipe tested 2026-11-03 (W): NO GAIN; AdaGC/decay bracket not run, not recommended on this evidence**
+- **RESULT (`latch/run_f0_modular.sh`, `eval/e2_f0_compare.py`).** Lead f0 head retrained with the E13 C3 recipe (modular, d512, depth 8, 12 epochs, val 0.227, still falling; current head AdamW d256 depth 4, 30 epochs, val 0.204), compared on the same 6 prompts x 2 seeds. Follow, old vs new: up/down +0.27/+0.24, +0.44/+0.50, +0.81/+0.80 and arch/valley +0.21/+0.24, +0.43/+0.20, +0.63/+0.56 at gains 512/2048/8192; every paired interval spans 0. Periods at gain 8192: 10 s +0.09/+0.15, 5 s -0.08/-0.09, 2.5 s -0.10/-0.07. Gate 0/24 for both throughout. So the recipe that gave chroma about 10x gives this head nothing, and the temporal ceiling (D16) is not a matter of this training recipe. Only ep12 tested.
 - `train_latch --optimizer fusion --fusion-decay/--fusion-snr` exist; AdaGC needs a small port; EDM2
   forced-norm exists nowhere.
 
