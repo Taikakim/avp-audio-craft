@@ -193,6 +193,8 @@ not a duplicate. Use `srun --ntasks=1` + `torchrun --standalone --nproc-per-node
 
 Full rule in `CLAUDE.md` ("Training runs — write the notes AT LAUNCH"). The short version:
 
+- **Also (2026-11-03, TRAINING.md D36-D39, §3b):** theme folder and canonical name; `Misc/run_record.py snapshot` keeps the launcher and trainer in `<run_dir>/_code/`; results go in with `Misc/run_record.py append`, never by overwriting; generally useful results also go in `docs/training-findings.md`.
+
 - The sbatch/launch script writes **`run_meta.json` into the run dir** via heredoc, so a run
   cannot start without one. Proven pattern: `lumi/sbatch/fullft_fleet.sbatch:91`.
 - Fields nothing else can reconstruct: **`purpose`** (what question, who asked, EXPERIMENTS
@@ -227,3 +229,6 @@ Full rule in `CLAUDE.md` ("Training runs — write the notes AT LAUNCH"). The sh
   vs healthy ~0.75–0.78), LoRA A/B gauge drift, a DSP disintegration spot-check, and how to read
   the `[MECHANISM AUDIT]` log lines — lives in `docs/train_lora_modular.md` §8 (finished run) /
   §8b (while it's still running). No GPU needed; works on any run dir.
+
+## After evaluation: prune to last + best (Kim 2026-11-03)
+Once a run is evaluated, keep the last and the best epoch and delete the other checkpoints; record the verdict and best epoch first. Not evaluated means not pruned. Full rule: `docs/TRAINING.md` D35.

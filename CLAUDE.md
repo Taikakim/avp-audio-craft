@@ -7,6 +7,8 @@ with its own `ARCHITECTURE.md` + `CLAUDE.md`.
 
 **⛔ Before launching or interpreting ANY training run, read `docs/TRAINING.md`** — the standing training directives, cross-run findings (with confidence) and the required per-run logging spec (Kim/W 2026-10-07). `docs/training-findings.md` is the dated log it cites.
 
+**⛔ Every run, every time (Kim 2026-11-03; TRAINING.md D36-D39, names in §3b):** (1) put it in its theme folder (`sa3_control_runs/__<theme>/`), never at a drive root, under the canonical name `<subject>_<method>_<corpus>_<params>_<YYYYMMDD>`; (2) keep the code with it: `Misc/run_record.py snapshot <run_dir> <launcher> <trainer>` plus `run_meta.json` saying what and why; (3) record every result, automatic or human, in that run's `run_meta.json` the moment you have it, by APPENDING with `Misc/run_record.py append`, never by overwriting; (4) if it is generally useful, not only about this run, also write it in `docs/training-findings.md`. That last one is case by case: a temporary optimisation observation can be universal.
+
 **Read these first, in order — they exist so parallel instances don't repeat work:**
 1. **`MASTER.md`** — single source of truth for cross-repo facts (data paths,
    venv-per-task, ROCm/RDNA4 gotchas). Start here for anything spanning repos. Update
@@ -348,6 +350,8 @@ Recovering it afterwards cost a day of reading 111 sbatch scripts by hand.
 **The census (`eval/model_census.html` + `.csv`, `eval/build_model_census.py`) is GENERATED.
 Never hand-edit it — the next build silently erases your edit.** Write to its SOURCES instead:
 
+**0. Where and what it's called: theme folder and canonical name, TRAINING.md D36 and §3b. The launcher also snapshots itself and the trainer into `<run_dir>/_code/` (D37).**
+
 **1. AT LAUNCH — the sbatch writes `run_meta.json` into the run dir.** Not afterwards, not by
 hand: a heredoc in the submit script itself, so it is impossible to start a run without one.
 **Copy the proven pattern at `lumi/sbatch/fullft_fleet.sbatch:91`** — it already carries
@@ -368,7 +372,7 @@ A run with no `purpose` is a run somebody will have to reverse-engineer. Also re
 `EXPERIMENTS.md` the same session (§3b) — `run_meta.json` says what the ARM is, EXPERIMENTS says
 why the experiment exists; a compaction must not be able to lose either.
 
-**2. AFTERWARDS — verdicts go in `Misc/models_index_overrides.json`**, keyed by run label
+**2. AFTERWARDS — every result is APPENDED to the run's `run_meta.json` with `Misc/run_record.py append` (D38), then the one-sentence verdict goes in `Misc/models_index_overrides.json`**, keyed by run label
 (`note` = the one-sentence evaluation shown on the page, `recipe` = real hyperparameters).
 That file is the last word in the recipe chain and survives every rebuild.
 

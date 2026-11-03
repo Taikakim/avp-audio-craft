@@ -18,6 +18,8 @@
 |---|---|---|---|
 | D1 | **Write `run_meta.json` AT LAUNCH, from the launch script (heredoc), never afterwards.** Fields: `purpose` (question, who asked, EXPERIMENTS id), `hypothesis` + kill-criterion, `status` (running/done/abandoned **and why**), `recipe.notes` (operational traps), `result` and `kim_feedback` as `null`. Copy `lumi/sbatch/fullft_fleet.sbatch:91`. | "I don't remember what all of these were about anymore" (Kim, 2026-09-01); only 24/111 sbatch scripts wrote one. | `CLAUDE.md` "Training runs — write the notes AT LAUNCH"; training-findings B12 |
 | D2 | **Register the run in `EXPERIMENTS.md` the same session.** `run_meta` says what the arm IS; EXPERIMENTS says why it exists. | A compaction must not be able to lose either. | `CLAUDE.md` (same section) |
+| D36 | **Put every run in its theme folder, under a canonical name (§3b). Never at the root of a run drive.** `sa3_control_runs/__<theme>/`: `__onsets`, `__chroma`, `__riffer`, `__film`, `__latch`, `__genre_style`, `__mood`, `__drones`, `__evolution`, `__soups`, `__misc`. Pick the closest existing theme; add a new one only when several runs need it. Moving a run? Update `__MOVED_MAP.json` and run `Misc/control_runs_repoint.py`. | The flat root reached 200+ entries and could not be read; moves silently break hardcoded paths, including the render server's default FiLM. | Kim 2026-11-03; MASTER §2 |
+| D37 | **Keep the code with the run: `python3 Misc/run_record.py snapshot <run_dir> <launch script> <training script>` from the launcher, before training starts.** Copies both into `<run_dir>/_code/` with the git state. A resume with changed code keeps both versions. Applies to every trainer and every launcher, local or cluster. | A recipe in JSON cannot be re-run if the trainer moved on; `git` only helps if the tree was clean and committed, and it often was not. `run_meta.script` names a file that may have changed since. | Kim 2026-11-03; `Misc/run_record.py` |
 | D3 | **Never hand-edit `eval/model_census.html/.csv`.** Verdicts go in `Misc/models_index_overrides.json`; rebuild with `eval/build_model_census.py --rescan`, every drive mounted. | The census is generated; a hand edit is erased, and a drive that is down reads as "arm absent". | `CLAUDE.md` (same section); skill §6 |
 | D4 | **Set `--lr` explicitly. LR scales are optimizer- AND net-specific; never copy one across.** `train_lora_modular.py` defaults to 5e-6 and barely moves (5e-4 clean on DoRA); the modular optimizer on a small from-scratch LatCH head wants 6e-3..1e-2 (3e-4 under-trains, 3e-2 diverges); FusionOpt full-FT best local ≈ 5e-6. | A wrong-scale LR looks like a null result, not an error. | training-findings C14, skill §4, `EXPERIMENTS.md` E5 |
 | D5 | **Fix the horizon of an EMA in data exposure, then derive beta from effective batch and update count.** Our EMA updates PER MICROBATCH (so accumulation 4 shortens the horizon 4x). Read `R = updates / half-life`: <1 is mostly the start point, 3-10 is the useful range. | A low-R EMA renders its own starting point, and the arms of a ladder come out alike (a false null). | skill §1 (arithmetic + the trap on load) |
@@ -66,6 +68,8 @@
 | # | Rule | Why | Evidence |
 |---|---|---|---|
 | D35 | **Once a run has been evaluated, prune its checkpoints to the last and the best epoch; keep both.** Results decide which epoch is best and whether the run is ready. Record the verdict and the best epoch (`run_meta.json` `result` or `Misc/models_index_overrides.json`) BEFORE deleting anything. Sidecars, logs, metrics and rendered clips stay. **Not evaluated means not pruned.** Hold off while the epochs are still needed, such as a planned soup or per-epoch listening. Keep the last epoch's fat form if the run might continue. Never on the only copy without looking at the target first; on LUMI, Kim runs it. Re-run `eval/build_model_census.py --rescan` afterwards. | Stops trash checkpoints accumulating: drives are at 97-100% (2026-11-03). The last is the resume point and the best is what you would actually use, and they are often different (quality can peak well before the end). | Kim direct 2026-11-03. Unaudited runs stay, as in `docs/pruning/2026-11-03-june-review.md`. **Tool gap:** `lumi/prune_optimizer_states.py` has no keep-last-and-best mode. `--keep-last-only` would delete the best, and `--keep-list` only chooses which stay fat. |
+| D38 | **Every result goes into that run's `run_meta.json` the moment we have it, automatic or human, on any run, old ones included. APPEND, never overwrite: `python3 Misc/run_record.py append <run_dir> --kind auto\|human --by <HANDLE> --text "..." [--source <page or file>] [--json <metrics file>]`.** It adds to an `evaluations` list; a human verdict also extends `kim_feedback`, verbatim and dated, in the shape it already has. Never write these fields by hand or with `dict.update`, and don't "tidy" old values. | `kim_feedback` and `result` each exist as string, list and dict across our sidecars, and generators read those keys by name. Evaluations written anywhere else could not be found when deciding what may be pruned (D35): the 2026-11-03 audit found no evaluation evidence at all for 342 of 731 runs. | Kim 2026-11-03; MASTER §4 manifest v2; `eval/audit_run_evaluations.py` |
+| D39 | **When a result is generally useful, also write it in `docs/training-findings.md`, dated, with its evidence; promote it to §2 here once it holds across runs.** Test, case by case: *would this change a decision on a run that is not this one?* A temporary optimisation observation usually would not, but it can be universally meaningful, so judge it rather than filter by type. Unsure means write it and give it a low confidence. Negative results count. Add a journal line too: `DISCOVERIES.md` is generated from journals, never hand-edit it. | Per-run sidecars are not searched when planning the next run. | Kim 2026-11-03 |
 
 ---
 
@@ -144,17 +148,42 @@ Detail and dated evidence live in `docs/training-findings.md`; numbers here were
 
 | Tier | What | Where | Notes |
 |---|---|---|---|
-| L1 | **`run_meta.json` at launch** (D1 fields), plus **full argv**, git SHAs of SAO / stable-audio-tools / stable-audio-3, interpreter path, and the env that changes behaviour: precision, EMA flags and horizon `R`, `--num-workers`, `SAVE_ALL`, `SHARE_GPU`, seed(s), effective batch, total planned steps | run dir | Training logs do not dump argv (item 21 had to reconstruct three runs); worker count and EMA are exactly the nuisance variables behind F4 and D5 |
+| L1 | **`run_meta.json` at launch** (D1 fields), **`_code/` with the launch and training scripts (D37)**, plus **full argv**, git SHAs of SAO / stable-audio-tools / stable-audio-3, interpreter path, and the env that changes behaviour: precision, EMA flags and horizon `R`, `--num-workers`, `SAVE_ALL`, `SHARE_GPU`, seed(s), effective batch, total planned steps | run dir | Training logs do not dump argv (item 21 had to reconstruct three runs); worker count and EMA are exactly the nuisance variables behind F4 and D5 |
 | L2 | **Per-step scalars (every step or at least every 50):** total loss AND components (`mse_loss`, `subspace_loss`, `var_barrier_loss`), raw pre-clip grad norm per kind (`grad/raw_norm_*`), the **lr actually applied** (not `train/lr` during warmup), param norm, update norm, step and epoch, wall time | wandb (offline OK) or a CSV in the run dir | `train_latch.py --wandb`; trainer already logs components for modular runs; D21 |
 | L3 | **Per-epoch / per-N-steps:** train and val loss, **val in raw units** (and the `--standardize` / `huber_beta` setting), best epoch, per-prompt or per-source val where sources are mixed | `train.log` + wandb | D24 |
 | L4 | **Checkpoint contents:** epoch checkpoints kept for any bracket (`SAVE_ALL=1`), each carrying epoch, global step, **lr and schedule position**, optimizer step counter, val loss, and the EMA/averaged-iterate flag | the `.pt`/`.ckpt` | Needed for trajectory analytics and for resuming correctly (D15) |
 | L5 | **Trajectory + per-layer telemetry:** per-layer weight/grad norms and distance-from-init, weight/grad histograms, live weight-space trajectory (velocity, path-length, net-displacement, path-efficiency), optimizer internals (per-component gains). Control heads: `control/sa3_control/telemetry.py` -> wandb. LoRA/DoRA: `[MECHANISM AUDIT]` (every 500 steps), `checkpoint_trajectory_stats.py` on the saved epochs, LoRA A/B gauge drift (`eval/lora_gauge_drift.py`), flight recorder (`--flight-recorder`, on by default) | wandb + run dir | MASTER §4: loss/gnorm are near-useless for control (RF loss is blind to it); the trajectory is the diagnostic. Reference band: velocity 30-50 per 1k steps sounded good, runaway 142 (see §4 caveat on path-efficiency) |
 | L6 | **Startup audits printed and kept:** caption audit per source, target-store sanity (counts, key matching), `[MECHANISM AUDIT]` snapshot, GPU/VRAM state at start | `train.log` | D12, D19 |
-| L7 | **After the run:** `result`, `kim_feedback`, `status` + WHY if not done, rendered-clip settings (weights online/EMA, duration, cfg grid), and a pointer from EXPERIMENTS | `run_meta.json`, `models_index_overrides.json`, `EXPERIMENTS.md` | `run_meta.json` may outlive the weights |
+| L7 | **After the run, appended by `Misc/run_record.py` (D38):** `result`, `kim_feedback`, `status` + WHY if not done, rendered-clip settings (weights online/EMA, duration, cfg grid), and a pointer from EXPERIMENTS | `run_meta.json`, `models_index_overrides.json`, `EXPERIMENTS.md` | `run_meta.json` may outlive the weights |
 
 **Cheap fixes that would close the Phase D gap (proposals, not yet done; owner decides):** make `latch/run_modular_bracket.sh` pass `--wandb` (offline is fine) and write L1 into `run_meta.json`; have `train_latch.py` save lr/step/schedule into every epoch checkpoint; echo `--num-workers` into the first log line. Verified 2026-10-07: `run_modular_bracket.sh` has no `--wandb`, each Phase D `train.log` is 94 lines, and a Phase D epoch checkpoint (`D15_b32` ep5) holds `epoch`, `avg_loss`, `val_loss`, `val_split`, `seed`, `effective_batch` and config keys, but no lr, global step, schedule position or optimizer step counter.
 
 ---
+
+### 3b. Canonical names (Kim 2026-11-03; new runs only)
+
+**Run dir:** `<subject>_<method>_<corpus>_<params>_<YYYYMMDD>`. Lower case; `_` between fields, `-` inside a field; launch date last.
+
+| Field | Values |
+|---|---|
+| `subject` | what it controls or tests: `chroma`, `onset`, `hardness`, `rms`, `mood`, `f0`, `drums`; `ft` for a plain fine-tune |
+| `method` | `latch`, `film`, `dora`, `lora`, `fullft`, `eval`, `render`, `probe` |
+| `corpus` | `avp`, `goa`, `bigset`, `suomi`, `mix`; leave out for `eval` and `render` |
+| `params` | only what separates this run from its neighbours: `r128-a45`, `d512-l8`, `lr1e-3`, `s1` |
+
+Examples: `__chroma/chroma_latch_avp_d512-l8_lr1e-3_20261103`, `ft_dora_avp_r128-a45_lr1e-4_20261103`, `__chroma/chroma_eval_e24-contour_20261103`.
+
+- **Brackets:** one campaign dir under that name, with arms inside: `onset_latch_avp_lr-bracket_20261103/A1_lr1e-3`. Each arm has its own `run_meta.json` and `_code/`.
+- **The experiment id goes in `run_meta.experiment`,** and in `params` if it helps reading.
+- **A resume keeps its dir.** A new recipe gets a new dir, with `init_from` in `run_meta`.
+- **Checkpoints keep what each trainer writes,** because loaders and the census parse these forms:
+  - fine-tunes: `epoch=E-step=S.ckpt`, with the slim `.weights.ckpt`
+  - LatCH heads: `latch_sa3_<feature>_ep<E>[_online|_ema<beta>].pt`, plus `_best.pt`
+  - adapters: `riffer_step<S>.pt`, plus `riffer_final.pt`
+  - soups: `soup_<method>.pt`
+  New trainers follow the LatCH form, and always write one `_final` and a `_best` if they track one.
+- **Never rename a run or checkpoint after the fact, and leave old names alone.** Ratings, pages and the census key on them. Moving a run between theme folders is fine under D36.
+- **A name is a label, not a record** (D28): the recipe lives in `run_meta.json`. `Misc/run_record.py check <run_dir>` reports what a run is missing.
 
 ## 4. OPEN ITEMS and KNOWN DISCREPANCIES between sources
 
