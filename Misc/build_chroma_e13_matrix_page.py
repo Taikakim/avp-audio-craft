@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: ANTIGRAVITY (created 2026-10-29)
+# Last edited: WINTERMUTE 2026-11-03 -- corrected the noise-burst explanation, status notice
 """build_chroma_e13_matrix_page.py -- Builds the interactive listening dashboard
 for the E13 Retrained Chroma Head Parameter Exploration Matrix.
 
@@ -161,9 +162,9 @@ footer {{ margin: 32px 0 20px; color: #62697b; font-size: 11px; }}
   <h1>E13 Retrained Chroma Head · Parameter Exploration Matrix</h1>
   <div class="explain">
     <b>What this exploration answers:</b> Kim's listening pass on <code>chroma_e13.html</code> confirmed that the E13 Modular Retrained Head (384-d, dim 512 depth 8)
-    <i>"follows the chords in a really beautiful and transparent way, it's almost unbelievable"</i>, but diagnosed that the raw untuned <code>medium-base</code> model
-    at 24 steps with seed <code>5678</code> produced a weak, hollow sound with high-frequency noise bursts.<br>
-    <b>The Fix & Exploration:</b> Here we pair the E13 head with the curated <b>Goa DoRA finetune (<code>subloss_k24</code> ep63)</b> and evaluate the impact of
+    <i>"follows the chords in a really beautiful and transparent way, it's almost unbelievable"</i>, The same pass flagged weak sound and noise bursts with the raw <code>medium-base</code> model at 24 steps with seed <code>5678</code>. Those clips were rendered with an allocator setting (<code>expandable_segments</code>) that we found on 2026-11-03 can decode a healthy latent to wrong audio, so the burst may not have been the model. The setting is gone; the baseline for seed 1234 on this page was wrong because of it and has been re-rendered.<br>
+    <b>Status:</b> these clips have not been through the disintegration gate, so this page does not establish a usable gain range. The other clips were rendered with that setting too; their levels look normal, but only the baseline has been re-rendered.<br>
+    <b>The Exploration:</b> Here we pair the E13 head with the curated <b>Goa DoRA finetune (<code>subloss_k24</code> ep63)</b> and evaluate the impact of
     <b>Guidance Weight (0..4096)</b>, <b>CFG Scale (3..7)</b>, <b>Sampling Steps (25..50)</b>, and <b>Guidance Schedule (<code>alpha</code> back-loaded vs <code>flat</code> equal-weight)</b>,
     directly testing Kim's weak seed <code>5678</code> against control seed <code>1234</code>.
   </div>
