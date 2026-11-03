@@ -1192,3 +1192,6 @@ An imported module set the allocator flag, so every test I thought was without i
 
 ## 2026-11-03 E24 arm C, first eval uninformative; arm B reopened
 One prompt and one seed made every render read as one held E4 (voiced 0.84 in every fed arm), so most scores came back empty, and the foreign arm repeated the true arm. A test design failure, not a result. Separately: the local stream goes to both CFG branches, so CFG never scales it; `modular_cfg_null` added, default off, tested in eval 2 (`eval/e24_eval2.py`). And a correction to my own note: E23 only tested L3 through cross-attention with Melodia-trained checkpoints, so skipping arm B on that basis was wrong. See EXPERIMENTS E24.
+
+## 2026-11-03 E24 arm C follows, once CFG scales the stream
+The stream was going to both CFG branches, so text got x7 and the stream x1. Zeros in the uncond branch: fed minus other +0.467 [+0.392, +0.543], 46/48, gate 0/48, against +0.151 before. Shape over seconds, not notes: note scale +0.103, within a semitone 14% vs 12% unsteered. Also my own scoring error, caught on the first read: true minus shuffled on each arm's own stream gave about 0, because both arms follow. Measured, not heard. EXPERIMENTS E24, `files/evals/e24_contour.html`.

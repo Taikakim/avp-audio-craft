@@ -623,3 +623,16 @@ Kill a driver by its PID from `ps -eo pid,cmd | grep "bash latch/run_"` -- never
 VERIFY: `cat /run/media/kim/Mantu/latch_sweep/air_head_2026-10-14/SUMMARY.tsv` (one row per arm; `rc=0` and a best validation loss mean it trained; check the number of `latch_sa3_rms_energy_air_ep*.pt` files too).
 Traps: batch 32 at dim 512 / depth 8 runs out of the 16 GB card; use `--batch-size 16 --grad-accum 2`. lr >= 5e-2 diverges. A saved head is the EMA weights when `--ema` is on (the `ema` field in the file). Register a head for the GUI by copying it as `latch_sa3_<name>_best.pt` into `stable-audio-3/latch_weights_sa3_medium/` and restarting the render server.
 
+
+## Quarantine a model-matrix clip (flag it N/A on the boards)
+
+`Misc/quarantine_clips.py` moves a clip's m4a, wav and latent to `Mantu/sa3_lora_runs/model_matrix_QUARANTINE_<date>_<tag>/`, strips `manifest.jsonl` and `clip_metrics.db`, and writes `~/evals_aac/model_matrix/quarantined.jsonl`. `model_matrix.html` and `dora_table.html` fetch that file: a flagged cell shows N/A, a click says "Clip quarantined", a never-rendered cell stays blank. Re-rendering a cell clears its N/A by itself.
+
+```bash
+cd /home/kim/Projects/SAO
+python3 Misc/quarantine_clips.py add --list files.txt --reason "why" --tag why        # dry run: prints the counts
+python3 Misc/quarantine_clips.py add --list files.txt --reason "why" --tag why --apply
+.venv/bin/python Misc/build_model_matrix.py && .venv/bin/python eval/build_evaluator_manifest.py
+python3 Misc/quarantine_clips.py unflag --list files.txt --apply                      # flag off only, cell goes back to blank
+```
+The server copies and `quarantined.jsonl` are WINTERMUTE's to update. Verify: `wc -l ~/evals_aac/model_matrix/quarantined.jsonl`, then click an N/A cell.
