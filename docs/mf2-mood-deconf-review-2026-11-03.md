@@ -157,5 +157,5 @@ baselines to r >= 0.999, max difference 0.011. Quoted values check out within th
 
 - The mining scripts lived only in the author's scratch folder; `antigravity_crossmodal_mf2_essentia.py` here is an unmodified copy, and the others
   are not copied.
-- The Deconf tabs are in the staged `mood_finegrained.html` and its builder only; the published page had none when fetched on 11-03 at about 01:30. The
-  claims above should not reach it before W's run reads out. A rebuild can also bring back text W corrected in the staged page (WORKLOG 11-03 00:39).
+- W republished `mood_finegrained` at 01:58 with the one-prompt Deconf results labelled one prompt, one seed, not established (WORKLOG). A rebuild can undo that text.
+- Merged captions built on section 1: see above. Full inventory of this author's recent work: `docs/antigravity-work-2026-10-29_11-03.md`.

@@ -1898,6 +1898,10 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
 - **Cheap test if wanted, before any caption merge or training:** no finetune. Add each candidate word to the canonical prompts on the Goa LoRA and on Base, same seeds, guided-path baseline, and read the Essentia tag and Audiobox against the prompt without it. **Kill:** the word moves nothing the plain prompt does not. Only words that move the meter are worth merging into captions.
 - **Results / tools:** `eval/mf2_deconf_review/`.
 
+### E26 — 56-d mood head and mood-guidance studies (ANTIGRAVITY, 10-31 to 11-03) — **RENDERED AND PUBLISHED, NOT GATED, NOT HEARD; registered after the fact by CONTINUITY**
+- Head, render scripts, pages and their state: `docs/antigravity-work-2026-10-29_11-03.md`. Target comparison continues in E25a. The merged captions (E25b) are on hold.
+- **Before anything is called working:** disintegration gate, guided-path baselines on the boards, listening.
+
 ## F. Data, captions, corpora (experiments they gate)
 
 ### F1 — goa_src caption chain (year pass → Granite → sidecar) and the `latents_sa3` key join — **GATED on Kim**
@@ -2015,6 +2019,9 @@ swept (outgoing LP / incoming HP, 16 kHz -> 60 Hz). (2) lengthen clips 2-3x with
 parts (zero latent is not silence: validity-weighted) and the chroma head to blend pitch. **Kill criterion:** a stage is dropped when the owner's ear finds it no better than v7b plain.
 **Status 2026-10-07:** (1) built, synthetic tests pass, NOT yet run on real clips (the clip drive dropped off the bus at 14:11; remount needs root).
 **Status 2026-10-28:** (1)+(2) run on 17 shortlist originals: 3x forward outpaint, BS-RoFormer stems, kick-grid tempo + kick-onset phase alignment, band-swap, 16-bar windows -> `Mantu/sa3_lora_runs/mixtape_mix17_v7c_len3x`, 26.4 min; marks collected on the phone page (aavepyora files/evals/mixtape_mark). Not yet heard; extended clips decoded without the z0 clamp (probably hot).
+
+
+**STANDING OWNER RULES for the mix (Kim 2026-11-03, repeated several times; do not re-propose, implement):** (1) tempo: nudge the OUTGOING track in 0.25 BPM ramps, each over ~10 s, in the less hectic sections; never rapid ramps; (2) pitch the INCOMING down where that reduces total stretching, but by at most 5%; (3) tracks play at or near their original BPM most of the time; (4) key: morph/shift the outgoing track's chroma toward the incoming's BEFORE the incoming starts mixing in (not only inside the bridge); (5) all options in ONE mix: inpaint + stem staging + clash-aware bass hand-over + chroma. Track pool replaced 2026-11-03 by 100 generated tracks (6 models, 30 s core + 45 s extension each side); the owner tags the ones that go in the mix on the eval page.
 
 ### F8 — Separation upgrade series S0-S5 (measure first, then cheapest fix first) — **PLANNED (Kim 2026-10-27, THE-FINN plan; no owner yet)**
 
