@@ -32,7 +32,7 @@ R=/home/kim/Projects/SAO/stable-audio-tools/scripts/synth_inversion/run_v8_retra
 | 5 | `bash $R phase1` | about 2 h, then evaluation | yes | go on |
 | 6 | `bash $R board` | about 10 min | yes | tell WINTERMUTE the board is staged |
 
-`bash $R status` prints what has passed. Stages 3 to 6 are long: run each in the background and wait for it to end. They write to `/home/kim/sao_runs/v8_retrain_2026-11/logs/`.
+If a stage was cut off by a reboot or a closed session, with no `PASS` or `STOP`, run that same stage again from its start. `bash $R status` prints what has passed. Stages 3 to 6 are long: run each in the background and wait for it to end. They write to `/home/kim/sao_runs/v8_retrain_2026-11/logs/`.
 
 Step 2's listen: notes should sound whole, not chopped, and the filter should open over the 4 s. If so, the person runs `touch /home/kim/sao_runs/v8_retrain_2026-11/RENDER_CHECK_APPROVED`. Stage 3 refuses to start without it.
 
