@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-10-14)
+# Last edited: WINTERMUTE 2026-11-03 -- name and download link follow every clip, not only the first on an audio element
 """float_player.py -- the floating transport bar of the old eval pages, for ANY page.
 
 build_evals.PLAYER_JS gives the old pages a fixed bottom bar (play/pause, clip name,
@@ -33,7 +34,7 @@ let tr=null,dragging=false;
 function show(){bar.style.display='flex';document.body.classList.add('fp-on')}
 function sync(){if(!tr)return;pp.innerHTML=tr.paused?'&#9654;':'&#9208;';
  const d=tr.duration;if(d&&isFinite(d)){if(!dragging)seek.value=Math.round(tr.currentTime/d*1000);tm.textContent=fmt(tr.currentTime)+' / '+fmt(d)}}
-function track(a){if(tr!==a){tr=a;const s=a.currentSrc||a.src||'';const nm=decodeURIComponent(s.split('/').pop().split('?')[0]);
+function track(a){tr=a;{const s=a.currentSrc||a.src||'';const nm=decodeURIComponent(s.split('/').pop().split('?')[0]);
  np.textContent=nm;dl.href=s;dl.setAttribute('download',nm)}show();sync()}
 function attach(a){if(a.__fp)return;a.__fp=true;a.addEventListener('play',()=>track(a));
  ['pause','timeupdate','durationchange','ended'].forEach(ev=>a.addEventListener(ev,()=>{if(tr===a)sync()}))}
