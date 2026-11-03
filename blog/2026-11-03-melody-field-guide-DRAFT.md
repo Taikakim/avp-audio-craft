@@ -5,9 +5,9 @@ record, what we know and do not know kept apart.
 Inputs: evidence dossiers docs/melody-hunt/A-substrate.md, B-guidance.md, C-conditioners.md, D-meters.md, E-literature.md (research agents, with file:line sources), and
 F-team-notes.md (WINTERMUTE, THE-FINN). docs/melody-hunt/README.md maps each section of this guide to its dossier and experiment ids. The public text carries no ids, paths or corpus names.
 Open before publishing:
-  1. Round 1 fact check applied (docs/melody-hunt/G-factcheck.md: 14 wrong, 25 imprecise, 4 unsourced, against about 195 OK). Project review should decide whether the post may disclose what it implies about training on commercial genre music. A strength grid (eval/d15_strength.py) runs tonight, about 21:30, then W runs invented melodies with the stream in both branches, a second seed and EMA. Section 7 and these section 10 rows may close: re-read before publishing. WINTERMUTE's review of its own results applied (F-team-notes.md); it did not check other sections or the literature. Awaiting GHOST-NOTE.
+  1. Round 1 fact check applied (docs/melody-hunt/G-factcheck.md: 14 wrong, 25 imprecise, 4 unsourced, against about 195 OK). Project review should decide whether the post may disclose what it implies about training on commercial genre music. WINTERMUTE's checks of 2026-11-03 night (both branches, seeds, EMA, strength grid) are in; these numbers have not yet been fact-checked by anyone but W. WINTERMUTE's review of its own results applied (F-team-notes.md); it did not check other sections or the literature. Awaiting GHOST-NOTE.
   2. Nobody has listened to most of what this reports. Section 7's result in particular needs ears before it is presented as more than a measurement.
-  3. Figures and audio: none yet. Candidates: gain ladder, speed limit, the pianoroll arms, the before and after of the CFG fix.
+  3. Four figures in, from run reports (Misc/build_melody_guide_figures.py). Audio: none yet, and clips should not be picked by meter alone.
   4. Review by WINTERMUTE and GHOST-NOTE, whose results these mostly are.
 Do not publish without project review.
 -->
@@ -24,7 +24,7 @@ Our evidence comes from one genre (goa trance and neighbours), mostly one 16 GB 
 - **We do not know how much melody our models produce.** A headline number here, 32% to 84% of renders with "no lead" against 5% in the corpus, turned out while writing this guide to be mostly a meter artefact: the threshold is 40 notes, on 20 s renders and on 380 s corpus crops. Cut to 20 s, about 60% of the corpus also reads "no lead" (section 3).
 - **Guidance moves harmony and slow pitch direction, not notes.** A retrained chroma head reaches at gain 512 what the production head reaches at 6144 to 8192, and follows transposition. A pitch head can make a whole clip rise or fall. It does not follow a contour faster than about a 10 s period (sections 4 and 5).
 - **The morph conditioner, as trained, does not follow its contour,** under a meter that passes its own positive control (section 6).
-- **A pianoroll conditioner does follow notes.** An unchanged checkpoint from August plays melodies invented for the test, with the top line on the fed pitch 67% of the time, once classifier-free guidance (CFG) scales the note stream. Two independent meters agree on those clips. Nobody has listened yet (section 7).
+- **A pianoroll conditioner does follow notes.** An unchanged checkpoint from August plays melodies invented for the test, with the top line on the fed pitch 67% of the time, once classifier-free guidance (CFG) scales the note stream. The fed pitch sounds on 73% of frames against 13% with the notes in both CFG branches. A second render seed and a second training seed agree, and two independent meters agree on the first run's clips. Nobody has listened yet (section 7).
 - **That fix is close to textbook.** The ControlNet paper discusses the choice in 2023. We had a control stream in both CFG branches, and evaluations through that inlet almost certainly understated the control until November (sections 7 and 9).
 - **Several headline nulls were instrument failures, so a null here is not a finding until the meter is audited.** Others survived the audit. Section 3 lists our main instruments and what fooled us, in both directions.
 - **There is no melody verdict from ears in the loop.** Our rating interface has no melody question, and no blind listening test on melody exists (section 10).
@@ -127,6 +127,8 @@ LatCH guidance needs no fine-tune: a small head predicts a feature from the nois
 | Production head | +0.014 | +0.033 | +0.075 | +0.133 | +0.189 |
 | Retrained head | +0.152 | +0.232 | +0.300 | +0.354 | +0.384 |
 
+![Change in mid-band chroma cosine against guidance gain, for the retrained and production heads. The retrained head leads at every gain and flattens near +0.38; the production head rises from +0.014 to +0.189. Measured, not heard.](assets/melody-field-guide/gain_ladder.png)
+
 This is the base model at 24 steps; the transposition tests below use a fine-tune at 50 steps, so do not compare numbers across them. At gain 512 the same retrained head reads +0.152 here and +0.080 there. In gain terms, 512 on the retrained head is about 6144 to 8192 on the production head. The gate passes the production head at every gain and the retrained head through 3072, then fails 1 to 2 of 48 on enjoyment drift. Both are usable to 8192 by the gate. Better validation loss did not predict more steering. The best-validation head steered less than one with worse loss, and a head trained only on our own music has a validation number that leaked. **Keep steering separate from validation loss when choosing a head.** Sharper targets land more frames on the strongest note (0.25 to 0.45 at gain 32768, with frame cosine falling, 12 clips per cell).
 
 **Does it follow transposition.** Asking for the same chord in four keys, on 14 prompts, against a bungee-shifted control that scored 84/84 and 42/42:
@@ -157,6 +159,8 @@ Heads trained on a pitch curve were tested on the base model with Melodia on the
 |---|---:|---:|---:|---:|---:|
 | Follow score | +0.155 | -0.080 | -0.073 | -0.044 | -0.019 |
 | Unsteered clips' chance correlation with the target (absolute r, a different scale) | 0.52 | 0.36 | 0.13 | 0.14 | 0.08 |
+
+![Follow score for a triangle pitch wave at five periods. Only the 10 s period is above zero, +0.155, with an interval from 0.021 to 0.285. Measured, not heard.](assets/melody-field-guide/speed_limit.png)
 
 Melodia on known synthetic lines over drums and bass reads 0.993 at a 5 s wave and 0.97 to 0.98 at 2 s, so this is not a blind meter, at least not without pads and leads competing. Even the 10 s result barely clears zero (interval lower bound 0.021).
 
@@ -207,7 +211,21 @@ A per-frame note roll from MuScriptor enters blocks 12 to 23 of the DiT through 
 | Gate | Invented 2 of 36; transposed 0 of 24; training crops 6 of 48, all enjoyment drift (13 of 48 with the stream in both branches) |
 | Quality | Audiobox rises on training crops (PQ 7.78 vs 7.67, CE 6.80 vs 6.30), is flat on invented melodies, and drops on transposed crops (PQ 7.17 vs 7.68, with a lower spectral centroid) |
 
-**What it does not show yet.** It has not been heard. It is one checkpoint, with a second seed never evaluated. Recall ranges from 21% to 100% by clip, and from 42% to 83% averaged by prompt. The invented lines (scale walks, arpeggios) were not checked for overlap with training rolls. MuScriptor made the rolls and scores the renders, so the model may have learned what MuScriptor reads as a note; Melodia agreeing on the invented clips argues against that, but a thin lead on top of the track would pass both. Melodia was not run on the training or transposed crops. Invented lines are one voice at 0.8% roll density against about 2.5% over whole training rolls, and more on selected crops. The F1 on training crops is above the source crop. That could mean memorising, or a decode that is a poor reference, or differing context: rolls were transcribed over 380 s, and the source reading is on a 24 s decode, of which only 16 of 24 crops read 0.5 or above. The source is a weak ceiling. Nobody has compared both-branches and null on the invented melodies, only on training crops, so how far generalisation depends on the fix is an inference. Untested so far: truly held-out transcriptions, notes under 2 frames (0.19 s), longer than 256 frames, cfg other than 7, EMA weights, a stream scale separate from text CFG.
+**It is the fix, and it is not one seed.** The same 36 invented melodies at cfg 7, on the same checkpoint unless stated:
+
+![Share of frames where the fed pitch sounds, invented melodies at cfg 7: no stream 2.5%, EMA weights 5.0%, notes in both CFG branches 13%, zeros in the unconditional branch 73%, the same with another render seed 65%, and with a second training seed 73%. Measured by MuScriptor, not heard.](assets/melody-field-guide/cfg_fix.png)
+
+The top line follows the same pattern: 10.3% in both branches, 67% with the fix, 62.3% with another render seed, 66.5% with the second training seed. So on these clips, following melodies outside the training rolls comes from the fix rather than from the checkpoint alone. With the notes in both branches it is present but small: fed minus other +0.099 [+0.044, +0.162], higher on 15 of 36.
+
+**EMA weights play nothing:** 5.0% against 4.8% with no stream, on 36 clips. The run has 5,376 updates at beta 0.9999, which is under one half-life, and the inlet starts at zero, so the shadow is still near zero. Our default render path prefers EMA weights when a checkpoint has them, so **this whole family reads as dead through a default render.** The results above are online weights. We have no record of which the August evaluation used.
+
+**How hard to push.** Note strength against cfg, 12 invented melodies per cell, first number the fed pitch sounding, then gate failures:
+
+![Grid of cfg 3, 5, 7 and 10 against note strength x0.5, x1, x1.5 and x2. The fed pitch sounds on 19% at cfg 3 x0.5, rising to 87% at cfg 10 x2. Cfg 7 at x1 reads 80% with 0 of 12 gate failures. Gate failures reach 3 of 12 at the strong end. Measured, not heard.](assets/melody-field-guide/strength_grid.png)
+
+Recall levels off near 87%, and another melody stays at 2 to 5% in every cell, so pushing harder does not make it play the wrong line. Cfg 7 at x1 is the clean default. Above x1, the CE enjoyment score falls by about 0.7 to 0.8 at cfg 5 and 7. Cfg 3 at x1.5 reaches 76% with 0 of 12 failures, which matters if a lower cfg sounds better.
+
+**What it does not show yet.** It has not been heard. Recall ranges from 21% to 100% by clip, and from 42% to 83% averaged by prompt. The invented lines (scale walks, arpeggios) were not checked for overlap with training rolls. Both training seeds used the same data, so a second seed does not rule out a data effect. MuScriptor made the rolls and scores the renders, so the model may have learned what MuScriptor reads as a note; Melodia agreeing on the invented clips argues against that, but a thin lead on top of the track would pass both. Melodia was not run on the training or transposed crops. Invented lines are one voice at 0.8% roll density against about 2.5% over whole training rolls, and more on selected crops. The F1 on training crops is above the source crop. That could mean memorising, or a decode that is a poor reference, or differing context: rolls were transcribed over 380 s, and the source reading is on a 24 s decode, of which only 16 of 24 crops read 0.5 or above. The source is a weak ceiling. Untested so far: truly held-out transcriptions, notes under 2 frames (0.19 s), longer than 256 frames, and a true stream-only guidance scale (the grid above multiplies the stream, and text CFG still scales it).
 
 **Absolute notes and centred pitch.** A pitch-invariant version follows over seconds at +0.467 but barely at note scale (+0.103; within a semitone 14% vs 12% for no stream). The absolute-note version scores +0.263 at note scale. It is tempting to read that as input, but one is a DoRA at 2,400 steps and the other a full fine-tune at 32 epochs. Both ran on the same crops, selected to be voiced with a moving top line, so neither is a corpus average.
 
@@ -222,6 +240,7 @@ A per-frame note roll from MuScriptor enters blocks 12 to 23 of the DiT through 
 | "32% to 84% of renders have no lead" | Mostly a length artefact in the detector, section 3. Anything built on it, including how much fine-tuning changes lead presence, needs a length-fair detector |
 | "Air is the melody band" | About half fingerprint |
 | "Air is the only band with a real matched-vs-null gap" (+0.196) | On 386 of 752 tracks with air notes, on one metric. Bass and mid have a temporal part on another metric (0.075, 0.104, vs air 0.125) |
+| Any render of a zero-init inlet through a default path | It picks EMA weights if present, and on a young shadow that plays as nothing. Check which weights a null used |
 | True-minus-shuffled numbers built by scoring each arm on its own stream | That cancels when both follow. One table is known affected, and it was caught the same day. August's +0.100 scored both against the source roll, which is valid. Check any others |
 | Any verdict on a stream through this inlet before 3 November | Under the CFG fault, including other per-frame conditioners built on it |
 
@@ -252,7 +271,7 @@ Confidence in brackets. These are measurements unless marked, and some carry int
 - It follows transposition in the mid band at gain 2048 (medium-high).
 - Pitch guidance sets slow direction (medium) and does not follow 5 s or faster (medium).
 - The morph conditioner does not follow above about 12% of a perfect copy (medium-high).
-- A note stream with CFG on it is followed, including sparse single-voice lines invented for the test (medium; two meters on those clips).
+- A note stream with CFG on it is followed, including sparse single-voice lines invented for the test (medium-high as a measurement: two meters on the first clips, two seeds of each kind, a strength grid; still unheard).
 - A control stream in both CFG branches is under-driven (high; reproduced on two checkpoints, and known in the literature).
 - PQ and CE do not see melody (medium).
 - Sampling updates do not show melody-specific bursts (medium).
@@ -270,10 +289,8 @@ Roughly cheapest first.
 | Is the air band lead or pad? | Join band results with lead detection | CPU, minutes |
 | Do subspace arms change hooks? | Transcribe clips already rendered | CPU |
 | Do ratings know about melody? | Join ratings with melody features; add a melody question | CPU, plus a UI change |
-| Is generalisation down to the fix? | Invented melodies with stream in both branches vs null | About 24 min GPU |
-| Does a second seed agree? EMA vs online? | Render and score | Short GPU |
 | Does the stronger chroma head turn a melody? | Re-run the July test with it | One GPU evening |
-| What stream scale is best, and is the quality cost separable? | Separate scale, ladder of 1 to 12 | Code plus GPU |
+| Is a separate stream-only guidance scale better than a strength multiplier? | Three-branch CFG, ladder | Code plus GPU |
 | Does it hold on real unseen notes? | Transcribe tracks outside the corpus | GPU |
 | Do the untested morph arms follow? | Run the meter on them | About an hour each |
 | When does sampling settle on a melody? | Track per-step melody across unguided sampling | An afternoon |
@@ -315,8 +332,9 @@ Each rule exists because something in section 3 got past us.
 9. **Check for fingerprint** with a frame shuffle.
 10. **Gate the output,** and check it is a new line and not an existing voice getting louder.
 11. **Use a second meter** when the scorer also made the targets.
-12. **Label it MEASURED or HEARD.** Only ears close it.
-13. **Write down the instrument audit before calling a null.**
+12. **Say which weights you rendered.** A default path can pick an EMA shadow that plays nothing.
+13. **Label it MEASURED or HEARD.** Only ears close it.
+14. **Write down the instrument audit before calling a null.**
 
 ## Papers
 
