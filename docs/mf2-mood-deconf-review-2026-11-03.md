@@ -82,8 +82,7 @@ stereotype. E25 registers the cheap test.
 
 ### Merged captions already built on this
 
-`eval/recover_mf2_lost_moods.py` (untracked, 01:10 on 11-03) builds "ready-to-train" merged sidecars, including `lumi/goa_longform_sidecar_merged.json`. Nothing
-here trains on them yet, as far as I can see. It strips hinted `euphoric`/`uplifting` as hallucinated when the unhinted caption is dark-family (`contradiction_fixed` 7,460 of 23,232).
+`eval/recover_mf2_lost_moods.py` (untracked, 01:10 on 11-03) builds "ready-to-train" merged sidecars, including `lumi/goa_longform_sidecar_merged.json`. Kim's decision on 2026-11-03: expected to be a noticeable quality improvement, hold lifted, E25b reads the words. It strips hinted `euphoric`/`uplifting` as hallucinated when the unhinted caption is dark-family (`contradiction_fixed` 7,460 of 23,232).
 Check (`strip_check.py`, a proxy on MF2 full captions, not a replay of its Granite-tag rule): 4,863 tracks would be stripped, 5,002 kept. The audio leans the way the rule assumes, moderately: stripped tracks score
 lower valence (AUC 0.61 and 0.63 on the two valence models) and higher Essentia `dark` (0.60). Essentia `uplifting` barely separates them (0.53), and the groups overlap heavily. So the rule points the right way
 on average and is not a per-track truth; "hallucinated" is too strong. The claim that the original is 15-20% wrong was not measured here.

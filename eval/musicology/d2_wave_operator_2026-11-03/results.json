@@ -1,0 +1,132 @@
+{
+ "A_mid": {
+  "1.0": {
+   "speed_centroid_st_s": 1.18,
+   "direction_correct": 1.0,
+   "flux": 6.2664
+  },
+  "2.0": {
+   "speed_centroid_st_s": 1.9,
+   "direction_correct": 1.0,
+   "flux": 9.7646
+  },
+  "3.0": {
+   "speed_centroid_st_s": 2.83,
+   "direction_correct": 1.0,
+   "flux": 11.6973
+  },
+  "6.0": {
+   "speed_centroid_st_s": 5.65,
+   "direction_correct": 1.0,
+   "flux": 14.2539
+  },
+  "12.0": {
+   "speed_centroid_st_s": 11.06,
+   "direction_correct": 1.0,
+   "flux": 14.8401
+  },
+  "24.0": {
+   "speed_centroid_st_s": 20.89,
+   "direction_correct": 1.0,
+   "flux": 12.6899
+  },
+  "48.0": {
+   "speed_centroid_st_s": 35.35,
+   "direction_correct": 1.0,
+   "flux": 8.814
+  }
+ },
+ "A_mid_spearman": {
+  "wave": 0.99,
+  "flux": 0.354
+ },
+ "A_air": {
+  "1.0": {
+   "speed_centroid_st_s": 1.16,
+   "direction_correct": 1.0,
+   "flux": 7.4668
+  },
+  "2.0": {
+   "speed_centroid_st_s": 1.83,
+   "direction_correct": 1.0,
+   "flux": 10.1187
+  },
+  "3.0": {
+   "speed_centroid_st_s": 2.79,
+   "direction_correct": 1.0,
+   "flux": 10.6835
+  },
+  "6.0": {
+   "speed_centroid_st_s": 5.42,
+   "direction_correct": 1.0,
+   "flux": 7.5045
+  },
+  "12.0": {
+   "speed_centroid_st_s": 9.03,
+   "direction_correct": 1.0,
+   "flux": 4.0204
+  },
+  "24.0": {
+   "speed_centroid_st_s": 16.15,
+   "direction_correct": 1.0,
+   "flux": 4.5751
+  },
+  "48.0": {
+   "speed_centroid_st_s": 21.21,
+   "direction_correct": 1.0,
+   "flux": 6.2189
+  }
+ },
+ "A_air_spearman": {
+  "wave": 0.99,
+  "flux": -0.653
+ },
+ "B_mid": {
+  "wave": 1.0,
+  "flux": 0.9916666666666667,
+  "modspec": 1.0,
+  "chance": 0.3333333333333333,
+  "n": 360
+ },
+ "B_air": {
+  "wave": 0.9861111111111112,
+  "flux": 0.49166666666666664,
+  "modspec": 0.9277777777777778,
+  "chance": 0.3333333333333333,
+  "n": 360
+ },
+ "C_mid": {
+  "wave": 0.9566666666666667,
+  "flux": 0.7922222222222223,
+  "modspec": 0.9133333333333333,
+  "wave+modspec": 0.9677777777777777,
+  "chance": 0.3333333333333333,
+  "n": 900,
+  "tracks": 296
+ },
+ "C_air": {
+  "wave": 0.7266666666666667,
+  "flux": 0.42777777777777776,
+  "modspec": 0.6233333333333333,
+  "wave+modspec": 0.7633333333333333,
+  "chance": 0.3333333333333333,
+  "n": 900,
+  "tracks": 296
+ },
+ "D_mid": {
+  "n": 300,
+  "artists": 137,
+  "flux": -0.016,
+  "modspec": -0.068,
+  "wave": -0.01,
+  "flux+wave": -0.011
+ },
+ "D_air": {
+  "n": 300,
+  "artists": 137,
+  "flux": -0.017,
+  "modspec": -0.011,
+  "wave": -0.03,
+  "flux+wave": -0.03
+ }
+}

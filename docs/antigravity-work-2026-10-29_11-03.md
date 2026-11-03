@@ -21,8 +21,8 @@ disintegration gate, and none of it has been listened to for a verdict.
 | What | Where | State |
 |---|---|---|
 | Hinted vs unhinted word mining, 8 axes | Scratch only: `~/.gemini/antigravity/brain/62fc5213-…/scratch/` (`mine_mf2_long_moods.py`, `crossmodal_mf2_essentia.py`, `analyze_mf2_moods.py`, `compare_deconf_vs_naive.py`). Copy of the second in `eval/mf2_deconf_review/` | Reviewed: suppression confirmed, "more honest" and "missing from Essentia" not shown |
-| **Merged captions:** cross-merge script | `eval/recover_mf2_lost_moods.py`, `eval/mf2_mood_recovery_report.json` | **Uncommitted.** Report: 7,460 of 23,232 archive tracks had words stripped as contradictions; 539 of 4,461 goa_src |
-| **Merged sidecars**, labelled ready to train | `lumi/goa_bigset_sidecar_merged.json`, `lumi/goa_longform_sidecar_merged.json` (uncommitted), `goa_archive_features/goa_archive_caption_sidecar_merged_year.json` | **Hold.** Not trained on, as far as anyone has said; awaiting the decision. Strip rule checked by proxy only |
+| **Merged captions:** cross-merge script | `eval/recover_mf2_lost_moods.py`, `eval/mf2_mood_recovery_report.json` | Report: 7,460 of 23,232 archive tracks had words stripped as contradictions; 539 of 4,461 goa_src |
+| **Merged sidecars**, labelled ready to train | `lumi/goa_bigset_sidecar_merged.json`, `lumi/goa_longform_sidecar_merged.json` (uncommitted), `goa_archive_features/goa_archive_caption_sidecar_merged_year.json` | **Hold lifted 2026-11-03:** Kim expects a noticeable quality improvement. Strip rule checked by proxy only; `industrial` rises from 31 to 6,519 archive tracks; E25b reads which words change a render |
 | Merged and new Granite captions | `Kosmos/captions/goa_archive_captions_merged/granite/` (23,232), `Kosmos/captions/goa_src_captions/granite/` (4,461) | New directories. Sources appear untouched by name; I have not diffed them |
 
 ## Chroma

@@ -61,6 +61,12 @@
 | D31 | **Cheapest decisive test first (gate -> pre-test -> retrofit -> adapter -> from-scratch).** Escalate only on a positive cheap result. | Kim's standing methodology, 2026-07-31 (relayed by C; secondhand). | memory note `feedback-lightweight-first`; EXPERIMENTS gates |
 | D32 | **Write failures up in `docs/training-findings.md` as symptom -> cause -> evidence -> fix/status, plus a `DISCOVERIES.md` pointer.** A verdict without numbers, checkpoint/step and family match is not a postmortem. | A diagnosis only reported in chat is re-done by the next instance. | `CLAUDE.md` "Training-failure postmortems" (Kim 2026-09-24) |
 
+### 1d. After evaluation
+
+| # | Rule | Why | Evidence |
+|---|---|---|---|
+| D35 | **Once a run has been evaluated, prune its checkpoints to the last and the best epoch; keep both.** Results decide which epoch is best and whether the run is ready. Record the verdict and the best epoch (`run_meta.json` `result` or `Misc/models_index_overrides.json`) BEFORE deleting anything. Sidecars, logs, metrics and rendered clips stay. **Not evaluated means not pruned.** Hold off while the epochs are still needed, such as a planned soup or per-epoch listening. Keep the last epoch's fat form if the run might continue. Never on the only copy without looking at the target first; on LUMI, Kim runs it. Re-run `eval/build_model_census.py --rescan` afterwards. | Stops trash checkpoints accumulating: drives are at 97-100% (2026-11-03). The last is the resume point and the best is what you would actually use, and they are often different (quality can peak well before the end). | Kim direct 2026-11-03. Unaudited runs stay, as in `docs/pruning/2026-11-03-june-review.md`. **Tool gap:** `lumi/prune_optimizer_states.py` has no keep-last-and-best mode. `--keep-last-only` would delete the best, and `--keep-list` only chooses which stay fat. |
+
 ---
 
 ## 2. GENERAL FINDINGS (hold across runs)
