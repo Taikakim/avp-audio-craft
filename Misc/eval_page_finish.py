@@ -18,7 +18,7 @@ from float_player import inject  # noqa: E402
 
 MARK = "<!-- eval-chrome v1 -->"
 # Each page's own audio bar. Hidden, not deleted: its script still reads and writes these elements.
-OWN_PLAYERS = (".transport-bar", "#player-bar", ".player-fixed", ".player-bar")
+OWN_PLAYERS = (".transport-bar", "#player-bar", ".player-fixed", ".player-bar", "#bar")
 HIDE = "<style>" + ",".join(OWN_PLAYERS) + "{display:none !important}</style>"
 CHROME = ('<div class="page-chrome" style="padding-top:18px">'
           '<p class="over">VIBE ON THE EDG3 · EVALS</p>'

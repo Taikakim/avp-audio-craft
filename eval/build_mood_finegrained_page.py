@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: WINTERMUTE 2026-11-03 -- chroma head is 384-dim; link to the finished 15-prompt run
 """build_mood_finegrained_page.py -- generates the listening page for the
 fine-grained weight ladder (g=0, 256, 512, 1024, 1536, 2048, 3072, 4096, 8192) and 8 model
 combinations / adapter blends on prompt rb_bracket_0.
@@ -791,13 +792,13 @@ body.inspector-open .inspector-toggle-tab {{ right: 410px; }}
 <h1>56-dim Mood LatCH: Fine-Grained Weight Ladder &amp; De-Confounded Targets <span class="unaudited" title="Initial listening note recorded; full matrix verdict pending.">&#10071;</span></h1>
 
 <p>
-  <b>What this tests and why.</b> This page sweeps guidance gain <code>g = 0..8192</code> (plus extended <code>g = 6144, 12288</code> and negative guidance) across 8 model/adapter configurations and 9 targets for the 56-dim Essentia <code>mtg_jamendo_moodtheme</code> LatCH probe (<code>ep40</code>, validation loss <code>0.0598</code>). Related mood and chroma listening pages: <a href="choice_clips_mood.html">choice_clips_mood.html</a> tests this head across 6 models at <code>g=1024, 2048</code>, <a href="mood_oppose.html">mood_oppose.html</a> tests reinforcement vs. opposition on 2 prompts, and <a href="choice_clips_chroma.html">choice_clips_chroma.html</a> / <a href="ep10_vs_ep40_chroma.html">ep10_vs_ep40_chroma.html</a> test the 24-dim chroma head.
+  <b>What this tests and why.</b> This page sweeps guidance gain <code>g = 0..8192</code> (plus extended <code>g = 6144, 12288</code> and negative guidance) across 8 model/adapter configurations and 9 targets for the 56-dim Essentia <code>mtg_jamendo_moodtheme</code> LatCH probe (<code>ep40</code>, validation loss <code>0.0598</code>). Related mood and chroma listening pages: <a href="choice_clips_mood.html">choice_clips_mood.html</a> tests this head across 6 models at <code>g=1024, 2048</code>, <a href="mood_oppose.html">mood_oppose.html</a> tests reinforcement vs. opposition on 2 prompts, and <a href="choice_clips_chroma.html">choice_clips_chroma.html</a> / <a href="ep10_vs_ep40_chroma.html">ep10_vs_ep40_chroma.html</a> test the 384-dim chroma head.
 </p>
 
 <div class="caveat-box">
   <b>Scope, Baseline &amp; Disintegration Gate Disclosures (Not Established):</b>
   <ul style="margin:5px 0 0 18px;">
-    <li><b>One prompt and one seed (not established):</b> Every cell on this page uses a single prompt (<code>rb_bracket_0</code>: <code>"{PROMPT}"</code>) and a single seed (<code>{SEED}</code>, <code>n = 1</code> per cell). One prompt and one seed establish nothing; all trends below are single-seed observations, <b>not established</b> results. WINTERMUTE's 15-prompt &times; 4-model run (<code>eval/mood_deconf_render.py</code> / <code>eval/mood_deconf_report.py</code>) tests whether these targets hold across prompts.</li>
+    <li><b>One prompt and one seed (not established):</b> Every cell on this page uses a single prompt (<code>rb_bracket_0</code>: <code>"{PROMPT}"</code>) and a single seed (<code>{SEED}</code>, <code>n = 1</code> per cell). One prompt and one seed establish nothing; all trends below are single-seed observations, <b>not established</b> results. WINTERMUTE's 15-prompt &times; 4-model run (<code>eval/mood_deconf_render.py</code> / <code>eval/mood_deconf_report.py</code>) tested these targets across prompts: see <a href="mood_deconf.html">the 15-prompt page</a>.</li>
     <li><b>Disintegration gate not run on this page:</b> The automated disintegration gate (<code>control_head_disintegration_eval.gate()</code>) has not been run on the clips in this table. Without the gate, this page does <b>not</b> establish a usable gain range or a confirmed sweet spot. As an informal listening observation, the range of useful weight varies strongly depending on the adapter and source material.</li>
     <li><b>Unguided <code>g=0</code> baseline confound (MASTER &sect;5):</b> The <code>g=0</code> clips on this page were rendered with unguided <code>generate()</code> rather than the guided sampler at <code>gain=0</code>, so differences between <code>g=0</code> and <code>g &gt; 0</code> combine guidance steering with the guided-sampler trajectory difference.</li>
   </ul>

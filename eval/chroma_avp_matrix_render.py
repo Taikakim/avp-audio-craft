@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: ANTIGRAVITY (created 2026-10-29)
+# Last edited: WINTERMUTE 2026-11-03 -- removed expandable_segments: on ROCm it makes decodes wrong or NaN (MASTER section 5)
 """chroma_avp_matrix_render.py -- Comparative evaluation matrix for the
 retrained 384-d SAME-chroma head on the AVP augmented dataset.
 
@@ -23,7 +24,6 @@ import os
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
 os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
-os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import argparse
 import json

@@ -22,7 +22,7 @@ SRC = os.path.expanduser("~/evals_aac/control_runs/mood_deconf_20261103")
 STAGE = os.path.expanduser("~/evals_aac")
 SUB = "mood_deconf"
 FINDINGS_FILE = os.path.join(SRC, "findings.html")
-MODEL_LABEL = {"base": "Medium base", "adamw": "AdamW ep5 (AVP)", "goa": "Goa LoRA ep63", "combo_fusion_goa": "Fusion + Goa, 50/50"}
+MODEL_LABEL = {"base": "Medium base", "adamw": "AdamW epoch 9 file (AVP)", "goa": "Goa LoRA ep63", "combo_fusion_goa": "Fusion + Goa, 50/50"}
 GROUPS = {"Melodic": ["Melodic", "Deconf_Melodic"], "Space": ["Space", "Deconf_Space"], "Dark": ["Dark", "Deconf_Dark"],
           "Uplifting (Deconf only)": ["Deconf_Uplifting"], "Anti-dark (Deconf only)": ["Deconf_AntiDark"]}
 GAINS = [1024, 2048, 4096, 8192]
@@ -53,20 +53,17 @@ TEXT = json.load(open(os.path.join(SRC, "prompts.json")))
 DATA = json.dumps({"clips": clips, "models": MODEL_LABEL, "groups": GROUPS, "gains": GAINS, "prompts": list(prompts), "text": TEXT,
                    "target_gain": rep["by_target_gain"], "paired": rep["paired"], "own": {"Melodic": "melodic", "Deconf_Melodic": "melodic", "Space": "space", "Deconf_Space": "space", "Dark": "dark", "Deconf_Dark": "dark", "Deconf_Uplifting": "uplifting", "Deconf_AntiDark": "melodic"}})
 
-T = r"""<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Mood Deconfounded Targets</title><style>
-:root{--bg:#0e0e10;--fg:#e0e0e0;--mut:#888;--line:#2a2a30;--head:#1c1c22;--bar:#16181c;--btn:#18181c}
-body{font:13px system-ui;margin:0;background:var(--bg);color:var(--fg)}
-#bar{position:sticky;top:0;background:var(--bar);padding:7px 12px;border-bottom:1px solid var(--line);z-index:9}
-#wrap{padding:14px 16px;max-width:1400px}h1{font-size:18px}h2{font-size:15px;margin:26px 0 4px;color:#cde}.muted{color:var(--mut)}
-.explain{background:#1a140c;border:1px solid #433;border-left:3px solid #d90;padding:10px 12px;font-size:12.5px;color:#dcd;margin:10px 0;line-height:1.45}.explain b{color:#fc6}
-table{border-collapse:collapse;font-size:12px;margin:4px 0;display:block;overflow-x:auto;max-width:100%}td,th{border:1px solid var(--line);padding:4px 6px;text-align:center;white-space:nowrap}
-th{background:var(--head);color:#aaa}td.l{text-align:left;color:#9ab;white-space:normal;min-width:190px;max-width:320px}
-.num{font-variant-numeric:tabular-nums}select{background:var(--btn);color:var(--fg);border:1px solid #444;padding:4px;margin:0 10px 0 4px;font:inherit}
-.b{display:inline-block;cursor:pointer;border:1px solid #333;border-radius:3px;padding:2px 5px;margin:1px;font-size:11px;font-variant-numeric:tabular-nums;background:var(--btn);min-width:30px}
-.b:hover{outline:1px solid #7cf}.play{outline:2px solid #5d5 !important}.un{color:#e44;font-weight:bold;cursor:help}
+T = r"""<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Mood Deconfounded Targets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="evals.css"><style>
+.wrap{max-width:1400px}.muted{color:var(--dim)}
+.explain{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--edge);padding:10px 12px;font-size:12.5px;margin:10px 0;line-height:1.6}.explain b{color:var(--ink)}
+table{border-collapse:collapse;font-size:12px;margin:4px 0;display:block;overflow-x:auto;max-width:100%}td,th{border:1px solid var(--rule);padding:4px 6px;text-align:center;white-space:nowrap}
+th{background:var(--paper-dim);color:var(--dim);font-weight:500}td.l{text-align:left;white-space:normal;min-width:190px;max-width:320px}
+.num{font-variant-numeric:tabular-nums}select{background:var(--paper-dim);color:var(--body);border:1px solid var(--rule);padding:4px;margin:0 10px 0 4px;font:inherit}
+.b{display:inline-block;cursor:pointer;border:1px solid var(--rule);border-radius:2px;padding:2px 5px;margin:1px;font-size:11px;font-variant-numeric:tabular-nums;background:var(--paper-dim);min-width:30px}
+.b:hover{border-color:var(--edge)}.play{background:var(--edge) !important;color:#fff;border-color:var(--edge)}.un{color:#e33;font-weight:bold;cursor:help}
 </style></head><body>
-<div id=bar>&#9654; <b id=np>click a clip to play</b> <span id=pos class=muted></span> <span class=muted>· switching keeps the playhead · re-click stops</span></div>
-<div id=wrap><h1>Mood steering: de-confounded targets vs naive ones</h1>
+<div class=wrap><p class=over>VIBE ON THE EDG3 · EVALS</p><p class=nav><a href="index.html">← all evals</a></p><h1>Mood steering: de-confounded targets vs naive ones</h1>
 <div class=explain><b>Why this page exists.</b> A first run suggested that mood targets corrected for the classifier's stock-music common factor (de-confounded) steer better than
 naive targets that name three tags. That run used one prompt and one seed. This one repeats it on 15 prompts, 4 models and 4 gains (1,980 clips).
 <b>How to read it.</b> Each clip is compared with the same model, prompt and seed rendered through the guided sampler at gain 0. Scores are an Essentia mood classifier on the rendered audio, from 0 to 1.
@@ -75,11 +72,10 @@ A higher score means the classifier hears more of that tag, not that it sounds b
 <div id=sum></div>
 <h2>Listen</h2>
 <div>Model<select id=sm></select>Target<select id=sg></select>Score shown<select id=ss></select></div>
-<div class=muted>Rows are prompts, each with its own seed. The button shows the chosen score; the first column is the same render with no steering.</div>
+<div class=muted>Rows are prompts, each with its own seed. The button shows the chosen score; the first column is the same render with no steering. Switching clips keeps the playhead; clicking the playing clip stops it.</div>
 <div id=grid></div></div><audio id=au_el preload=none></audio>
 <script>const D=__DATA__;
-const au=document.getElementById('au_el'),np=document.getElementById('np');let cur=null;
-au.addEventListener('timeupdate',()=>{document.getElementById('pos').textContent=cur?('· '+au.currentTime.toFixed(1)+'s'):'';});
+const au=document.getElementById('au_el'),np=document.createElement('span');let cur=null;
 au.addEventListener('ended',()=>{cur=null;mark();});
 function mark(){document.querySelectorAll('.b.play').forEach(e=>e.classList.remove('play'));if(cur){document.querySelectorAll('[data-id="'+cur+'"]').forEach(e=>e.classList.add('play'));}}
 function play(id){if(cur===id){au.pause();cur=null;mark();np.textContent='stopped';return;}

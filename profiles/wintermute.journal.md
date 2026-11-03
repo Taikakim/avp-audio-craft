@@ -1186,3 +1186,6 @@ A `|| true` on the directory step, and ssh errors on stdout, so a connection res
 
 ### finding · The dead decode comes after the latent, and empty_cache can set it off
 Same request in one process: latent identical to the bit, first render's audio NaN or wrong. With `empty_cache` between renders, ten of ten NaN. Calling `same.decode()` between renders was worse. Found by accident: the first version of the mood script did both, and its smoke test logged 31 NaN cells as finished. I had assumed "first render of a process" was the whole pattern; it is one symptom. Root cause still open, and E13's 2 faults in 1,715 with the same call mean something else matters too.
+
+### finding · Root cause: expandable_segments. My empty_cache story was wrong
+An imported module set the allocator flag, so every test I thought was without it had it. Isolating the flag took ten renders each way and CPU-side measurement. Without it: no faults in 1,980 clips, and a fresh server is clean. The faults also explain the silent-damage case, where a dead check passes wrong audio. Lesson: read what an import does to the environment before crediting a result to the variable I changed.

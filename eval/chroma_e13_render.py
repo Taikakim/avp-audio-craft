@@ -28,7 +28,7 @@ import os
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
 os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
-os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")   # first run OOMed at 12.9 GiB after 142 clips
+# NOT expandable_segments (W 2026-11-03): on ROCm it makes decodes wrong or NaN from a healthy latent, MASTER section 5. Memory build-up: the runner resumes.
 
 import argparse
 import gc
@@ -241,10 +241,7 @@ def run(stages, ladder_heads=None):
     if missing:
         sys.exit(f"missing heads: {missing}")
     model = StableAudioModel.from_pretrained("medium-base", device="cuda")
-    # WARM-UP (W 2026-11-02): the first guided render of a fresh process decoded to all-NaN audio from a finite latent in 3 of 3
-    # fresh processes tested, at gains 2048 and 16384. Six throwaway renders avoid that case, but they do NOT cure the fault: after
-    # warm-up a new head (S0_ep4) still gave dead audio, and one request came out unsteered in one run and steered in another. Cause
-    # unknown (MASTER section 5). The audio check below is the real guard; the warm-up only saves those first cells.
+    # WARM-UP (W 2026-11-02), kept for continuity with the earlier cells. The faults it was added for came from expandable_segments (MASTER section 5).
     for i in range(6):
         model.generate(prompt=prompt_text(PROMPTS[i % 3]), duration=DURATION_SEC, steps=STEPS, cfg_scale=CFG, seed=i,
                        latch_configs=[{"model_path": str(PROD), "target_raw": build_target("C", n_frames), "weight": 1.0,

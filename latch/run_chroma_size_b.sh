@@ -13,7 +13,7 @@ while pgrep -f "^/bin/bash latch/run_chroma_size.sh" > /dev/null; do sleep 60; d
 grep -v "	deferred$" "$OUT/SUMMARY.tsv" > "$OUT/SUMMARY.tsv.tmp" && mv "$OUT/SUMMARY.tsv.tmp" "$OUT/SUMMARY.tsv"
 echo "$(date '+%F %T') first runner done; S1/S2 with PYTHONPATH=$PYTHONPATH"
 cd "$SAO" || exit 1
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True bash latch/run_chroma_size.sh
+bash latch/run_chroma_size.sh   # W 2026-11-03: expandable_segments removed, MASTER section 5
 "$SAO/eval/run_chroma_e13.sh" --stages size
 python3 "$SAO/eval/grad_noise_by_t_report.py" "$OUT"/S*_*/ > "$OUT/grad_noise_by_t_report.txt" 2>&1
 echo "$(date '+%F %T') E13b done"

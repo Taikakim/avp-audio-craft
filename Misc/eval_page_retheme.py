@@ -79,8 +79,23 @@ def map_rgba(m):
 RGBA = re.compile(r"rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)")
 
 
+def tint_hex(m):
+    """A saturated colour used as a BACKGROUND: a pale tint of its hue, whatever its lightness, so dark text stays readable on it."""
+    r, g, b, a = to_rgb(m.group(0))
+    h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+    if s < .22 or l < .03:
+        return neutral(l) + a
+    rr, gg, bb = colorsys.hls_to_rgb(h, .92, .5)
+    return f"#{int(rr * 255):02x}{int(gg * 255):02x}{int(bb * 255):02x}" + a
+
+
+BG = re.compile(r"(background(?:-color)?\s*:\s*)(" + HEX + ")")
+
+
 def css(text):
-    return RGBA.sub(map_rgba, re.sub(HEX, map_hex, text))
+    text = BG.sub(lambda m: m.group(1) + "@@" + tint_hex(re.match(HEX, m.group(2))).lstrip("#"), text)
+    text = RGBA.sub(map_rgba, re.sub(HEX, map_hex, text))
+    return text.replace("@@", "#")
 
 
 def retheme(html, up=""):
@@ -93,14 +108,13 @@ def retheme(html, up=""):
 
     def script(m):
         body = COLOR_SCRIPT.sub(lambda k: k.group(1) + re.sub(HEX, map_hex, k.group(2)) + k.group(1), m.group(2))
-        body = INLINE_CSS_IN_SCRIPT.sub(lambda k: k.group(1) + re.sub(HEX, map_hex, k.group(2)), body)
+        body = INLINE_CSS_IN_SCRIPT.sub(lambda k: k.group(1) + re.sub(HEX, tint_hex if k.group(1).lstrip().startswith("background") else map_hex, k.group(2)), body)
         return m.group(1) + body + m.group(3)
 
     html = re.sub(r"(<script\b[^>]*>)(.*?)(</script>)", script, html, flags=re.S)
     html = html.replace("@@FP@@", player_css)
     html = html.replace("</head>", BASE + "</head>", 1) if "</head>" in html else BASE + html
-    html = finish(html, up=up)
-    return html.replace("<style>#fpbar{", player_css[:len("<style>#fpbar{")], 1) if False else html
+    return finish(html, up=up)
 
 
 def main():

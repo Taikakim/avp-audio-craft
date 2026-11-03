@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: WINTERMUTE 2026-11-03 -- chroma head is 384-dim; link to the finished 15-prompt run
 """build_mood_eval_page.py -- builds the listening evaluation page
 for the 56-dim continuous Mood LatCH conditioning head (ep40 & ep40_ema0.25) across 6 representative models.
 Follows docs/eval-page-standard.md and site/reference.html (evals.css + Misc/float_player.py + Misc/comment_notes_block.py).
@@ -227,7 +228,7 @@ th {{
 <h1>56-dim Mood LatCH Conditioning across 6 Choice Models (ep40 &amp; ep40_ema0.25) <span class="unaudited" title="No listening verdict recorded yet (unaudited).">&#10071;</span></h1>
 
 <p>
-  <b>What this tests and why.</b> This page auditions test-time guidance with the 56-class Essentia <code>mtg_jamendo_moodtheme</code> LatCH probe (<code>ep40</code> validation loss <code>0.0598</code> vs. fast iterate <code>ep40_ema0.25</code>) across 6 representative model families from the choice clips set at <code>g=1024</code> and <code>g=2048</code>. For a finer gain sweep (<code>g=0..8192</code>) and de-confounded targets on a single prompt, see <a href="mood_finegrained.html">mood_finegrained.html</a>; for mood reinforcement vs. opposition see <a href="mood_oppose.html">mood_oppose.html</a>; for the 24-dim chroma head on the same 6 models see <a href="ep10_vs_ep40_chroma.html">ep10_vs_ep40_chroma.html</a>.
+  <b>What this tests and why.</b> This page auditions test-time guidance with the 56-class Essentia <code>mtg_jamendo_moodtheme</code> LatCH probe (<code>ep40</code> validation loss <code>0.0598</code> vs. fast iterate <code>ep40_ema0.25</code>) across 6 representative model families from the choice clips set at <code>g=1024</code> and <code>g=2048</code>. For a finer gain sweep (<code>g=0..8192</code>) and de-confounded targets on a single prompt, see <a href="mood_finegrained.html">mood_finegrained.html</a>; for mood reinforcement vs. opposition see <a href="mood_oppose.html">mood_oppose.html</a>; for the 384-dim chroma head on the same 6 models see <a href="ep10_vs_ep40_chroma.html">ep10_vs_ep40_chroma.html</a>.
 </p>
 
 <div class="caveat-box">

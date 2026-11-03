@@ -14,16 +14,10 @@ Grid: 4 models (medium base, AdamW ep5, Goa LoRA ep63, Fusion+Goa 50/50) x 15 pr
 
 Differences from that run, on purpose:
   - The baseline goes through the GUIDED sampler at gain 0 (rho = mu = 0), not generate() with no config (MASTER section 5).
-  - Audio comes from generate() itself. Calling model.same.decode() between guided renders broke the renders after it, measured
-    2026-11-03 on both venvs: non-finite latents, and once HSA_STATUS_ERROR_ILLEGAL_INSTRUCTION.
-  - NO torch.cuda.empty_cache() or gc between renders. Measured 2026-11-03 on SAO/.venv, 10 renders in one process: without it 1 bad
-    first render, then 9 that repeat exactly; with it, NaN audio on all 10 from a finite latent (MASTER section 5). If memory builds
-    up the process dies, the runner starts a fresh one, and it resumes.
-  - The first guided render of a process is thrown away: same request, bit-identical latent, different audio from the later
-    renders (MASTER section 5). A clip with dead audio or a non-finite latent is rendered again, up to twice, then left out of
-    cells.jsonl (and logged in faults.jsonl) so a rerun tries it.
-  - Each process renders its first clip again every 40 clips and at the end, and logs the comparison in chunk_checks.jsonl, which
-    shows whether renders stayed reproducible through the chunk.
+  - No expandable_segments: on ROCm it decodes healthy latents to wrong or NaN audio (MASTER section 5).
+  - Audio comes from generate(). The first render of a process is thrown away and compared with the second, and each process repeats its
+    first clip every 40 clips and at the end (chunk_checks.jsonl). In the 1,980-clip run all of these matched, so the throwaway is a check, not a need.
+  - A clip with dead audio or a non-finite latent is rendered again, up to twice, then left out of cells.jsonl (logged in faults.jsonl).
 Targets: the de-confounded vectors from ANTIGRAVITY's deconf_targets.json, copied into the run dir at first start so a later rebuild
 of that file cannot change them mid-run.
 
