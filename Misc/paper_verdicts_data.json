@@ -25,6 +25,15 @@
           "caveats": "Not treated as a closed case against LoL's mechanism itself &mdash; it's flagged as an open structural-analogy question (SA3 is bidirectional-window denoising, not autoregressive with attention sinks, so the pathology may simply not transfer) rather than a refutation of LoL's claim in its own (AR) setting. A follow-up diagnostic (E3, phase-alignment) was designed to determine whether the null means \"LoL's pathology isn't ours\" or \"our null needs a re-look inside LoL's &sigma;&theta;&isin;[0.05,0.10] band\" (docs/ai-research/validation-experiment-plan-2026-07-15.md) &mdash; as of the material reviewed, E3 is still queued, not yet executed.",
           "one_liner": "Hour-long video by jittering RoPE per head to break the phase re-alignment that causes long-horizon collapse.",
           "enrich": "Our own rope-jitter result here is a NULL — but scoped: it was tested on <em>windowed</em> long-form, where positions reset per window so the RoPE-aliasing precondition never arises (that's the null's own explanation). The live testbed is the <em>within-window</em> loop attractor (our documented 'loops a short phrase for minutes' finding), a single forward where RoPE geometry is live — so LoL's convergence with UltraViCo is testable there without contradicting our null. The transferable ideas are the RoPE-phase-coherence diagnostic and per-head jitter; the video-AR streaming machinery does not port, and it explicitly provides no long-term memory (our prompt-arc/structure-recall gap survives)."
+        },
+        {
+          "id": "2608.15103",
+          "title": "Forward-Evolution Error Analysis and Adaptive Design for Matrix-Valued Diffusion Models",
+          "link": "https://arxiv.org/abs/2608.15103",
+          "claim": "Design rules for matrix-valued diffusion: noise low-variance directions more slowly, and equidistribute the square root of the local growth over steps.",
+          "one_liner": "Tested the step-spacing rule on our base renders: it raised discretization error (+15% to +34%) instead of lowering it.",
+          "explanation": "We ported section 5.2's rule to SA3 medium base (eval/d5_adaptive_grid.py, EXPERIMENTS D5, 2026-11-03): growth measured along a 64-step Euler path on 3 pilot prompts, an adaptive grid from equal quantiles of the integral of its square root, and 14 canonical prompts tested against an N=256 reference. Final-latent error rose: +34% at N=16 (interval +5 to +80), +15% at N=24 (-3 to +36), +24% at N=32 (+2 to +49), lower on 4, 6 and 6 of 14 prompts, where the paper reports -7 to -16%. Our default schedule is already warped toward high noise by the model's distribution shift, and the reference uses that schedule, which may favour it. One global curve from 3 prompts. Only the step-spacing rule was tested, not the matrix-valued noise rule.",
+          "internal_log": "EXPERIMENTS D5"
         }
       ]
     },
@@ -538,7 +547,8 @@
           "id": "2608.06717",
           "title": "WaveFreqAnchor (training-free face restoration)",
           "link": "https://arxiv.org/abs/2608.06717",
-          "claim": "A fixed, frequency-domain anisotropic wave operator (orientation/velocity-tunable) run on the denoising trajectory, plus phase-anchoring against a reference signal, gives training-free restoration guidance — real-world (unknown-degradation) restoration wins outright while operator-matched baselines collapse."
+          "claim": "A fixed, frequency-domain anisotropic wave operator (orientation/velocity-tunable) run on the denoising trajectory, plus phase-anchoring against a reference signal, gives training-free restoration guidance — real-world (unknown-degradation) restoration wins outright while operator-matched baselines collapse.",
+          "one_liner": "Its phase-anchoring idea is untested on SA3. A precondition measured 2026-11-03 (EXPERIMENTS D1): plain SDEdit keeps no noise band where our rhythm outlives harmony; all fall together near t_s 0.5."
         },
         {
           "id": "2608.04624",
@@ -608,13 +618,6 @@
           "link": "https://arxiv.org/abs/2602.19512",
           "claim": "Learn an anisotropic noise schedule (per-direction rather than a single global schedule) by variational trajectory optimisation.",
           "one_liner": "Filed as theory for a possible anisotropic or rotating melody schedule (EXPERIMENTS B5, together with 2608.15103); needs a rectified-flow port; not started."
-        },
-        {
-          "id": "2608.15103",
-          "title": "Forward-Evolution Error Analysis and Adaptive Design for Matrix-Valued Diffusion Models",
-          "link": "https://arxiv.org/abs/2608.15103",
-          "claim": "Design rules for matrix-valued diffusion: noise low-variance directions more slowly, and equidistribute the square root of the local growth over steps.",
-          "one_liner": "Deep-read; one rule (step spacing from local growth) is noted for our base renders at 16&ndash;50 steps, and the schedule rules sit behind B5; no experiment run."
         },
         {
           "id": "2510.04212",

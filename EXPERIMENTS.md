@@ -1115,7 +1115,8 @@ positions; a reference excerpt gets its own positions.
 
 ## D. a2a, guidance, sampling
 
-### D1 — SDEdit survival curves: temporal phase vs TIV vs t_s — **PLANNED (afternoon, existing a2a machinery)**
+### D1 — SDEdit survival curves: temporal phase vs TIV vs t_s — **DONE 2026-11-03 (W), NEGATIVE: no band keeps one and regenerates the other; files/evals/d1_d5_tests.html**
+- **RESULT (eval/d1_sdedit_survival.py, 12 goa tracks x t_s 0.1-1.0 x 2 seeds = 240 clips, base model, one prompt, cfg 7, 24 steps; floor = output vs a different track's source).** Half points, interval over tracks: phase bass 0.49 (0.45-0.54), mid 0.51 (0.45-0.54), air 0.53 (0.47-0.57), rhythm with lag 0.49 (0.44-0.54), TIV 0.52 (0.48-0.55), chroma 0.53 (0.49-0.58), mel 0.52 (0.48-0.55). All fall together between t_s 0.4 and 0.6; below 0.3 all stay above 0.8. Rhythm does not outlive harmony on the base model. Base model, one prompt: an adapter may differ. This weakens the case for D3, which stays open as a guided method.
 - **Why:** decides where the "keep vs regenerate" band split goes for a2a (WaveFreqAnchor 2608.06717 read as
   the real-world branch). Reuses `eval/a2a_fulltrack.py` / breathing_a2a. Doubles as a trajectory-level check
   of rhythm-is-noise-invariant (beat R² .80 at L14).
@@ -1134,7 +1135,8 @@ positions; a reference excerpt gets its own positions.
   Aversion to the "failure direction" NOT yet justified (it is present in healthy runs too; render probe
   says it carries dulling). Gate: if `01_remove_k1` sounds better than `00_bad_terminal` → an aversion arm.
 
-### D5 — Adaptive (curvature-equidistributed) sampling grid for base renders — **PLANNED (cheap, local)**
+### D5 — Adaptive (curvature-equidistributed) sampling grid for base renders — **DONE 2026-11-03 (W), NEGATIVE; files/evals/d1_d5_tests.html**
+- **RESULT (eval/d5_adaptive_grid.py, 14 canonical prompts, cfg 7, Euler, reference N=256 on the default schedule).** Final-latent error, adaptive vs default: +34% at N=16 (interval +5 to +80), +15% at N=24 (-3 to +36), +24% at N=32 (+2 to +49); lower on 4, 6 and 6 of 14 prompts. Paper: -7 to -16%. Audiobox PQ: 8.08/8.13/8.13 adaptive, 8.14/8.15/8.15 default. The default schedule is warped toward high noise by the model's distribution shift and the reference uses it, which may favour it. Not worth pursuing without a new reason.
 - 2608.15103 §5.2: equidistribute √(local growth); we render base at 16–50 steps everywhere, so it applies
   board-wide (their numbers: −7…−16 % discretization error at N=16–64). Pilot-estimate growth along the
   path, √-quantile grid into `build_schedule`; A/B at 16/24/32 steps, PQ + ears. Sharpens, doesn't add melody.
@@ -1702,6 +1704,7 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   a different render from the guided sampler at gain 0; 4 of 12 such baselines scored CE ~3 against 6-7 for every steered clip of the
   same prompt + seed, and the production head read NEGATIVE at gain 512. The numbers above use baselines rendered through the guided
   sampler at gain 0 (`base0__`); MASTER section 5 has the gotcha.
+  (5b) **BASELINE FIX (W, 2026-11-03):** `expandable_segments` wrote wrong audio for two goa baselines, s77 and s9012 (same latent, about 40% of the level, CE about 4), so the page's mean deltas ran low and every cell showed about 24/48 gate fails. After re-rendering all 12 baselines without the flag: gate fails 0/48 through gain 3072 for every head, at most 2/48 above; mid-band change vs baseline, production +0.014 / +0.074 / +0.189 at 512 / 2048 / 8192, C3 ep10 +0.152 / +0.300 / +0.384; strongest-class hit production +0.003 / +0.030 / +0.108, C3 ep10 +0.090 / +0.208 / +0.214. Usable ceiling 8192 for all. The clean-only numbers already quoted above stand. Page rebuilt.
   (6) **Listening verdict (Kim, 2026-10-29 on files/evals/chroma_e13.html):** "The retrained new ones sound pretty promising...
   (E13 Modular Retrained Head, 384-d) follows the chords in a really beautiful and transparent way, it's almost unbelievable.
   Listen: hpcp (Production Head, 12-d) is not bad either, some of the chords change the content more, but the timbre is really

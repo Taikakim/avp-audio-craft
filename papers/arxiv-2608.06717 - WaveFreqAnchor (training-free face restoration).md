@@ -78,3 +78,7 @@ below. An external Claude analysis Kim relayed was checked against the PDF and h
    Hours, CPU, pure DSP.
 3. If both pass: MWFI-style temporal-phase injection as a soft callback on reduced coordinates; `L_wave`
    on the air band as a guidance term (mid conditionally, once E1/E2 says mid's readout is trustworthy).
+
+
+## Precondition measured on SA3 (W, 2026-11-03, EXPERIMENTS D1)
+SDEdit survival, 12 tracks: temporal phase per band, TIV, chroma and mel all fall together, half points 0.49 to 0.53 with overlapping intervals. No band where rhythm outlives harmony. The anchoring itself is untested (D3).

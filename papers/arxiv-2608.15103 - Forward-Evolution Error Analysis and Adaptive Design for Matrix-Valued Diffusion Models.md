@@ -55,3 +55,7 @@ not beat, known worst-case orders; the contribution is the unified forward proof
   2602.19512 (criteria from this one, implementation from that one) only when a real melody-schedule
   finetune is committed; then `P_melody` is used twice — where noise goes (schedule) and where gradient
   pressure goes (#59 loss).
+
+
+## Result on SA3 (W, 2026-11-03, EXPERIMENTS D5)
+Step-spacing rule, section 5.2, on medium base: discretization error rose +34% (N=16), +15% (N=24), +24% (N=32) against an N=256 reference, 14 prompts. Negative. The reference uses our default warped schedule, which may favour it.
