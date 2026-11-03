@@ -3,6 +3,7 @@
 """The per-run record: keep the code with the run, append results without overwriting, check a run.
 
   run_record.py snapshot RUN_DIR SCRIPT [SCRIPT ...]   copy launcher + trainer into RUN_DIR/_code/, note git state
+  run_record.py autosnapshot RUN_DIR SCRIPT ...        same, plus any launcher found up the process tree (trainers call this)
   run_record.py append RUN_DIR --kind auto|human --by HANDLE --text "..." [--source PAGE_OR_FILE] [--json FILE]
   run_record.py check RUN_DIR                          what is missing; exit 1 if anything is
 
@@ -75,6 +76,23 @@ def snapshot(run_dir, scripts):
         m = load(run_dir); m["code_snapshot"] = list(m.get("code_snapshot") or []) + [{"date": _now(), "files": names}]; save(run_dir, m)
     return names
 
+def find_launchers(pid=None, depth=8):
+    """Launch scripts among this process's ancestors: the shell script or sbatch that started the trainer."""
+    pid = pid or os.getppid(); out = []
+    for _ in range(depth):
+        try:
+            argv = open(f"/proc/{pid}/cmdline", "rb").read().split(b"\0"); cwd = os.readlink(f"/proc/{pid}/cwd")
+            ppid = int(open(f"/proc/{pid}/stat").read().rsplit(")", 1)[1].split()[1])
+        except (OSError, ValueError, IndexError): break
+        for a in argv[:4]:
+            a = a.decode(errors="replace")
+            if a.endswith((".sh", ".sbatch", ".bash")) and "shell-snapshots" not in a:
+                p = a if os.path.isabs(a) else os.path.join(cwd, a)
+                if os.path.isfile(p) and p not in out: out.append(p)
+        if ppid <= 1: break
+        pid = ppid
+    return out
+
 def check(run_dir):
     m = load(run_dir); miss = []
     for k in ("purpose", "hypothesis", "status"):
@@ -89,8 +107,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter); sp = ap.add_subparsers(dest="cmd", required=True)
     s = sp.add_parser("snapshot"); s.add_argument("run_dir"); s.add_argument("scripts", nargs="+")
     a = sp.add_parser("append"); a.add_argument("run_dir"); a.add_argument("--kind", required=True); a.add_argument("--by", required=True); a.add_argument("--text", required=True); a.add_argument("--source"); a.add_argument("--json")
+    h = sp.add_parser("autosnapshot", help="what trainers call: snapshot the given scripts plus any launcher found up the process tree"); h.add_argument("run_dir"); h.add_argument("scripts", nargs="+")
     c = sp.add_parser("check"); c.add_argument("run_dir")
     x = ap.parse_args()
+    if x.cmd == "autosnapshot":
+        os.makedirs(x.run_dir, exist_ok=True); fs = x.scripts + [l for l in find_launchers() if l not in x.scripts]
+        print("[run_record] kept with the run:", snapshot(x.run_dir, fs)); return
     if not os.path.isdir(x.run_dir): raise SystemExit(f"no such run dir: {x.run_dir}")
     if x.cmd == "snapshot": print("copied", snapshot(x.run_dir, x.scripts))
     elif x.cmd == "append":

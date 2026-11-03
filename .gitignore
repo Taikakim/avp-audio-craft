@@ -99,6 +99,13 @@ __pycache__/
 # debug wavs, logs, one-off scripts). Track only the shared canonical tools.
 !/Misc/
 /Misc/*
+# Track scripts, docs and small data here: not losing them outranks a tidy tree (2026-11-03).
+!/Misc/*.py
+!/Misc/*.sh
+!/Misc/*.md
+!/Misc/*.json
+!/Misc/*.txt
+!/Misc/*.tsv
 !/Misc/build_top100_page.py
 !/Misc/agent_dialogue.py
 !/Misc/osc_queue_watch.py

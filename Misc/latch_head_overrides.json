@@ -1,0 +1,12 @@
+{
+  "_README": "Facts a LatCH checkpoint does not carry. scripts/latch/train_latch.py saves feature_name but NOT --target-source / --chroma-dir / --chroma-key, so for heads trained before 2026-08-24 the chroma readout is unrecoverable from the file. Fill 'readout' here only from a training log or run script you actually read; leave it out rather than guess. 'readout' values seen in train_latch.py are the --chroma-key choices: other / bass / full_mix; a 12-d head is an HPCP readout, not a SAME-chroma one.",
+  "same_chroma": {
+    "readout": "same_chroma_3band_384",
+    "note": "3-band SAME chroma, octave centres 1/5/9, 128 bins each. Cosine loss, unstandardised. Needs a 384-d target, not a scalar."
+  },
+  "chroma_other": {
+    "readout": "stem_chroma_other_384",
+    "source": "eval/chroma_morph_transitions.py:12 \u2014 \"PROVEN stem-chroma LatCH head (latch_sa3_chroma_other_best, cosine, gain 2048)\"; the '_other' in the filename is train_latch.py's --chroma-key choice (other | bass | full_mix).",
+    "note": "384-d, cosine, gain 2048 (NOT the 512 the medium heads use). Lives on the Mantu eval drive, so it disappears from /info whenever that drive is unmounted."
+  }
+}

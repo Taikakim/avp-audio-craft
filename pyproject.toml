@@ -1,0 +1,36 @@
+# SAO tooling — import-root shim for the cut-over tooling trees.
+#
+# This project installs NOTHING but an editable "finder" that makes the two
+# cross-directory packages importable by their bare top-level names from any
+# cwd / any entry point inside SAO/.venv:
+#
+#     sa3_control   ->  SAO/control/sa3_control     (the copied avp_sa3 control pkg)
+#     latch         ->  SAO/onnx/latch              (the SA3 LatCH phase-1 pkg)
+#
+# Loose scripts (onnx/*.py, latch/*.py, eval/*.py) keep importing their siblings
+# by bare name — that already works because Python puts a script's own directory
+# on sys.path[0] when you run it. Only the *cross-directory* package imports
+# (onnx/eval -> sa3_control, onnx/latch -> sa3_control/latch) needed a global
+# root, and that is exactly what this editable finder provides.
+#
+# `dependencies = []` so `uv pip install -e .` resolves to "nothing to install"
+# beyond the finder .pth — it will NEVER touch torch / flash_attn / the ROCm
+# stack. Install pinned against the stack constraints as belt-and-suspenders:
+#
+#     uv pip install -e . -c constraints-rocm-stack.txt --python .venv/bin/python
+#
+# Do NOT `uv sync`.
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sao-tooling"
+version = "0.0.0"
+description = "Import-root shim for SAO/ cut-over tooling (onnx, control, latch, eval)."
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["onnx", "control"]
+include = ["sa3_control*", "latch*"]

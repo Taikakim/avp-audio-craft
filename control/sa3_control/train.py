@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — keep the script and its launcher with each run (TRAINING.md D37)
 # Last edited: WINTERMUTE 2026-10-15 -- state_online (online/SF-averaged weights) saved beside the EMA state, periodic + final (TRAINING.md D6)
 # Last edited: WINTERMUTE 2026-10-16 -- EMA no longer overwritten by the SF opt.eval() at save time ("state" = EMA when --ema > 0)
 # Last edited: WINTERMUTE 2026-10-29 -- --resume-exact seeds the EMA shadow from the checkpoint's saved EMA (was: restarted from zero-init)
@@ -41,6 +42,18 @@ from sa3_control.conditioner import (AudioRefEncoder, ScalarAttributeEncoder, At
 from sa3_control.dataset import LatentControlDataset, CONTROL_FIELDS, CONTROL_DIMS
 from sa3_control.inject import (adapter_state_dict, freeze_base_train_adapters,
                                 install_adapters)
+
+
+def _snapshot_code(run_dir):
+    """TRAINING.md D37: keep this script and its launcher with the run. Rank 0 only; never fatal."""
+    if os.environ.get("LOCAL_RANK", "0") != "0":
+        return
+    try:
+        import subprocess as _sp
+        _sp.run([sys.executable, "/home/kim/Projects/SAO/Misc/run_record.py", "autosnapshot", str(run_dir),
+                 os.path.abspath(sys.argv[0])], timeout=120, check=False)
+    except Exception as e:  # never lose a run to bookkeeping
+        print(f"[run_record] snapshot failed: {e}", flush=True)
 
 
 def lr_multiplier(step: int, warmup: int, hold: int, cosine: int, min_factor: float = 0.0) -> float:
@@ -979,6 +992,7 @@ def main():
         preencode_text(sam, [ds.meta[p].get("prompt", "") for p in ds.paths], crop_seconds, device)
 
     os.makedirs(args.save_dir, exist_ok=True)
+    _snapshot_code(args.save_dir)
 
     def _extra_ckpt_fields():
         """melody_contour/metrical_position/dora additions to the checkpoint dict. Call INSIDE the EMA-swapped
