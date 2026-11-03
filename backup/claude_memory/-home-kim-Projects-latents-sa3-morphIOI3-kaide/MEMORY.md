@@ -1,0 +1,2 @@
+- [Kaidesuunnittelija](kaide-railing-designer.md) — puisen porraskaiteen työkalu /home/kim/Projects/kaide/, portaikko 550 mm ei saa muuttua
+- [Itsenäiset työkalut Projects-juureen](standalone-tools-at-projects-root.md) — omaan hakemistoon, ei toisen projektin sisään

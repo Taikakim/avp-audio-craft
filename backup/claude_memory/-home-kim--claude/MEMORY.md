@@ -1,0 +1,28 @@
+# Memory index
+
+- [My role: THE-FINN, overseer](my-role-overseer.md) — domain /home/kim/.claude, duties (papers/ index, book watch, inconsistency patrol), fleet roster
+- [New-instance onboarding checklist](onboarding-new-instance.md) — CONTINUITY's canonical boot liturgy: read order, presence, posture, hygiene, identity, culture
+- [DM log convention](dm-log-convention.md) — instance-to-instance DMs in `<x>.<y>.log` at SAO root, OSC doorbell; PUBLICLY mirrored to /files/dm/ (08-17 attribution rule applies)
+- [Orientation audit 2026-07](sao-orientation-2026-07.md) — 24 confirmed inconsistencies (MASTER staleness, public-surface leaks, my-domain cleanup) + unverified queue + project map digest
+- [Proactive listening](feedback-proactive-listening.md) — keep `wait` armed + check DMs/channel unprompted, especially after crash/reboot/idle gaps
+- [Gemini brief convention](sao-gemini-brief-convention.md) — feed Gemini problem+phenomenology only, never code/files, or citations close-loop on our own docstrings
+- [Redaction posture refinement](redaction-posture-refinement.md) — Kim 2026-07-30: paths/drive-labels/cluster-names/code-names NOT secret (polish not security); checkpoint filenames OK on pages since 10-29; corpus/creds/infra still off-limits
+- [Lightweight-first](feedback-lightweight-first.md) — Kim 2026-07-31 (via C): cheapest decisive test (gate/probe/retrofit) before any heavy build; escalate only on a positive cheap result
+- [GUI first-release focus](gui-first-release-focus.md) — Kim 2026-10-29: next deliverable = first GUI release once chroma/onset/hardness/RMS heads are trained well; clean user-facing release repo (dev repos private); ships only Kim's-own-music weights; WHY = early public prior art + a hobby scene, speed over polish; 11-03: Medium base+pt, bring the project AS IS (no upstream port)
+- [Bitwig MCP connection](bitwig-mcp-connection.md) — full doc at bitwig-mcp-server/CONNECTION.md; DrivenByMoss OSC is network-only (no MIDI driver), latch = "Open Sound Control" controller on UDP 8000/9000; global server, any session, one-at-a-time
+- [LUMI eval excludes MIR](lumi-eval-excludes-mir.md) — Kim 2026-08-12: LUMI auto-eval renders clips only, MIR scoring stays local (too fragile on LUMI); deployed clips need a latent-sanity gate (fullft_bigset scored corrupt audio green)
+- [LUMI ssh status](finn-has-lumi-ssh.md) — worked in Aug, `Permission denied (publickey)` on 2026-11-02; allocation closed 08-23, scratch wipe ~11-21; re-test before offering cluster checks
+- [Shell-string hazards](feedback-pipeline-exit-code-trap.md) — pipeline rc = last stage (piped `filelock acquire` guard is decorative → use `filelock hold` wrapper); + metachar expansion silently eats words from long `--text`/`-m` prose (use `<<'EOF'` heredoc). "print statements are not evidence"
+- [LUMI pull discipline](lumi-pull-discipline.md) — Kim 2026-08-21: before pulling FROM LUMI, check what's local already + `ps aux | grep rsync` for an in-flight pull; don't duplicate
+- [Kim: Max→Pro downgrade](kim-max-to-pro-downgrade-2026-08.md) — 2026-08-21, budget: fleet must lean solo/lightweight over heavy multi-agent orchestration near-term
+- [External agent Antigravity](external-agent-antigravity-modular-trainer.md) — Kim's non-fleet Gemini agent (modular opt, synth inversion, drum sep); kept OUT of team comms/systems (Kim 10-29); own git author since 10-08
+- [Checkpoint analysis vs. votes](sao-checkpoint-analysis-vs-votes.md) — concordance table built & pushed (4d7d2b3): 113/2069 rows fully joined, 10 wandb-hash aliases resolved via Antigravity
+- [Thin-fork local excludes](feedback-thin-fork-local-excludes.md) — machine junk in stable-audio-3 goes in `.git/info/exclude`, never tracked `.gitignore` (avoids upstream-merge diffs)
+- [Converging is not evidence](feedback-converging-is-not-evidence.md) — W: 3 fleet members agreeing on a provenance guess from mtimes isn't verification; check the source
+- [Dynamically-inert bug class](feedback-dynamically-inert-bug-class.md) — C/W's framework: flags/heads that run but never leave no-op effect, confirmed 3x (modular-ev, SF exclusion, LatCH guidance)
+- [NaN-permissive guards](feedback-nan-permissive-guards.md) — bare `x > threshold` is False for NaN, so watchdogs built on it certify divergence as healthy
+- [Modular-trainer flags unverified](sao-modular-trainer-flags-unverified.md) — 2026-09-22: runs using --modular-ev/--var-dampening/--var-barrier-weight/--modular-schedule-free are unverified pending re-run post-fix
+- [LatCH guidance fix queued](sao-latch-guidance-inert-fix-queued.md) — W: rms_energy_air head found inert 2026-09-22, ~30-line telemetry fix designed but not yet implemented
+- [SAO open misc items](sao-open-misc-2026-09.md) — 2026-09: flash-attn pin needs author confirmation, 2.9GB render dirs need relocation to Mantu drive
+- [Fleet comms native alternatives](fleet-comms-native-alternatives-evaluated.md) — 2026-09-22: cross-session messaging/channels/agent-teams/claude-squad all evaluated, none fit; keep OSC system
+- [June prune pending](june-prune-pending.md) — Kim 2026-11-03: 152.9 GB of June experiment ckpts + audio; manifest ready, my delete was blocked, Kim must run or allow it

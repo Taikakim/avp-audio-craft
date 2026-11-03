@@ -1,0 +1,26 @@
+- [Shared Framework Multi-Version Architecture](shared_framework_versions.md) — Gradio UI and sampler settings vary across Stable Audio versions (1, 2, 3)
+- [LatCH on SA3 (Phase 1)](latch-sa3-phase1.md) — latent-control head ported & verified controlling bass RMS on small-music-base (branch latch-sa3-phase1)
+- [ROCm / flash-attn env](rocm-flash-attn-env.md) — AMD RDNA4 (gfx1201) ROCm stack, flash-attn/aiter varlen skew, and the CK-on-RDNA4 lead (issue #161)
+- [InfiniteAudio FIFO on SA3](infinite-audio-fifo-sa3.md) — per-frame-timestep surgery + FIFO sampler prototype (written, reviewed, UNTESTED); forage-dj/mir beatmatch comparison
+- [Long-form render on SA3](longform-render-sa3.md) — sliding-window inpaint-continuation + crossfade (drift-free successor to FIFO); CPU-tested, GPU validation pending; push to `fork` not `origin`
+- [SA3 field-guide book](sa3-field-guide-book.md) — "Hands Inside the Instrument", a Hopkin-style book of questions for musicians; DONE, on audio-tools-avp main at docs/book/ — don't regenerate
+- [SA3 steering handoff package](sa3-kim-steering-package.md) — control-adapter + LatCH-head models packaged for Kevin Griffing's VST at /home/kim/sa3-kim-steering (validated)
+- [Git push policy](git-push-policy.md) — NEVER push to upstream (origin=Stability) on SA3 repos; push only to forks fork/avp, explicitly
+- [Fleet handle identity](fleet-handle-identity.md) — this session is GHOST-NOTE (Bitwig tools), not CONTINUITY; check for a live listener before adopting any SAO fleet handle
+- [uv reinstall dependency risk](uv-reinstall-dependency-risk.md) — always pass --no-deps when reinstalling a package into a custom ROCm/CK venv, else uv may pull CUDA torch over it
+- [pkill orphaned subprocess children](pkill-orphaned-subprocess-children.md) — kill batch orchestrators by script basename, not a flag-specific pattern, or spawned subprocess.run() children survive and stack across restarts (caused a real RAM/swap exhaustion incident)
+- [Stay responsive to fleet comms](fleet-comms-stay-responsive.md) — Kim expects prompt attention to AGENT_DIALOGUE.md + DMs at all times, even mid-task; keep the listener armed continuously
+- [UI asks: don't infer a new trigger](feedback_ui_ambiguous_requests.md) — a terse UI request describes a visibility goal, not necessarily a new interaction trigger (hover-autoplay incident)
+- [filelock: shared files + pipe exit codes](filelock-shared-files-and-pipe-exit-codes.md) — lock scope is broader than docs (any multi-agent-touched file); never pipe a command whose exit code you test
+- [Shell metacharacters in prose args](shell-metacharacters-in-prose-args.md) — don't inline long prose into --text "..."/-m "..."; backticks/$ silently corrupt the message, build it in a heredoc instead
+- [Nested-repo git log scope](nested-repo-git-log-scope.md) — check fix status with `git -C <nested-repo-dir> log`, never from the outer SAO meta-repo; it doesn't track their history
+- [Shell glob arg-limit on large dirs](shell-glob-arg-limit-large-dirs.md) — `ls`/`rm DIR/*.ext` on 20k+ files silently fails (ARG_MAX) and reads as "empty"; always use `find`
+- [pgrep self-matching monitor bug](pgrep-self-matching-monitor-bug.md) — a watcher's `pgrep -f` pattern can match its own source text, silently reporting "alive" forever after the real process died; check PID directly
+- [EXPERIMENTS D14 scoring](experiment-d14-cross-prompt-a2a-scoring.md) — cross-prompt a2a bracket incoming; low CE + high CLAP are EXPECTED/misleading here, never merge into the main matrix ranking
+- [LUMI allocation closed](lumi-allocation-closed-2026-08.md) — 4765/5000 GPU-h used as of 2026-08-23, no more compute until a new allocation, transfers only
+- [Kim's budget downgrade](kim-budget-downgrade-lean-on-compute.md) — Claude Max→Pro (2026-08-21), lean toward lighter/solo work over heavy multi-agent orchestration unless genuinely needed
+- [Push cadence](push-cadence-not-every-commit.md) — commit by default, but don't push everything the moment it's tracked; pushing is when overlapping edits must be reconciled
+- [Audio review encode bitrate](audio-review-encode-256kbps.md) — encode review clips at 256kbps, not the lower bitrates used earlier; raise the size-cap tradeoff explicitly if it conflicts with many-clip batches
+- [Steering improvement criteria](steering-improvement-criteria.md) — Kim: improvement = less coarseness + bass restored; loudness/dynamics loss is NOT better; many seeds, his 1-5 ratings, loudness-matched comparisons
+- [Air-head epoch listening](air-head-epoch-listening.md) — Kim 2026-10-15: early epochs / short low-lr runs sound best; click meter + val loss miss the glitches
+- [Mix tempo-ramp rules](mix-tempo-ramp-rules.md) — Kim's repeated DJ-mix rules: 0.25 BPM/10 s ramps, incoming max -5%, stay near original BPM, pre-morph outgoing key

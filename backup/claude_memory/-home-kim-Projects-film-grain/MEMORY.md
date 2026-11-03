@@ -1,0 +1,8 @@
+- [GPU lockfile convention](gpu-lockfile-convention.md) — flock /tmp/gpu.lock around all GPU runs; machine-wide rule shared with other agent swarms
+- [LUMI supercomputer access](lumi-supercomputer-access.md) — 8x 64GB MI250X (ROCm-native, direct port); target for full-frame packs, corpus generation, MC photon transport
+- [LUMI ops docs](lumi-ops-docs.md) — field guide + SAO bundle paths (read-only); EFP WebUI submission, standard-g whole-node billing → pack 8/node, paste etiquette
+- [Verification loop pattern](verification-loop-pattern.md) — critique→implement→battery→adversarial; pin baselines pre-edit; exact reductions; instrument before guessing; metrics can be the bug
+- [Scale estimation lessons](scale-estimation-lessons.md) — never extrapolate ETA/RAM across scale jumps; transients count; 3.5× sweep anomaly at 1.9B unprofiled (LUMI prerequisite)
+- [Kim working preferences](kim-working-preferences.md) — CC licensing care, taste-curve authority, public sharing, run etiquette, "ultracode" for big physics
+- [Background run hygiene](background-run-hygiene.md) — setsid detachment, silence-aware monitors, .sh edit hazard, flock queue scheduling, verify patches applied
+- [Distill v1 state](distill-v1-state.md) — distill/ code landed 2026-10-26; data gotchas, smoke results

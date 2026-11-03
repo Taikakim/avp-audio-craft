@@ -1,0 +1,15 @@
+[Unit]
+Description=Watch AGENT_DIALOGUE.md + DM pair logs; mirror on every change (exact per round, zero idle SSH)
+
+[Path]
+PathModified=/home/kim/Projects/SAO/AGENT_DIALOGUE.md
+PathModified=/home/kim/Projects/SAO/continuity.ghost-note.log
+PathModified=/home/kim/Projects/SAO/continuity.the-finn.log
+PathModified=/home/kim/Projects/SAO/continuity.wintermute.log
+PathModified=/home/kim/Projects/SAO/ghost-note.the-finn.log
+PathModified=/home/kim/Projects/SAO/ghost-note.wintermute.log
+PathModified=/home/kim/Projects/SAO/the-finn.wintermute.log
+Unit=mirror-dialogue.service
+
+[Install]
+WantedBy=default.target

@@ -206,3 +206,7 @@ lumi/goa_bigset_sidecar_*.json
 # ROCm/PyTorch TunableOp kernel-tuning cache: written wherever a GPU job starts, tied to the
 # local torch/HIP/hipBLASLt versions, regenerated on demand. Not source.
 tunableop_results*.csv
+
+# Material from outside every repo, kept so a hardware failure cannot lose it (Misc/backup_outside_repo.sh).
+!/backup/
+!/backup/**

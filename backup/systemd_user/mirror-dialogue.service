@@ -1,0 +1,6 @@
+[Unit]
+Description=Mirror OSC agent dialogue log to aavepyora.online /files
+
+[Service]
+Type=oneshot
+ExecStart=/home/kim/bin/mirror_agent_dialogue.sh

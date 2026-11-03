@@ -1,0 +1,34 @@
+# Memory index
+
+- [LUMI project purge deadline](lumi-project-purge-deadline.md) — /scratch purged ~few weeks after 2026-08-07; pull FAT ckpts + all keep-worthy artifacts before then (archive-before-purge)
+- [GPU lock: use gpu_guard.sh](gpu-lock-tmp-mirror.md) — never hand-write /tmp/gpu.lock; filelock owns its format, a hand-written one strands the lock and blocks teammates
+
+- [SA3 latent explorer tool](sa3-latent-explorer-tool.md) — SA3-only viewer+player on mir branch sa3-latent-explorer
+- [SA3 LatCH head families](sa3-latch-head-families.md) — two head dirs/naming/key schemas; wrong one finds zero heads
+- [SA3 ONNX→AMD inference](sa3-onnx-amd-inference.md) — fixed-chunk SAME export for ORT+MIGraphX; export_same_onnx.py
+- [stable-audio-3-rs (MNN)](stable-audio-3-rs-mnn.md) — reference: Rust SA3-Small INT8 runtime; proves SAME ONNX export
+- [SA3 full-length control render](sa3-fulllength-control-render.md) — RESUME: single-shot 4096 breaks stereo, use windowed steered_longform.py; clamp-save bug patched (uncommitted); render unverified
+- [aavepyora publish target](aavepyora-publish-target.md) — Dreamhost SSH/rsync to host full eval sets online (aavepyora.online/files)
+- [SAO agent handle: CONTINUITY](sao-agent-handle-continuity.md) — identity (né FLATLINE) + fleet lanes: Fable 5, tokens precious, delegate light work to G/F; start listener on session start
+- [Latents saved with audio](latents-saved-with-audio.md) — standing directive: save z0 next to every render
+- [Bash sequencer gotchas](bash-sequencer-gotchas.md) — pgrep \| never matches; $(date) clobbers $? — false-fire + false rc=0
+- [Board representative cells](board-representative-cells.md) — reps = (w1,cfg7)+(w1,cfg16)+often w1.5 both; stats per (model,weight,cfg) cell, never pooled
+- [Update lumi-ops skill on fixes](update-lumi-skill-on-fixes.md) — standing: every solved LUMI issue → SKILL.md same session
+- [Lightweight tests first](lightweight-tests-first.md) — Kim's standing sequencing method: cost-order experiments, cheap probes de-risk expensive arms
+- [Negative-result autopsy](negative-result-autopsy.md) — Kim's standing method: nulls get a machinery audit + failure-point list + Deep Research on candidate masks before final verdict
+- [Goa corpus quality / FLAC plan](goa-corpus-quality-flac-plan.md) — big-FT is MP3 (A+B keep-set); later FLAC re-source + ~1000 handpicked favourites (disconnected drive); gated on mp3_latent_sensitivity test
+- [LUMI live jobs 2026-08](sao-lumi-live-jobs-2026-08.md) — job IDs: 20687866 big-FT full, 20682678+20687515 precision ladder; check/pull actions on resume
+- [Post to chat on milestones](post-to-chat-on-milestones.md) — standing: post landed work to common AGENT_DIALOGUE chat (Kim's public window), not just DMs; C went silent a week, Kim flagged it
+- [Session model tier work style](session-model-tier-work-style.md) — on Sonnet 5 sessions prefer training/bracketing runs over theory-heavy work (tokens tight); Fable/Opus is the theory lane
+- [LUMI air-gapped, rsync only](lumi-air-gapped-rsync-only.md) — never git pull on LUMI (permanent); BUT agents MAY run read-only ssh + pull rsync since 2026-08-31 — never write to scratch, multiplex one ssh for bulk pulls
+- [No hardcoded drive paths](no-hardcoded-drive-paths.md) — use config files; 9 scripts still point at the nonexistent Mantu1; Lehto=small files/latents, UUID=all LUMI, Mantu=bulk
+- [Token economy: Pro tier](token-economy-pro-tier.md) — Kim on Claude Pro since 2026-08-21; fleet token austerity, prefer light/solo work
+- [Full-length 4096 renders](sa3-fulllength-4096-render.md) — 378 s works BOTH windowed and single-shot on the current stack, 9.7 GB peak; the old "single-shot breaks stereo" finding is stale
+- [Audit the instrument first](audit-the-instrument-first.md) — a null is not a finding until the measurement is checked; broken meters fail toward 'no effect'
+- [Run-params provenance](run-params-provenance.md) — 4-source recipe chain; run_params_extracted.json was HAND-READ from 111 sbatch scripts, no extractor exists, never regenerate
+- [DoRA table = ALL models](dora-table-name-is-all-models.md) — misleading name is deliberate; never rename, it would break log/DM fact-finding
+- [Claude Code memory reaper](claude-code-memory-reaper.md) — background tasks killed at 85 GB available; harness reaper reads MemFree, not baloo/OOM; run long jobs outside the harness
+- [Bulk edits: list files first](bulk-edit-enumerate-files-first.md) — grep -r with --include after `--` matches everything; a scripted edit rewrote git reflogs and logs (2026-10-27, reverted)
+- [GPU guard: same handle is not exclusive](gpu-guard-same-handle-not-exclusive.md) — two of my own jobs under one handle both acquire; chain them in one driver instead
+- [Checkpoint names are not secret](checkpoint-names-not-secret.md) — ckpt filenames may appear on public pages; no redaction (Kim 2026-10-29)
+- [No amend on the shared tree](no-amend-shared-tree.md) — HEAD moves between commands; my amend rewrote GHOST-NOTE commit 2026-11-02; use follow-up commits
