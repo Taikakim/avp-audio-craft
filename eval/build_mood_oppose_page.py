@@ -1,15 +1,47 @@
 #!/usr/bin/env python3
-"""build_mood_oppose_page.py -- Builds interactive web dashboard for mood reinforcement & opposition study.
-
-Outputs:
-- /home/kim/evals_aac/mood_oppose.html
+"""build_mood_oppose_page.py -- Builds listening evaluation page for mood reinforcement & opposition study.
+Follows docs/eval-page-standard.md and site/reference.html (evals.css + Misc/float_player.py + Misc/comment_notes_block.py).
+Outputs: /home/kim/evals_aac/mood_oppose.html and /home/kim/evals_aac/mood_oppose/run_meta.json
 """
 import json
+import sys
 from pathlib import Path
+
+sys.path.insert(0, "/home/kim/Projects/SAO/Misc")
+from comment_notes_block import notes_block  # noqa: E402
+from float_player import inject  # noqa: E402
 
 AAC_DIR = Path("/home/kim/evals_aac/mood_oppose")
 JSON_PATH = AAC_DIR / "mood_56d_predictions.json"
 OUT_HTML = Path("/home/kim/evals_aac/mood_oppose.html")
+RUN_META_JSON = AAC_DIR / "run_meta.json"
+
+
+def write_run_meta(n_clips):
+    existing_feedback = None
+    if RUN_META_JSON.exists():
+        try:
+            existing_feedback = json.loads(RUN_META_JSON.read_text()).get("kim_feedback")
+        except Exception:
+            existing_feedback = None
+    meta = {
+        "purpose": "Compare positive mood reinforcement, cross-mood opposition, and negated gradient (-grad) steering across all 56 Essentia mtg_jamendo_moodtheme dimensions on 2 prompts (Prompt A: Melodic Goa, Prompt B: Dark Psytrance).",
+        "hypothesis": "Test how sparse 3-tag reinforcement vs cross-mood opposition vs negative gradient steering shifts all 56 Essentia mood dimensions on Stable Audio 3 Medium Base.",
+        "recipe": {
+            "script": "eval/build_mood_oppose_page.py",
+            "n_prompts": 2,
+            "n_seeds_per_prompt": 1,
+            "n_clips": n_clips,
+            "backbone": "sa3_medium_base",
+            "head": "56-dim Essentia mtg_jamendo_moodtheme LatCH ep40 (val loss 0.0598)",
+            "baseline_g0_source": "unguided generate() (NOT guided sampler at gain=0; carries MASTER section 5 baseline confound)",
+            "disintegration_gate": "not run on this page"
+        },
+        "result": f"{n_clips} clips rendered across 2 prompts (1 seed per prompt; n=1 per cell, not established). Full 56-dim Essentia predictions recorded in mood_56d_predictions.json.",
+        "kim_feedback": existing_feedback
+    }
+    RUN_META_JSON.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+
 
 def main():
     with open(JSON_PATH) as f:
@@ -18,7 +50,6 @@ def main():
     classes = data["classes"]
     clips = data["clips"]
 
-    # Precompute deltas
     by_prompt = {}
     for c in clips:
         by_prompt.setdefault(c["prompt_id"], []).append(c)
@@ -32,320 +63,163 @@ def main():
                 deltas[k] = c["predictions"][k] - base_preds[k]
             c["deltas"] = deltas
 
+    write_run_meta(len(clips))
+    notes_html = notes_block("mood_oppose", levels=[("clip", "this clip"), ("page", "page")],
+                             hint="click a card to play, then record a listening note")
+
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LatCH Mood Steering: Reinforcement, Opposition & 56-Dim Manifold Dynamics</title>
+<title>LatCH Mood Steering: Reinforcement &amp; Opposition — Evals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="evals.css">
 <style>
-  :root {{
-    --bg: #0c0e14;
-    --panel: #161b26;
-    --panel-border: #232b3e;
-    --accent: #6366f1;
-    --accent-hover: #4f46e5;
-    --text: #e2e8f0;
-    --text-muted: #94a3b8;
-    --green: #10b981;
-    --red: #ef4444;
-    --cyan: #06b6d4;
-    --orange: #f59e0b;
+  .wrap {{ max-width: 1360px; }}
+  .caveat-box {{
+    background: #fff8f6; border: 1px solid var(--rule); border-left: 3px solid #b42318;
+    padding: 10px 14px; margin: 10px 0 16px 0; font-size: 12px; line-height: 1.6; color: var(--body);
   }}
-  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    line-height: 1.5;
-    padding: 24px;
-    max-width: 1400px;
-    margin: 0 auto;
+  .caveat-box b {{ color: var(--ink); }}
+  .meta-strip {{
+    display: flex; flex-wrap: wrap; gap: 16px;
+    padding: 8px 12px; background: var(--paper-dim); border: 1px solid var(--rule);
+    font-size: 11px; color: var(--dim); margin: 12px 0 16px 0;
   }}
-  header {{
-    margin-bottom: 24px;
-    border-bottom: 1px solid var(--panel-border);
-    padding-bottom: 16px;
-  }}
-  h1 {{
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }}
-  .badge {{
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 9999px;
-    background: rgba(99, 102, 241, 0.2);
-    color: #a5b4fc;
-    border: 1px solid rgba(99, 102, 241, 0.4);
-  }}
-  .meta-bar {{
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-top: 12px;
-    font-size: 0.9rem;
-    color: var(--text-muted);
-  }}
-  .meta-bar strong {{ color: var(--text); }}
-  
-  /* Tabs */
-  .tabs {{
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-  }}
+  .meta-strip b {{ color: var(--ink); }}
+  .tabs {{ display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }}
   .tab-btn {{
-    padding: 10px 20px;
-    background: var(--panel);
-    border: 1px solid var(--panel-border);
-    color: var(--text-muted);
-    font-size: 0.95rem;
-    font-weight: 600;
-    border-radius: 8px;
+    padding: 8px 14px; background: var(--paper-dim); border: 1px solid var(--rule);
+    color: var(--ink); font-family: var(--mono); font-size: 11px; font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
   }}
+  .tab-btn:hover {{ border-color: var(--edge); }}
   .tab-btn.active {{
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
+    background: #e6f4f3; color: var(--edge-ink);
+    border-color: var(--edge); border-top: 2px solid var(--edge); font-weight: 600;
   }}
-
-  /* Audio player panel */
-  .player-fixed {{
-    position: sticky;
-    top: 12px;
-    z-index: 100;
-    background: rgba(22, 27, 38, 0.95);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--panel-border);
-    border-radius: 12px;
-    padding: 14px 20px;
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-  }}
-  .player-info {{
-    font-size: 0.95rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }}
-  .player-info .current-track {{
-    font-weight: 700;
-    color: #fff;
-  }}
-  .player-info .current-action {{
-    color: var(--cyan);
-    margin-left: 8px;
-    font-size: 0.85rem;
-  }}
-  audio {{
-    height: 38px;
-    outline: none;
-    flex: 1;
-    max-width: 600px;
-  }}
-
-  /* Grid of cards */
   .card-grid {{
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-    gap: 20px;
-    margin-bottom: 32px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 12px; margin-bottom: 24px;
   }}
-  .card {{
-    background: var(--panel);
-    border: 1px solid var(--panel-border);
-    border-radius: 12px;
-    padding: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    cursor: pointer;
-    transition: border-color 0.15s, transform 0.15s;
+  .cell.card {{
+    background: var(--paper-dim); border: 1px solid var(--rule);
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; text-align: left;
   }}
-  .card:hover {{
-    border-color: #3b82f6;
-    transform: translateY(-2px);
-  }}
-  .card.active {{
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
-  }}
-  .card-header {{
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }}
-  .card-title {{
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: #fff;
-  }}
+  .card-header {{ display: flex; justify-content: space-between; align-items: flex-start; }}
+  .card-title {{ font-size: 12px; font-weight: 600; color: var(--ink); }}
   .card-tag {{
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 3px 8px;
-    border-radius: 6px;
-    background: #1e293b;
-    color: #cbd5e1;
+    font-size: 10px; font-weight: 600; padding: 1px 6px;
+    border: 1px solid var(--rule); background: var(--paper); color: var(--dim);
   }}
-  .card-tag.reinforce {{ background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }}
-  .card-tag.oppose {{ background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }}
-  .card-tag.neutral {{ background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }}
+  .card-tag.reinforce {{ border-color: var(--edge); color: var(--edge-ink); }}
+  .card-tag.oppose {{ border-color: #9e2a2b; color: #9e2a2b; }}
 
-  /* Top shifts bars */
   .shifts-container {{
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    font-size: 0.8rem;
-    background: #0f131c;
-    padding: 10px;
-    border-radius: 8px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    font-size: 10px; background: var(--paper); padding: 8px; border: 1px solid var(--rule-light);
   }}
   .shift-col h4 {{
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 6px;
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 4px 0; color: var(--dim);
   }}
-  .shift-col.up h4 {{ color: var(--green); }}
-  .shift-col.down h4 {{ color: var(--red); }}
   .shift-row {{
-    display: flex;
-    justify-content: space-between;
-    padding: 2px 0;
-    border-bottom: 1px solid #1a2234;
+    display: flex; justify-content: space-between; padding: 2px 0;
+    border-bottom: 1px solid var(--rule-light); font-variant-numeric: tabular-nums;
   }}
   .shift-row:last-child {{ border-bottom: none; }}
-  .shift-name {{ font-weight: 500; }}
-  .shift-val.up {{ color: var(--green); font-weight: 600; }}
-  .shift-val.down {{ color: var(--red); font-weight: 600; }}
+  .shift-val.up {{ color: var(--edge-ink); font-weight: 600; }}
+  .shift-val.down {{ color: #9e2a2b; font-weight: 600; }}
 
-  /* Table section */
   .table-section {{
-    margin-top: 40px;
-    background: var(--panel);
-    border: 1px solid var(--panel-border);
-    border-radius: 12px;
-    padding: 20px;
+    margin-top: 22px; border: 1px solid var(--rule); padding: 12px 14px;
   }}
-  .table-section h3 {{
-    font-size: 1.2rem;
-    margin-bottom: 14px;
-    color: #fff;
-  }}
-  .table-controls {{
-    margin-bottom: 14px;
-    display: flex;
-    gap: 12px;
-    align-items: center;
-  }}
+  .table-controls {{ margin-bottom: 10px; }}
   .table-controls input {{
-    background: #0f131c;
-    border: 1px solid var(--panel-border);
-    border-radius: 6px;
-    padding: 8px 12px;
-    color: #fff;
-    font-size: 0.9rem;
-    width: 260px;
+    background: var(--paper-dim); border: 1px solid var(--rule); padding: 6px 10px;
+    color: var(--ink); font-family: var(--mono); font-size: 11px; width: 280px;
   }}
-  .table-scroll {{
-    overflow-x: auto;
-    max-height: 500px;
-  }}
-  table {{
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-    text-align: left;
-  }}
-  th, td {{
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--panel-border);
-    white-space: nowrap;
-  }}
+  .table-scroll {{ overflow-x: auto; max-height: 480px; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }}
+  th, td {{ padding: 6px 8px; border-bottom: 1px solid var(--rule-light); border-right: 1px solid var(--rule-light); white-space: nowrap; }}
   th {{
-    background: #111520;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    font-weight: 600;
-    color: var(--text-muted);
+    background: var(--paper-dim); position: sticky; top: 0; z-index: 10;
+    font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--dim); border-bottom: 1px solid var(--rule);
   }}
-  tr:hover td {{
-    background: rgba(255, 255, 255, 0.03);
-  }}
-  .num-cell {{
-    font-family: monospace;
-    text-align: right;
-  }}
-  .val-up {{ color: var(--green); }}
-  .val-down {{ color: var(--red); }}
+  .num-cell {{ text-align: right; font-variant-numeric: tabular-nums; }}
+  .val-up {{ color: var(--edge-ink); }}
+  .val-down {{ color: #9e2a2b; }}
 </style>
 </head>
 <body>
+<div class="wrap">
+  <p class="over">VIBE ON THE EDG3 · EVALS</p>
+  <p class="nav"><a href="index.html">← all evals</a></p>
 
-<header>
-  <h1>
-    LatCH Mood Steering: Reinforcement, Opposition & Manifold Dynamics
-    <span class="badge">56 Continuous Dimensions</span>
-  </h1>
-  <div class="meta-bar">
-    <div><strong>Evaluator:</strong> Essentia Discogs-EffNet → MTG-Jamendo MoodTheme (Ground Truth Classifier)</div>
-    <div><strong>Diffusion Backbone:</strong> Stable Audio 3 Medium Base</div>
-    <div><strong>Continuous LatCH Head:</strong> ep40 held-out val loss 0.0598</div>
-    <div><strong>Index:</strong> <a href="index.html" style="color: var(--accent); text-decoration: none;">← Back to Evals Portal</a></div>
-  </div>
-</header>
+  <h1>LatCH Mood Steering: Reinforcement, Opposition &amp; 56-Dim Predictions <span class="unaudited" title="No listening verdict recorded yet (unaudited).">&#10071;</span></h1>
+  <p>
+    <b>What this tests and why.</b> This page inspects how positive reinforcement, cross-mood opposition, and negative gradient steering (<code>-grad</code>) move all 56 Essentia <code>mtg_jamendo_moodtheme</code> dimensions on 2 contrasting prompts (Prompt A: Melodic Goa; Prompt B: Dark Psytrance). Related pages: <a href="mood_finegrained.html">mood_finegrained.html</a> tests an 8-model &times; 9-target weight ladder, and <a href="choice_clips_mood.html">choice_clips_mood.html</a> tests the 56-dim mood probe across 6 choice models.
+  </p>
 
-<div class="player-fixed">
-  <div class="player-info">
-    <span class="current-track" id="pTrack">Select a clip below to audition</span>
-    <span class="current-action" id="pAction"></span>
+  <div class="caveat-box">
+    <b>Scope, Baseline &amp; Disintegration Gate Disclosures (Not Established):</b>
+    <ul style="margin:5px 0 0 18px;">
+      <li><b>Sample size (not established):</b> This diagnostic uses 2 prompts &times; 1 seed each (<code>n = 1</code> per card). Single-seed observations on 2 prompts are <b>not established</b>.</li>
+      <li><b>Disintegration gate not run on this page:</b> <code>control_head_disintegration_eval.gate()</code> has not been run on these clips, so this page does <b>not</b> establish a usable gain range.</li>
+      <li><b>Unguided <code>g=0</code> baseline confound (MASTER &sect;5):</b> The <code>base (g=0)</code> clips were generated with unguided <code>generate()</code> rather than the guided sampler at <code>gain=0</code>.</li>
+    </ul>
   </div>
-  <audio id="globalPlayer" controls></audio>
+
+  <div class="meta-strip">
+    <span>Prompts: <b>2 (n=1 seed per prompt)</b></span>
+    <span>Classifier: <b>Essentia Discogs-EffNet &rarr; MTG-Jamendo MoodTheme (56 dims)</b></span>
+    <span>Backbone: <b>Stable Audio 3 Medium Base</b></span>
+    <span>Head: <b>ep40 (val loss 0.0598)</b></span>
+    <span>Playhead: <b>Preserved across clip switches · Re-click pauses</b></span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchPrompt('prompt_melodic')">Prompt A: Melodic Goa (n=1 seed)</button>
+    <button class="tab-btn" onclick="switchPrompt('prompt_dark')">Prompt B: Dark Psytrance (n=1 seed)</button>
+  </div>
+
+  <div id="cardsPromptA" class="card-grid"></div>
+  <div id="cardsPromptB" class="card-grid" style="display: none;"></div>
+
+  <div class="table-section">
+    <h2><span class="mark">&sect;</span> Complete 56-Dimensional Predictions &amp; Delta Matrix (n=1 seed per prompt)</h2>
+    <p class="dim">Measured Essentia classifier scores (%) and delta vs. unguided <code>g=0</code> baseline.</p>
+    <div class="table-controls">
+      <input type="text" id="filterInput" placeholder="Filter channel (e.g. dark, melodic, space)..." onkeyup="filterTable()">
+    </div>
+    <div class="table-scroll">
+      <table id="moodTable">
+        <thead id="moodTableHead"></thead>
+        <tbody id="moodTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  {notes_html}
 </div>
 
-<div class="tabs">
-  <button class="tab-btn active" onclick="switchPrompt('prompt_melodic')">Prompt A: Melodic Goa (Reinforce Melodic vs Oppose Dark vs Negative)</button>
-  <button class="tab-btn" onclick="switchPrompt('prompt_dark')">Prompt B: Dark Psytrance (Reinforce Dark vs Oppose Melodic vs Negative)</button>
-</div>
-
-<div id="cardsPromptA" class="card-grid"></div>
-<div id="cardsPromptB" class="card-grid" style="display: none;"></div>
-
-<div class="table-section">
-  <h3>Complete 56-Dimensional Predictions & Delta Matrix</h3>
-  <div class="table-controls">
-    <input type="text" id="filterInput" placeholder="Filter emotion tag (e.g. dark, melodic, space)..." onkeyup="filterTable()">
-  </div>
-  <div class="table-scroll">
-    <table id="moodTable">
-      <thead id="moodTableHead"></thead>
-      <tbody id="moodTableBody"></tbody>
-    </table>
-  </div>
-</div>
+<audio id="globalPlayer" preload="auto" style="display:none"></audio>
 
 <script>
 const DATA = {json.dumps(data)};
 let currentPrompt = "prompt_melodic";
 let currentAac = null;
+let lastKnownTime = 0;
 const player = document.getElementById("globalPlayer");
-const pTrack = document.getElementById("pTrack");
-const pAction = document.getElementById("pAction");
+
+player.addEventListener("timeupdate", () => {{
+  if (player.currentTime > 0 && !player.ended) lastKnownTime = player.currentTime;
+}});
+player.addEventListener("ended", () => {{
+  lastKnownTime = 0;
+  document.querySelectorAll(".cell.card").forEach(el => el.classList.remove("playing"));
+}});
 
 function getTagType(action) {{
   if (action.includes("Reinforce")) return "reinforce";
@@ -361,11 +235,11 @@ function renderCards(promptId, containerId) {{
 
   clips.forEach(c => {{
     const card = document.createElement("div");
-    card.className = "card";
-    card.id = "card_" + c.cond_id;
+    card.className = "cell card";
+    card.id = "card_" + c.prompt_id + "_" + c.cond_id;
+    card.dataset.src = "mood_oppose/" + c.aac_file;
     card.onclick = () => playClip(c);
 
-    // Calc top 4 up / down
     const deltas = Object.entries(c.predictions).map(([k, v]) => ({{
       name: k,
       val: v,
@@ -383,7 +257,7 @@ function renderCards(promptId, containerId) {{
       shiftsHtml = `
         <div class="shifts-container">
           <div class="shift-col up">
-            <h4>Surging (Elevated)</h4>
+            <h4>Elevated</h4>
             ${{topUp.map(x => `
               <div class="shift-row">
                 <span class="shift-name">${{x.name}}</span>
@@ -392,7 +266,7 @@ function renderCards(promptId, containerId) {{
             `).join("")}}
           </div>
           <div class="shift-col down">
-            <h4>Collapsing (Suppressed)</h4>
+            <h4>Suppressed</h4>
             ${{topDown.map(x => `
               <div class="shift-row">
                 <span class="shift-name">${{x.name}}</span>
@@ -407,12 +281,12 @@ function renderCards(promptId, containerId) {{
       shiftsHtml = `
         <div class="shifts-container" style="grid-template-columns: 1fr;">
           <div class="shift-col">
-            <h4 style="color: var(--text-muted)">Baseline Prominent Moods</h4>
+            <h4>Baseline Top Channels (g=0)</h4>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
               ${{topBase.map(x => `
                 <div class="shift-row">
                   <span class="shift-name">${{x[0]}}</span>
-                  <span class="shift-val" style="color: var(--cyan);">${{(x[1] * 100).toFixed(1)}}%</span>
+                  <span class="shift-val up">${{(x[1] * 100).toFixed(1)}}%</span>
                 </div>
               `).join("")}}
             </div>
@@ -423,11 +297,11 @@ function renderCards(promptId, containerId) {{
 
     card.innerHTML = `
       <div class="card-header">
-        <div class="card-title">${{c.action}}</div>
+        <div class="card-title">&#9654; ${{c.action}}</div>
         <span class="card-tag ${{tagType}}">${{c.cond_id}}</span>
       </div>
-      <div style="font-size: 0.85rem; color: var(--text-muted);">
-        Weight: <strong>${{c.weight}}</strong> &bull; File: ${{c.aac_file}}
+      <div style="font-size: 10px; color: var(--dim);">
+        Weight: <b>${{c.weight}}</b> · File: ${{c.aac_file}}
       </div>
       ${{shiftsHtml}}
     `;
@@ -436,21 +310,33 @@ function renderCards(promptId, containerId) {{
 }}
 
 function playClip(clip) {{
-  const curTime = player.currentTime;
-  const isPlaying = !player.paused;
-  
-  document.querySelectorAll(".card").forEach(el => el.classList.remove("active"));
-  const card = document.getElementById("card_" + clip.cond_id);
-  if (card) card.classList.add("active");
+  if (window.noteSet) noteSet({{model: clip.prompt_id, ckpt: clip.cond_id, clip: clip.aac_file}});
+  const card = document.getElementById("card_" + clip.prompt_id + "_" + clip.cond_id);
+  if (currentAac === clip.aac_file) {{
+    if (player.paused) {{
+      player.play();
+      if (card) card.classList.add("playing");
+    }} else {{
+      player.pause();
+      if (card) card.classList.remove("playing");
+    }}
+    return;
+  }}
 
-  pTrack.innerText = clip.aac_file;
-  pAction.innerText = "(" + clip.action + ")";
+  const curTime = (player.currentTime > 0 && !player.ended) ? player.currentTime : lastKnownTime;
+
+  document.querySelectorAll(".cell.card").forEach(el => el.classList.remove("playing"));
+  if (card) card.classList.add("playing");
 
   player.src = "mood_oppose/" + clip.aac_file;
-  player.onloadedmetadata = () => {{
-    player.currentTime = curTime;
-    if (isPlaying || curTime > 0) player.play();
+  const go = () => {{
+    if (curTime > 0) {{
+      try {{ player.currentTime = Math.min(curTime, (player.duration || 20.0) - 0.05); }} catch(e) {{}}
+    }}
+    player.play().catch(e => console.log(e));
   }};
+  if (player.readyState >= 1) go();
+  else player.addEventListener("loadedmetadata", go, {{ once: true }});
   currentAac = clip.aac_file;
 }}
 
@@ -470,16 +356,16 @@ function renderTable() {{
   const clips = DATA.clips.filter(c => c.prompt_id === currentPrompt);
   const baseClip = clips.find(c => c.cond_id === "base");
 
-  let hHtml = "<tr><th>Emotion Tag</th>";
+  let hHtml = "<tr><th>Channel</th>";
   clips.forEach(c => {{
-    hHtml += `<th>${{c.cond_id}}<br><span style="font-weight: 400; font-size: 0.75rem; color: var(--text-muted);">${{c.weight >= 0 ? 'g=' + c.weight : 'g=' + c.weight}}</span></th>`;
+    hHtml += `<th>${{c.cond_id}}<br><span style="font-weight: 400; font-size: 9px; color: var(--dim);">g=${{c.weight}}</span></th>`;
   }});
   hHtml += "</tr>";
   thead.innerHTML = hHtml;
 
   let bHtml = "";
   DATA.classes.forEach(cls => {{
-    bHtml += `<tr data-class="${{cls}}"><td><strong>${{cls}}</strong></td>`;
+    bHtml += `<tr data-class="${{cls}}"><td><b>${{cls}}</b></td>`;
     clips.forEach(c => {{
       const val = c.predictions[cls];
       const baseVal = baseClip.predictions[cls];
@@ -488,7 +374,7 @@ function renderTable() {{
       if (c.cond_id !== "base") {{
         const sign = delta >= 0 ? "+" : "";
         const cl = delta >= 0 ? "val-up" : "val-down";
-        dStr = `<br><span class="${{cl}}" style="font-size: 0.75rem;">${{sign}}${{(delta * 100).toFixed(1)}}%</span>`;
+        dStr = `<br><span class="${{cl}}" style="font-size: 9px;">${{sign}}${{(delta * 100).toFixed(1)}}%</span>`;
       }}
       bHtml += `<td class="num-cell">${{(val * 100).toFixed(1)}}%${{dStr}}</td>`;
     }});
@@ -505,26 +391,18 @@ function filterTable() {{
   }});
 }}
 
-// Init
 renderCards("prompt_melodic", "cardsPromptA");
 renderCards("prompt_dark", "cardsPromptB");
 renderTable();
-
-// Auto-select first clip
-const firstClip = DATA.clips.find(c => c.prompt_id === "prompt_melodic");
-if (firstClip) {{
-  player.src = "mood_oppose/" + firstClip.aac_file;
-  pTrack.innerText = firstClip.aac_file;
-  pAction.innerText = "(" + firstClip.action + ")";
-}}
 </script>
-
 </body>
 </html>
 """
-    with open(OUT_HTML, "w") as f:
+    html_content = inject(html_content)
+    with open(OUT_HTML, "w", encoding="utf-8") as f:
         f.write(html_content)
     print(f"Interactive dashboard written to: {OUT_HTML} ({OUT_HTML.stat().st_size / 1024:.1f} KB)")
+
 
 if __name__ == "__main__":
     main()

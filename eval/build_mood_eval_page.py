@@ -1,75 +1,109 @@
 #!/usr/bin/env python3
-"""build_mood_eval_page.py -- builds the interactive listening evaluation dashboard
-for the 56-dim continuous Mood LatCH conditioning head (ep40 & ep40_ema0.25).
-Outputs /home/kim/evals_aac/choice_clips_mood.html
+"""build_mood_eval_page.py -- builds the listening evaluation page
+for the 56-dim continuous Mood LatCH conditioning head (ep40 & ep40_ema0.25) across 6 representative models.
+Follows docs/eval-page-standard.md and site/reference.html (evals.css + Misc/float_player.py + Misc/comment_notes_block.py).
+Outputs: /home/kim/evals_aac/choice_clips_mood.html and /home/kim/evals_aac/choice_clips_mood/run_meta.json
 """
-import json, sys
+import json
+import sys
 from pathlib import Path
+
+sys.path.insert(0, "/home/kim/Projects/SAO/Misc")
+from comment_notes_block import notes_block  # noqa: E402
+from float_player import inject  # noqa: E402
 
 AAC_DIR = Path("/home/kim/evals_aac/choice_clips_mood")
 OUT_HTML = Path("/home/kim/evals_aac/choice_clips_mood.html")
-PLAN_ITEMS_FILE = Path("/home/kim/.gemini/antigravity/brain/62fc5213-e94b-4c13-86bf-69147f02f03c/scratch/render_plan_items.json")
+RUN_META_JSON = AAC_DIR / "run_meta.json"
+PLAN_ITEMS_FILE = Path(__file__).resolve().parent / "choice_clips_plan_items.json"
 
-def btn(stem, label, idx, cond, head_tag=""):
+
+def btn(stem, label, idx, model, ckpt, cond, head_tag=""):
     exists = (AAC_DIR / stem).exists()
     status_cls = "ready" if exists else "pending"
+    url = f"choice_clips_mood/{stem}"
     title_attr = f'title="{stem}"'
     sub_span = f'<span class="sub">{head_tag}</span>' if head_tag else ''
-    return f"""<button class="play-btn {status_cls}" onclick="playAudio('{stem}', this, {idx}, '{cond}')" {title_attr}>
+    return f"""<button class="cell play-btn {status_cls}" data-src="{url}" onclick="playAudio('{stem}', this, {idx}, '{model}', '{ckpt}', '{cond}')" {title_attr}>
         <span class="icon">&#9654;</span> <span class="lbl">{label}</span>{sub_span}
     </button>"""
 
+
+def write_run_meta():
+    existing_feedback = None
+    if RUN_META_JSON.exists():
+        try:
+            existing_feedback = json.loads(RUN_META_JSON.read_text()).get("kim_feedback")
+        except Exception:
+            existing_feedback = None
+    meta = {
+        "purpose": "Compare the 56-dim Essentia mtg_jamendo_moodtheme LatCH probe at ep40 (val loss 0.0598) vs ep40_ema0.25 across 6 representative model families (rows 02, 05, 07, 11, 22, 28 of the choice clips table) at g=1024 and g=2048.",
+        "hypothesis": "Test whether the 56-dim mood probe steers Space, Dark, Melodic, and Aliens HQ time-series targets across different LoRA/DoRA/Full-FT models, and compare standard EMA vs fast EMA (0.25).",
+        "recipe": {
+            "script": "eval/build_mood_eval_page.py",
+            "n_rows": 6,
+            "n_seeds_per_cell": 1,
+            "weights": [0, 1024, 2048],
+            "heads": ["ep40 (val 0.0598)", "ep40_ema0.25"],
+            "targets": ["Space", "Dark", "Melodic", "Aliens"],
+            "sampler": "euler (24 steps, 20.0s)",
+            "baseline_g0_source": "unguided generate() (NOT guided sampler at gain=0; carries MASTER section 5 baseline confound)",
+            "disintegration_gate": "not run on this page"
+        },
+        "result": "102 clips rendered across 6 model rows (1 prompt and 1 seed per row; per-row comparisons are n=1 and not established). Ready for listening.",
+        "kim_feedback": existing_feedback
+    }
+    RUN_META_JSON.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+
+
 def main():
+    AAC_DIR.mkdir(parents=True, exist_ok=True)
     with open(PLAN_ITEMS_FILE) as f:
         all_items = json.load(f)
 
-    # Core representative choice models
     selected_rows = [2, 5, 7, 11, 22, 28]
-    items = [it for it in all_items if it['idx'] in selected_rows]
+    items = [it for it in all_items if it["idx"] in selected_rows]
 
     rows_html = []
     for item in items:
-        idx = item['idx']
-        label = item['label']
-        model = item['model']
-        ckpt = item['ckpt_tag']
-        prompt = item['prompt_text']
-        seed = item['seed']
-        cfg = item['cfg']
-        strength = item['strength']
+        idx = item["idx"]
+        label = item["label"]
+        model = item["model"]
+        ckpt = item["ckpt_tag"]
+        prompt = item["prompt_text"]
+        seed = item["seed"]
+        cfg = item["cfg"]
+        strength = item["strength"]
 
-        # Base stem
         base_stem = f"mood_row{idx:02d}__{model}__{ckpt}__base__s{seed}.m4a"
 
-        # Targets & Heads
         targets = [
-            ("Space", "Space (Atmospheric / Cosmic)", "#38bdf8"),
-            ("Dark", "Dark (Heavy / Night-time Psy)", "#f43f5e"),
-            ("Melodic", "Melodic (Euphoric / Uplifting)", "#a855f7"),
-            ("Aliens", "Aliens HQ (Dynamic Excerpt)", "#10b981")
+            ("Space", "Space (space=1.0, soundscape=0.3, dream=0.3)"),
+            ("Dark", "Dark (dark=1.0, heavy=0.4, deep=0.3)"),
+            ("Melodic", "Melodic (melodic=1.0, uplifting=0.4, happy=0.3)"),
+            ("Aliens", "Aliens HQ (20s Essentia TS, sample 6073122)")
         ]
-        heads = [("ep40", "ep40 (0.0598)"), ("ep40_ema0.25", "ep40 EMA 0.25")]
+        heads = [("ep40", "ep40 (val 0.0598)"), ("ep40_ema0.25", "ep40 EMA 0.25")]
 
         target_blocks = []
-        for tgt_id, tgt_title, tgt_color in targets:
+        for tgt_id, tgt_title in targets:
             head_cols = []
             for head_id, head_lbl in heads:
-                head_cls = head_id.replace('.', '_')
                 stem_1024 = f"mood_row{idx:02d}__{model}__{ckpt}__{head_id}__{tgt_id}_g1024__s{seed}.m4a"
                 stem_2048 = f"mood_row{idx:02d}__{model}__{ckpt}__{head_id}__{tgt_id}_g2048__s{seed}.m4a"
                 head_cols.append(f"""
                 <div class="head-col">
-                    <div class="head-badge head-{head_cls}">{head_lbl}</div>
+                    <div class="head-badge">{head_lbl}</div>
                     <div class="btn-group">
-                        {btn(stem_1024, 'g1024', idx, f'{tgt_id}_{head_id}_1024', 'Standard')}
-                        {btn(stem_2048, 'g2048', idx, f'{tgt_id}_{head_id}_2048', 'High')}
+                        {btn(stem_1024, 'g=1024', idx, model, ckpt, f'{tgt_id}_{head_id}_1024')}
+                        {btn(stem_2048, 'g=2048', idx, model, ckpt, f'{tgt_id}_{head_id}_2048')}
                     </div>
                 </div>
                 """)
 
             target_blocks.append(f"""
             <div class="target-section">
-                <div class="target-title" style="border-left: 3px solid {tgt_color};">{tgt_title}</div>
+                <div class="target-title">{tgt_title}</div>
                 <div class="heads-grid">
                     {''.join(head_cols)}
                 </div>
@@ -84,13 +118,13 @@ def main():
                 <div class="meta-badges">
                     <span class="badge">CFG {cfg}</span>
                     <span class="badge">w {strength}</span>
-                    <span class="badge">Seed {seed}</span>
+                    <span class="badge">Seed {seed} (n=1)</span>
                     <span class="badge">20.0s</span>
                 </div>
                 <div class="prompt-text" title="{prompt}">{prompt}</div>
                 <div class="base-container">
-                    <span class="base-lbl">Unguided Reference:</span>
-                    {btn(base_stem, 'Base (g0)', idx, 'base')}
+                    <span class="base-lbl">Unguided gen() (g=0):</span>
+                    {btn(base_stem, 'Base (g=0)', idx, model, ckpt, 'base')}
                 </div>
             </td>
             <td class="eval-grid-cell">
@@ -101,582 +135,205 @@ def main():
         </tr>
         """)
 
+    write_run_meta()
+    notes_html = notes_block("choice_clips_mood", levels=[("clip", "this clip"), ("page", "page")],
+                             hint="click a clip, then record a listening note")
+
     table_rows = "".join(rows_html)
 
-    html = """<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>56-dim Mood LatCH Conditioning Head Evaluation (ep40 & ep40_ema0.25)</title>
+<title>56-dim Mood LatCH Choice Clips — Evals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="evals.css">
 <style>
-:root {
-    --bg-main: #0c0e12;
-    --bg-card: #151921;
-    --bg-hover: #1c222e;
-    --border: #232a38;
-    --text-primary: #e2e8f0;
-    --text-muted: #8b9bb4;
-    --accent-blue: #3b82f6;
-    --accent-green: #10b981;
-    --accent-purple: #8b5cf6;
-    --accent-rose: #f43f5e;
-    --accent-cyan: #06b6d4;
-    --gold: #f59e0b;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-    background: var(--bg-main);
-    color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    padding: 24px;
-    line-height: 1.5;
-    padding-bottom: 120px;
-}
-header {
-    max-width: 1700px;
-    margin: 0 auto 24px auto;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px 28px;
-    position: relative;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-}
-.header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-}
-h1 {
-    font-size: 24px;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: -0.02em;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.tag-badge {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    background: rgba(16, 185, 129, 0.2);
-    color: var(--accent-green);
-    border: 1px solid var(--accent-green);
-    padding: 2px 8px;
-    border-radius: 20px;
-}
-.subtitle {
-    font-size: 14px;
-    color: var(--text-muted);
-    max-width: 1200px;
-}
-.nav-link {
-    color: var(--accent-blue);
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 500;
-}
-.nav-link:hover { text-decoration: underline; }
-.stat-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 16px;
-}
-.chip {
-    background: #0f131a;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.chip-val {
-    font-weight: 700;
-    color: #fff;
-}
-
-.table-container {
-    max-width: 1700px;
-    margin: 0 auto;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-}
-th {
-    background: #11151c;
-    padding: 12px 16px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--border);
-    letter-spacing: 0.05em;
-}
-.clip-row {
-    border-bottom: 1px solid var(--border);
-    transition: background 0.15s ease;
-}
-.clip-row:hover {
-    background: rgba(255,255,255,0.015);
-}
-.idx-cell {
-    padding: 16px;
-    font-size: 16px;
-    font-weight: 800;
-    color: var(--text-muted);
-    vertical-align: top;
-    width: 50px;
-    text-align: center;
-}
-.meta-cell {
-    padding: 16px 20px 16px 0;
-    width: 380px;
-    vertical-align: top;
-    border-right: 1px solid var(--border);
-}
-.model-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #fff;
-    margin-bottom: 6px;
-    line-height: 1.3;
-}
-.meta-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 10px;
-}
-.badge {
-    font-size: 11px;
-    background: #0f131a;
-    border: 1px solid #2d3748;
-    color: #94a3b8;
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.prompt-text {
-    font-size: 12px;
-    color: var(--text-muted);
-    line-height: 1.4;
-    margin-bottom: 14px;
-    background: #0b0e14;
+.wrap {{ max-width: 1460px; }}
+.caveat-box {{
+    background: #fff8f6; border: 1px solid var(--rule); border-left: 3px solid #b42318;
+    padding: 10px 14px; margin: 10px 0 16px 0; font-size: 12px; line-height: 1.6; color: var(--body);
+}}
+.caveat-box b {{ color: var(--ink); }}
+.meta-strip {{
+    display: flex; flex-wrap: wrap; gap: 16px;
+    padding: 8px 12px; background: var(--paper-dim); border: 1px solid var(--rule);
+    font-size: 11px; color: var(--dim); margin: 12px 0 16px 0;
+}}
+.meta-strip b {{ color: var(--ink); }}
+.table-container {{ border: 1px solid var(--rule); overflow-x: auto; margin-bottom: 20px; }}
+table {{ width: 100%; border-collapse: collapse; text-align: left; font-size: 11px; }}
+th {{
+    background: var(--paper-dim); padding: 8px 12px; font-size: 10px; font-weight: 600;
+    text-transform: uppercase; color: var(--dim); border-bottom: 1px solid var(--rule); letter-spacing: 0.05em;
+}}
+.clip-row {{ border-bottom: 1px solid var(--rule); }}
+.idx-cell {{
+    padding: 12px; font-size: 13px; font-weight: 600; color: var(--edge-ink);
+    vertical-align: top; width: 44px; text-align: center; border-right: 1px solid var(--rule-light);
+    background: var(--paper-dim);
+}}
+.meta-cell {{
+    padding: 12px 14px; width: 340px; vertical-align: top;
+    border-right: 1px solid var(--rule); background: var(--paper-dim);
+}}
+.model-title {{ font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }}
+.meta-badges {{ display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }}
+.badge {{
+    font-size: 10px; background: var(--paper); border: 1px solid var(--rule);
+    color: var(--dim); padding: 1px 5px;
+}}
+.prompt-text {{
+    font-size: 11px; color: var(--body); line-height: 1.45; margin-bottom: 10px;
+    background: var(--paper); padding: 6px 8px; border: 1px solid var(--rule-light);
+}}
+.base-container {{
+    display: flex; align-items: center; gap: 8px;
+    background: var(--paper); padding: 6px 8px; border: 1px solid var(--rule);
+}}
+.base-lbl {{ font-size: 10px; font-weight: 600; color: var(--dim); text-transform: uppercase; }}
+.eval-grid-cell {{ padding: 10px 12px; vertical-align: top; }}
+.targets-container {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }}
+.target-section {{
+    background: var(--paper-dim); border: 1px solid var(--rule);
     padding: 8px 10px;
-    border-radius: 6px;
-    border: 1px solid rgba(255,255,255,0.05);
-}
-.base-container {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(255,255,255,0.02);
-    padding: 8px 10px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-}
-.base-lbl {
-    font-size: 11px;
-    font-weight: 600;
-    color: #cbd5e1;
-    text-transform: uppercase;
-}
-
-.eval-grid-cell {
-    padding: 14px 16px;
-    vertical-align: top;
-}
-.targets-container {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-}
-.target-section {
-    background: #11141c;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 14px;
-}
-.target-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #fff;
-    padding-left: 8px;
-    margin-bottom: 12px;
-    line-height: 1.2;
-}
-.heads-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
-.head-col {
-    background: #0d1017;
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 6px;
-    padding: 8px;
-}
-.head-badge {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    text-align: center;
-    padding: 3px 6px;
-    border-radius: 4px;
-    margin-bottom: 8px;
-    letter-spacing: 0.03em;
-}
-.head-ep40 {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
-    border: 1px solid #3b82f6;
-}
-.head-ep40_ema0_25 {
-    background: rgba(168, 85, 247, 0.2);
-    color: #c084fc;
-    border: 1px solid #a855f7;
-}
-.btn-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.play-btn {
-    background: #1e2634;
-    border: 1px solid #334155;
-    color: #cbd5e1;
-    padding: 6px 8px;
-    border-radius: 5px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    transition: all 0.12s ease;
-    user-select: none;
-}
-.play-btn:hover:not(.pending) {
-    background: #2b3548;
-    color: #fff;
-    border-color: #475569;
-}
-.play-btn .icon {
-    font-size: 9px;
-    margin-right: 4px;
-    opacity: 0.8;
-}
-.play-btn .lbl {
-    font-weight: 700;
-}
-.play-btn .sub {
-    font-size: 9px;
-    font-weight: 500;
-    color: #94a3b8;
-    background: rgba(0,0,0,0.3);
-    padding: 1px 4px;
-    border-radius: 3px;
-    margin-left: 4px;
-}
-.play-btn.playing {
-    background: #10b981 !important;
-    border-color: #059669 !important;
-    color: #fff !important;
-    box-shadow: 0 0 10px rgba(16,185,129,0.5);
-}
-.play-btn.playing .sub {
-    color: #d1fae5;
-    background: rgba(0,0,0,0.2);
-}
-.play-btn.pending {
-    opacity: 0.35;
-    cursor: not-allowed;
-    border-style: dashed;
-}
-
-#player-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(15, 19, 27, 0.96);
-    backdrop-filter: blur(12px);
-    border-top: 1px solid #232a38;
-    padding: 12px 24px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    z-index: 1000;
-    box-shadow: 0 -4px 25px rgba(0,0,0,0.6);
-}
-.bar-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.main-play-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--accent-green);
-    border: none;
-    color: #000;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    transition: transform 0.1s ease;
-}
-.main-play-btn:hover { transform: scale(1.05); }
-.track-info {
-    min-width: 280px;
-}
-.track-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #fff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 400px;
-}
-.track-cond {
-    font-size: 11px;
-    color: var(--text-muted);
-}
-.progress-container {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.progress-bar-bg {
-    flex: 1;
-    height: 6px;
-    background: #1e2634;
-    border-radius: 3px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-}
-.progress-bar-fill {
-    height: 100%;
-    background: var(--accent-green);
-    width: 0%;
-    border-radius: 3px;
-    transition: width 0.05s linear;
-}
-.time-disp {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 12px;
-    color: var(--text-muted);
-    min-width: 80px;
-}
+}}
+.target-title {{
+    font-size: 11px; font-weight: 600; color: var(--ink);
+    margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--rule-light);
+}}
+.heads-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }}
+.head-col {{ background: var(--paper); border: 1px solid var(--rule-light); padding: 6px; }}
+.head-badge {{
+    font-size: 9px; font-weight: 600; text-transform: uppercase; text-align: center;
+    padding: 2px 4px; margin-bottom: 6px; color: var(--dim); background: var(--paper-dim);
+    border: 1px solid var(--rule-light);
+}}
+.btn-group {{ display: flex; flex-direction: column; gap: 4px; }}
+.cell.play-btn {{
+    font-family: var(--mono); padding: 5px 8px; font-size: 11px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+}}
+.cell.play-btn.pending {{ opacity: 0.35; cursor: not-allowed; border-style: dashed; }}
 </style>
 </head>
 <body>
+<div class="wrap">
+<p class="over">VIBE ON THE EDG3 · EVALS</p>
+<p class="nav"><a href="index.html">← all evals</a></p>
 
-<header>
-    <div class="header-top">
-        <div>
-            <h1>56-dim Mood LatCH Conditioning Evaluation <span class="tag-badge">Best 40ep Head</span></h1>
-            <div class="subtitle">Auditioning test-time guidance steering with the continuous 56-class MTG Jamendo mood head (ep40 val loss 0.0598) across curated choice prompts and diverse model families.</div>
-        </div>
-        <div>
-            <a href="index.html" class="nav-link">&larr; Back to Evals Index</a>
-        </div>
-    </div>
-    <div class="stat-chips">
-        <div class="chip">Heads: <span class="chip-val">ep40 (val loss 0.0598) · ep40_ema0.25</span></div>
-        <div class="chip">Targets: <span class="chip-val">Space · Dark · Melodic · Aliens HQ</span></div>
-        <div class="chip">Weights: <span class="chip-val">g=1024 · g=2048</span></div>
-        <div class="chip">Clips: <span class="chip-val">20.0s (280 frames @ 10.77 Hz, 24 Euler steps, 256k AAC)</span></div>
-        <div class="chip">Audio Context: <span class="chip-val">Synchronized same-clock Web Audio player</span></div>
-    </div>
-</header>
+<h1>56-dim Mood LatCH Conditioning across 6 Choice Models (ep40 &amp; ep40_ema0.25) <span class="unaudited" title="No listening verdict recorded yet (unaudited).">&#10071;</span></h1>
+
+<p>
+  <b>What this tests and why.</b> This page auditions test-time guidance with the 56-class Essentia <code>mtg_jamendo_moodtheme</code> LatCH probe (<code>ep40</code> validation loss <code>0.0598</code> vs. fast iterate <code>ep40_ema0.25</code>) across 6 representative model families from the choice clips set at <code>g=1024</code> and <code>g=2048</code>. For a finer gain sweep (<code>g=0..8192</code>) and de-confounded targets on a single prompt, see <a href="mood_finegrained.html">mood_finegrained.html</a>; for mood reinforcement vs. opposition see <a href="mood_oppose.html">mood_oppose.html</a>; for the 24-dim chroma head on the same 6 models see <a href="ep10_vs_ep40_chroma.html">ep10_vs_ep40_chroma.html</a>.
+</p>
+
+<div class="caveat-box">
+  <b>Scope, Baseline &amp; Disintegration Gate Disclosures (Not Established):</b>
+  <ul style="margin:5px 0 0 18px;">
+    <li><b>Sample size (not established per row):</b> Each of the 6 model rows below is rendered on 1 prompt and 1 seed (<code>n = 1</code> per row &times; condition cell). Single-seed rows do not establish per-adapter or per-prompt performance.</li>
+    <li><b>Disintegration gate not run on this page:</b> <code>control_head_disintegration_eval.gate()</code> has not been run on these clips, so this page does <b>not</b> establish a usable gain range. Informally, the range of useful weight varies across adapters and source material, and <code>Aliens HQ</code> produces very small changes on Goa tracks whose unguided mood profile is already nearly collinear with the target.</li>
+    <li><b>Unguided <code>g=0</code> baseline confound (MASTER &sect;5):</b> The <code>Base (g=0)</code> clips were generated with unguided <code>generate()</code> rather than the guided sampler at <code>gain=0</code>.</li>
+  </ul>
+</div>
+
+<div class="meta-strip">
+  <span>Rows: <b>6 models (n=1 prompt/seed per row)</b></span>
+  <span>Heads: <b>ep40 (val 0.0598) · ep40_ema0.25</b></span>
+  <span>Targets: <b>Space · Dark · Melodic · Aliens HQ</b></span>
+  <span>Weights: <b>g=1024 · g=2048</b></span>
+  <span>Clips: <b>20.0s (24 Euler steps, 256k AAC)</b></span>
+  <span>Playhead: <b>Preserved across clip switches · Re-click pauses</b></span>
+</div>
 
 <div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Model & Curated Prompt</th>
-                <th>Mood Guidance Matrix (Space · Dark · Melodic · Aliens HQ)</th>
-            </tr>
-        </thead>
-        <tbody>
-""" + table_rows + """
-        </tbody>
-    </table>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Model &amp; Prompt (n=1 seed per row)</th>
+        <th>Mood Guidance Matrix (Space · Dark · Melodic · Aliens HQ)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {table_rows}
+    </tbody>
+  </table>
 </div>
 
-<div id="player-bar">
-    <div class="bar-controls">
-        <button class="main-play-btn" id="bar-play-toggle" onclick="togglePlayPause()">&#9654;</button>
-    </div>
-    <div class="track-info">
-        <div class="track-title" id="bar-track-title">Select a clip to play</div>
-        <div class="track-cond" id="bar-track-cond">Hotkeys: Space (Play/Pause), Esc (Stop)</div>
-    </div>
-    <div class="progress-container">
-        <span class="time-disp" id="bar-cur-time">0:00</span>
-        <div class="progress-bar-bg" id="progress-bar" onclick="seekAudio(event)">
-            <div class="progress-bar-fill" id="progress-fill"></div>
-        </div>
-        <span class="time-disp" id="bar-dur-time">0:20</span>
-    </div>
+{notes_html}
 </div>
+
+<audio id="audio-player" preload="auto" style="display:none"></audio>
 
 <script>
-let currentAudio = null;
+const audio = document.getElementById('audio-player');
 let currentBtn = null;
 let currentStem = null;
-let currentRowIdx = null;
+let lastKnownTime = 0;
 
-const barPlayBtn = document.getElementById('bar-play-toggle');
-const barTitle = document.getElementById('bar-track-title');
-const barCond = document.getElementById('bar-track-cond');
-const barFill = document.getElementById('progress-fill');
-const barCurTime = document.getElementById('bar-cur-time');
-const barDurTime = document.getElementById('bar-dur-time');
-
-function formatTime(sec) {
-    if (isNaN(sec)) return "0:00";
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return m + ":" + (s < 10 ? '0' : '') + s;
-}
-
-function playAudio(stem, btnEl, rowIdx, condLabel) {
+function playAudio(stem, btnEl, rowIdx, model, ckpt, condLabel) {{
     if (btnEl.classList.contains('pending')) return;
+    if (window.noteSet) noteSet({{model: model, ckpt: ckpt, clip: stem}});
 
-    let targetTime = 0;
-    if (currentAudio && !currentAudio.paused) {
-        targetTime = currentAudio.currentTime;
-    }
-
-    if (currentBtn === btnEl && currentAudio) {
-        togglePlayPause();
+    if (currentBtn === btnEl) {{
+        if (audio.paused) {{
+            audio.play();
+            btnEl.classList.add('playing');
+            btnEl.querySelector('.icon').innerHTML = '||';
+        }} else {{
+            audio.pause();
+            btnEl.classList.remove('playing');
+            btnEl.querySelector('.icon').innerHTML = '&#9654;';
+        }}
         return;
-    }
+    }}
 
-    if (currentAudio) {
-        currentAudio.pause();
-        currentAudio = null;
-    }
-    if (currentBtn) {
+    const targetTime = (audio.currentTime > 0 && !audio.ended) ? audio.currentTime : lastKnownTime;
+
+    if (currentBtn) {{
         currentBtn.classList.remove('playing');
         currentBtn.querySelector('.icon').innerHTML = '&#9654;';
-    }
+    }}
 
     currentBtn = btnEl;
     currentStem = stem;
-    currentRowIdx = rowIdx;
 
-    currentAudio = new Audio('choice_clips_mood/' + stem);
-    currentAudio.currentTime = targetTime;
-    currentAudio.play().catch(e => console.error(e));
+    audio.src = 'choice_clips_mood/' + stem;
+    const go = () => {{
+        if (targetTime > 0) {{
+            try {{ audio.currentTime = Math.min(targetTime, (audio.duration || 20.0) - 0.05); }} catch (e) {{}}
+        }}
+        audio.play().catch(e => console.error(e));
+    }};
+    if (audio.readyState >= 1) go();
+    else audio.addEventListener('loadedmetadata', go, {{ once: true }});
 
     btnEl.classList.add('playing');
-    btnEl.querySelector('.icon').innerHTML = '&#10074;&#10074;';
-    barPlayBtn.innerHTML = '&#10074;&#10074;';
+    btnEl.querySelector('.icon').innerHTML = '||';
+}}
 
-    const rowEl = document.getElementById('row-' + rowIdx);
-    const modelTitle = rowEl ? rowEl.querySelector('.model-title').textContent : ('Row ' + rowIdx);
-    barTitle.textContent = modelTitle + ' — [' + condLabel + ']';
-    barCond.textContent = stem;
+audio.addEventListener('timeupdate', () => {{
+    if (audio.currentTime > 0 && !audio.ended) lastKnownTime = audio.currentTime;
+}});
 
-    currentAudio.ontimeupdate = () => {
-        if (!currentAudio) return;
-        const cur = currentAudio.currentTime;
-        const dur = currentAudio.duration || 20.0;
-        const pct = (cur / dur) * 100;
-        barFill.style.width = pct + '%';
-        barCurTime.textContent = formatTime(cur);
-        barDurTime.textContent = formatTime(dur);
-    };
-
-    currentAudio.onended = () => {
-        if (currentBtn) {
-            currentBtn.classList.remove('playing');
-            currentBtn.querySelector('.icon').innerHTML = '&#9654;';
-        }
-        barPlayBtn.innerHTML = '&#9654;';
-        barFill.style.width = '0%';
-        barCurTime.textContent = '0:00';
-    };
-}
-
-function togglePlayPause() {
-    if (!currentAudio) return;
-    if (currentAudio.paused) {
-        currentAudio.play();
-        if (currentBtn) {
-            currentBtn.classList.add('playing');
-            currentBtn.querySelector('.icon').innerHTML = '&#10074;&#10074;';
-        }
-        barPlayBtn.innerHTML = '&#10074;&#10074;';
-    } else {
-        currentAudio.pause();
-        if (currentBtn) {
-            currentBtn.classList.remove('playing');
-            currentBtn.querySelector('.icon').innerHTML = '&#9654;';
-        }
-        barPlayBtn.innerHTML = '&#9654;';
-    }
-}
-
-function seekAudio(e) {
-    if (!currentAudio) return;
-    const bar = document.getElementById('progress-bar');
-    const rect = bar.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const width = rect.width;
-    const dur = currentAudio.duration || 20.0;
-    const seekTime = (clickX / width) * dur;
-    currentAudio.currentTime = seekTime;
-}
-
-document.addEventListener('keydown', e => {
-    if (e.code === 'Space') {
-        e.preventDefault();
-        togglePlayPause();
-    } else if (e.code === 'Escape') {
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio.currentTime = 0;
-            if (currentBtn) {
-                currentBtn.classList.remove('playing');
-                currentBtn.querySelector('.icon').innerHTML = '&#9654;';
-            }
-            barPlayBtn.innerHTML = '&#9654;';
-            barFill.style.width = '0%';
-            barCurTime.textContent = '0:00';
-        }
-    }
-});
+audio.addEventListener('ended', () => {{
+    lastKnownTime = 0;
+    if (currentBtn) {{
+        currentBtn.classList.remove('playing');
+        currentBtn.querySelector('.icon').innerHTML = '&#9654;';
+    }}
+}});
 </script>
 </body>
 </html>
 """
-    OUT_HTML.write_text(html)
-    print(f"Generated dashboard: {OUT_HTML} ({len(html)} bytes)")
+    html = inject(html)
+    OUT_HTML.write_text(html, encoding="utf-8")
+    print(f"Built {OUT_HTML} ({len(html)} bytes)")
+
 
 if __name__ == "__main__":
     main()
