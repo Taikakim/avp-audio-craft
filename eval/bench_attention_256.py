@@ -18,7 +18,7 @@ import json
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
 os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
-os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+# expandable_segments removed (W 2026-11-03): decodes go wrong on ROCm, MASTER section 5
 
 import torch
 import torch.nn.functional as F
