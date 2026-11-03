@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: WINTERMUTE 2026-11-03 -- quarantined cells show N/A, clicking says "Clip quarantined"
 """
 build_model_matrix.py -- THE MODEL MATRIX (Kim 2026-07-11, the overnight priority):
 a 4-column preset board where each column = (model, checkpoint) chosen by dropdowns,
@@ -105,6 +106,9 @@ h1{font-size:17px;margin:0 0 4px}a{color:#7cf}
 border-bottom:1px solid #2a2a30;font-size:13px}#np{color:#cde}#pos{color:#888}
 #trans{display:none;align-items:center;gap:8px;margin-left:12px;vertical-align:middle}
 #trans.on{display:inline-flex}
+.cell.quar{background:#c0392b;color:#000;font-weight:600;font-size:10px}.cell.quar:hover{background:#d0493b}
+#qmsg{display:none;background:#c0392b;color:#000;font-weight:600;padding:2px 10px;border-radius:3px}
+#trans.quar>*{display:none}#trans.quar>#qmsg{display:inline-block}
 #pp{background:none;border:0;color:#7cf;cursor:pointer;font-size:14px;padding:0 2px;line-height:1}
 #seek{width:240px;max-width:36vw;accent-color:#7cf;cursor:pointer;height:4px}
 #tm{color:#9ab;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}
@@ -321,7 +325,8 @@ def main():
                '<span id=trans><button id=pp title="play / pause">&#9208;</button>'
                '<input type=range id=seek min=0 max=1000 value=0 step=1 title="playhead — drag to seek">'
                '<span id=tm>0:00&#8239;/&#8239;0:00</span>'
-               '<a id=dl href="#" download title="download the track playing now">&#8681;</a></span>'
+               '<a id=dl href="#" download title="download the track playing now">&#8681;</a>'
+               '<span id=qmsg>Clip quarantined</span></span>'
                ' <label style="color:#8b8" title="play each cell&#39;s native-training-length render '
                '(e.g. 47.5s for T512 models) instead of the 20s comparison clip, where one exists '
                '(terminal checkpoints) -- cells without one keep their 20s clip. Also DIMS cells that '
@@ -399,6 +404,14 @@ async function refreshMM(){
     (cov[e.model]=cov[e.model]||{})[e.ckpt]=1; continue}
    data[e.model+'|'+e.ckpt+'|'+e.cfg+'|'+e.strength+'|'+pid]=e.file;
    (cov[e.model]=cov[e.model]||{})[e.ckpt]=1; }
+  // Removed for a reason (W 2026-11-03): Misc/quarantine_clips.py flags, one line per clip. A live clip at the same cell wins.
+  const quar={};
+  try{const qr=await fetch('model_matrix/quarantined.jsonl',{cache:'no-store'});
+   if(qr.ok)for(const ln of (await qr.text()).split('\\n')){ if(!ln.trim()) continue;
+    let e; try{e=JSON.parse(ln)}catch(_){continue}
+    quar[e.model+'|'+e.ckpt+'|'+e.cfg+'|'+e.strength+'|'+e.prompt_id]=e.reason||'';
+    (cov[e.model]=cov[e.model]||{})[e.ckpt]=1; }}catch(_){}
+  MM.quar=quar;
   MM.data=data; MM.native=native; MM.ngrid=ngrid; MM.prompts=prompts;
   for(const m of Object.keys(MM.models)) MM.models[m].ckpts=Object.keys(cov[m]||{}).sort();
   render();
@@ -432,7 +445,18 @@ function seekAndPlay(pos){
  if(a.readyState>=3){go();return}
  let done=false;const fire=()=>{if(done)return;done=true;go()};
  a.addEventListener('canplay',fire,{once:true});setTimeout(fire,1200)}
+// A quarantined cell: stop the audio and say so where the playhead sits. Same coordinates are kept, so switching checkpoint still A/Bs this cell.
+function quarShow(el){
+ a.pause();document.getElementById('ld').textContent='';
+ cur=el;el.classList.add('playing');trans.classList.add('on','quar');
+ document.getElementById('qmsg').title=el.title||'';
+ curCoord={col:el.dataset.col,cf:el.dataset.cf,w:el.dataset.w,pid:el.dataset.pid};}
+function quarCell(el){
+ if(cur===el){el.classList.remove('playing');trans.classList.remove('quar');cur=null;curCoord=null;return}
+ if(cur)cur.classList.remove('playing','loading');
+ quarShow(el)}
 function startCell(el,f){
+ trans.classList.remove('quar');
  document.getElementById('ld').textContent='loading…';el.classList.add('loading');
  a.pause();a.src='model_matrix/'+f;seekAndPlay(ph);cur=el;el.classList.add('playing');
  dl.href='model_matrix/'+f;dl.setAttribute('download',f);trans.classList.add('on');
@@ -469,7 +493,11 @@ function reattach(){
  if(!curCoord)return;
  const q='.cell.have[data-col="'+curCoord.col+'"][data-cf="'+curCoord.cf+'"][data-w="'+curCoord.w+'"][data-pid="'+CSS.escape(curCoord.pid)+'"]';
  const el=document.querySelector(q);
- if(!el){cur=null;return}                       // analogous cell gone -> leave audio as-is
+ if(!el){cur=null;
+  const qel=document.querySelector(q.replace('.cell.have','.cell.quar'));
+  if(qel)quarShow(qel);                         // same cell on the new checkpoint was removed -> say so, do not keep playing the old one
+  return}                                       // analogous cell gone -> leave audio as-is
+ trans.classList.remove('quar');
  cur=el;el.classList.add('playing');
  const ef=effSrc(el);
  if(!a.src.endsWith('/'+ef)){               // different clip => checkpoint (or native toggle) switched
@@ -595,7 +623,7 @@ function render(){
      // prompt occupies the SAME height in every column and the same prompt lands on the
      // same horizontal line across models (Kim 2026-07-22 alignment fix; supersedes the
      // 07-13 label-only path that made empty rows shorter than populated ones).
-     const anyCell=MM.cfgs.some(cf=>MM.strengths.some(w=>(st.model+'|'+st.ckpt+'|'+cf+'|'+w+'|'+pid) in MM.data));
+     const anyCell=MM.cfgs.some(cf=>MM.strengths.some(w=>{const k=st.model+'|'+st.ckpt+'|'+cf+'|'+w+'|'+pid;return (k in MM.data)||(MM.quar&&k in MM.quar)}));
      const hint=anyCell?'':' <span style="color:#a66;font-style:italic">· no clips at these settings</span>';
      h+='<div class=plabel'+(anyCell?'':' style="opacity:.4"')+' title="'+MM.prompts[pid].replace(/"/g,'&quot;')+'">'+pid+' — '+MM.prompts[pid].slice(0,60)+hint+'</div>';
      h+='<table class=mini><tr><th></th>';
@@ -607,6 +635,8 @@ function render(){
         const hasNat=!!(MM.ngrid&&MM.ngrid[key]);
         const hasPtm=!ptmSib||!!MM.data[ptmSib+'|'+st.ckpt+'|'+cf+'|'+w+'|'+pid];
         h+='<td class="cell have'+(hasNat?'':' no-nat')+(hasPtm?'':' no-ptm')+'" data-src="'+f+'" data-col="'+c+'" data-cf="'+cf+'" data-w="'+w+'" data-pid="'+pid+'" onclick="play(this)">&#9654;</td>';
+       }else if(MM.quar&&key in MM.quar){
+        h+='<td class="cell quar" title="'+(MM.quar[key]||'Clip quarantined').replace(/"/g,'&quot;')+'" data-col="'+c+'" data-cf="'+cf+'" data-w="'+w+'" data-pid="'+pid+'" onclick="quarCell(this)">N/A</td>';
        }else h+='<td class="cell miss">·</td>'}
       h+='</tr>'}
      h+='</table>'}

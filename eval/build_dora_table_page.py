@@ -383,6 +383,10 @@ tr:hover td{background:#191a22 !important}tr:hover td.model{background:#1c1e28 !
 .pbar select{max-width:220px}
 #plabel{color:#9a9;flex:1;min-width:180px}
 #plabel.playing{color:#7ed}#plabel.nomatch{color:#f76}
+#pquar{display:none;background:#c0392b;color:#000;font-weight:600;padding:2px 10px;border-radius:3px}
+.pbar.pq #pquar{display:inline-block}.pbar.pq #pseek,.pbar.pq #ptm,.pbar.pq #pp,.pbar.pq #pdl{display:none !important}
+tbody tr.qcell,tbody tr.qcell td{opacity:1 !important;color:#ccc !important}
+tbody tr.qcell td.model::after{content:"N/A";background:#c0392b;color:#000;font-weight:600;font-size:10px;padding:0 4px;margin-left:6px;border-radius:2px}
 #pp{background:#1b1c22;color:#dde;border:1px solid #333;border-radius:4px;width:26px;height:22px;cursor:pointer}
 #pseek{width:140px}
 tbody tr{cursor:pointer}
@@ -436,7 +440,7 @@ Hyperparameters parsed from the checkpoint recipes.</p>
  <button title="delete one of YOUR saved presets (not a built-in one)" onclick="const n=prompt('Delete which saved preset? (yours only, not built-in)');if(n)deleteUserPreset(n);">delete a saved preset</button>
  <span id=count style=color:#9a9></span>
 </div>
-<div class=pbar>
+<div class=pbar id=playerbar>
  <b>Cell picker</b>
  <label>prompt <select id=pprompt></select></label>
  <label>cfg <select id=pcfg></select></label>
@@ -444,6 +448,7 @@ Hyperparameters parsed from the checkpoint recipes.</p>
  <label title="the post-trained (rf_denoiser/ping-pong) base model instead of medium-base, with this row's own adapter applied. Only rendered at cfg1/w1/8-step (its PT-native config) -- higher cfg 'cooks' the output, so checking this forces+locks cfg/weight."><input type=checkbox id=pptm> post-trained</label>
  <label title="play the native-training-length render (e.g. 47.5s for T512 models) instead of the 20s comparison cell. Native grids exist at TERMINAL checkpoints only -- other rows fall back to their 20s clip, marked ·20s in the label. Combines with post-trained (ptm+native)."><input type=checkbox id=pnative> native length</label>
  <button id=pp title="play/pause">&#9654;</button>
+ <span id=pquar>Clip quarantined</span>
  <input type=range id=pseek min=0 max=1000 value=0>
  <span id=ptm style=color:#9a9>0:00 / 0:00</span>
  <a id=pdl href="#" download title="download the clip playing now" style="display:none;color:#7ed;text-decoration:none;font-size:16px;padding:0 4px">&#8681;</a>
@@ -875,6 +880,7 @@ function markAvailability(){
    cb.classList.toggle('on',on);cb.classList.remove('err');
    cb.title=on?'in the mixtape -- click to remove':'add this clip (at the current prompt / cfg / weight picker) to the mixtape';}});}
 function markPlaying(){
+ markQuarRows();
  document.querySelectorAll('#body tr.playing').forEach(x=>x.classList.remove('playing'));
  annotateAvailabilityMarkers();
  if(!playingModel)return;
@@ -968,7 +974,23 @@ function annotateAvailabilityMarkers(){
    if(pVals.has(o.value))t+=' \u{1F535}P';
    if(pnVals.has(o.value))t+=' \u{1F7E2}\u{1F535}PN';
    o.textContent=t;});});}
+// Removed for a reason (W 2026-11-03): Misc/quarantine_clips.py flags, fetched in loadManifest. The exact selected cell only, and a live clip there wins.
+let quarIndex=new Map();
+function quarAt(model,ckpt,pid,cfg,w){
+ const k=cellKey(modelKey(model),ckpt,pid,cfg,w);
+ return quarIndex.has(k)&&!(cellIndex&&cellIndex.has(k))&&!(nativeIndex&&nativeIndex.has(k));}
+function showQuar(model,ckpt,key){
+ pl.pause();playingKey=key;playingModel=model;playingCkpt=ckpt;
+ document.getElementById('playerbar').classList.add('pq');
+ plabel.className='';plabel.textContent=modelKey(model)+' '+ckpt;
+ document.getElementById('ssmpanel').style.display='none';markPlaying();}
+function markQuarRows(){
+ if(!quarIndex.size)return;
+ document.querySelectorAll('#body tr').forEach(tr=>{if(!tr.dataset.model)return;
+  const {pid,cfg,w}=currentSel(tr.dataset.model);
+  tr.classList.toggle('qcell',quarAt(tr.dataset.model,tr.dataset.ckpt,pid,cfg,w));});}
 function stopPlaying(){pl.pause();userPaused=true;playingKey=playingModel=playingCkpt=null;
+ document.getElementById('playerbar').classList.remove('pq');
  plabel.className='';plabel.textContent='click a model row to play';
  document.getElementById('ssmpanel').style.display='none';document.getElementById('pdl').style.display='none';markPlaying();}
 // SAME-PLAYHEAD A/B (Kim 2026-07-23): switching checkpoint (row) or setting (picker) mid-play
@@ -982,6 +1004,7 @@ function seekAndPlay(pos){
  pl.addEventListener('loadedmetadata',fire,{once:true});setTimeout(fire,1500);}
 // re-resolve the CURRENTLY-playing model at a changed picker setting, continue from ph
 function repickCurrent(){
+ markQuarRows();
  markAvailability();
  // Markers depend on ALL THREE current picker values now (matchesOthers, above), not just
  // (model,ckpt) -- so they must be recomputed on every picker change, including the ones
@@ -992,6 +1015,7 @@ function repickCurrent(){
  if(!playingModel||userPaused)return;                 // nothing playing / user hit pause -> just re-dim rows
  applyPtmLock(playingModel);
  const {pid,cfg,w}=currentSel(playingModel);
+ if(quarAt(playingModel,playingCkpt,pid,cfg,w)){showQuar(playingModel,playingCkpt,'Q'+cellKey(modelKey(playingModel),playingCkpt,pid,cfg,w));return;}
  const hit=resolveCell(modelKey(playingModel),playingCkpt,pid,cfg,w);
  if(!hit)return;                                      // model has no clip at all -> keep playing
  const sw=nativeSwap(hit,playingCkpt);
@@ -1000,6 +1024,7 @@ function repickCurrent(){
  playingKey=key;
  curLabel=hit.mkey+' '+playingCkpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest')+sw.tag+badLabel(sw.file);
  plabel.className='playing';plabel.textContent='▶ '+curLabel;
+ document.getElementById('playerbar').classList.remove('pq');
  pl.pause();pl.src=CB+sw.file;seekAndPlay(ph);showSSM(sw.file);setDL(sw.file);
  noteFromPlay(playingModel,playingCkpt,sw.file);markPlaying();}
 function playRow(tr){
@@ -1008,6 +1033,10 @@ function playRow(tr){
  applyPtmLock(tr.dataset.model);        // lock (and visibly pin to 1/1) BEFORE resolving, so a
                                         // clicked ptm row's own resolution sees the pinned values
  const {pid,cfg,w}=currentSel(tr.dataset.model);
+ if(quarAt(tr.dataset.model,tr.dataset.ckpt,pid,cfg,w)){
+  const qk='Q'+cellKey(modelKey(tr.dataset.model),tr.dataset.ckpt,pid,cfg,w);
+  if(playingKey===qk){stopPlaying();return;}
+  showQuar(tr.dataset.model,tr.dataset.ckpt,qk);return;}
  const hit=resolveCell(modelKey(tr.dataset.model),tr.dataset.ckpt,pid,cfg,w);
  if(!hit){               // truly no clip for this model-ckpt in EITHER view -> genuine dead row
   tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');
@@ -1020,6 +1049,7 @@ function playRow(tr){
  playingKey=key;playingModel=tr.dataset.model;playingCkpt=tr.dataset.ckpt;
  curLabel=hit.mkey+' '+tr.dataset.ckpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest')+sw.tag+badLabel(sw.file);
  plabel.className='playing';plabel.textContent='loading… '+curLabel;
+ document.getElementById('playerbar').classList.remove('pq');
  pl.pause();pl.src=CB+sw.file;seekAndPlay(ph);     // resume at the shared playhead (A/B), not from 0
  showSSM(sw.file);setDL(sw.file);
  noteFromPlay(playingModel,playingCkpt,sw.file);
@@ -1109,7 +1139,12 @@ async function loadManifest(){
    if(e.duration_mode==='native'){nativeIndex.set(cellKey(e.model,e.ckpt,e.prompt_id,e.cfg,e.strength),e.file);continue;}
    cellIndex.set(cellKey(e.model,e.ckpt,e.prompt_id,e.cfg,e.strength),e.file);
    cfgSet.add(e.cfg);wSet.add(e.strength);}
+  try{const qr=await fetch('model_matrix/quarantined.jsonl',{cache:'no-store'});
+   if(qr.ok)for(const line of (await qr.text()).split('\n')){
+    if(!line.trim())continue;let e;try{e=JSON.parse(line)}catch(_){continue}
+    quarIndex.set(cellKey(e.model,e.ckpt,e.prompt_id,e.cfg,e.strength),e.reason||'');}}catch(_){}
   fillPicker(promptTxt,cfgSet,wSet);
+  markQuarRows();
   plabel.textContent='click a model row to play';return;
  }catch(err){/* file:// blocks fetch, or offline -> embedded snapshot below */}
  const cf=(typeof D!=='undefined')?D.cf:null;
