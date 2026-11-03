@@ -31,6 +31,7 @@ X.N_CROPS = 24
 PROMPTS = Path("/home/kim/evals_aac/control_runs/mood_deconf_20261103/prompts.json")
 PACKS = {"C": (X.PACK, 2), "B": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_contourB"), 15)}
 ARMS = ("true", "shuffled", "true_null", "shuf_null", "zero")
+LOCAL_FRAMES = 16
 
 
 def feed(pack, stem, w):
@@ -97,9 +98,11 @@ def score(a):
     for l in (out / "cells.jsonl").read_text().splitlines():
         c = json.loads(l)
         cells[c["id"]] = c
-    model = TranscriptionModel.load_model("medium", device="cuda")
     midd = out / "midi"
     midd.mkdir(exist_ok=True)
+    model = None
+    if any(not (midd / f"{i}.mid").exists() for i in cells):
+        model = TranscriptionModel.load_model("medium", device="cuda")
 
     def corr(line, target):
         v = (line >= 0) & (target[1] > 0)
@@ -108,6 +111,16 @@ def score(a):
         flat = np.std(line[v]) == 0
         return (0.0 if flat or np.std(target[0][v]) == 0 else float(np.corrcoef(line[v], target[0][v])[0, 1])), flat
 
+    def corr_local(line, target, win=LOCAL_FRAMES):
+        """The same correlation after taking out each curve's running mean over win frames (about 1.5 s), so only note-scale movement counts."""
+        v = (line >= 0) & (target[1] > 0)
+        if v.sum() < 2 * win:
+            return 0.0
+        a, b = line[v].astype(np.float64), target[0][v].astype(np.float64)
+        k = np.ones(win) / win
+        a, b = a - np.convolve(a, k, "same"), b - np.convolve(b, k, "same")
+        return 0.0 if np.std(a) == 0 or np.std(b) == 0 else float(np.corrcoef(a, b)[0, 1])
+
     rows = []
     for c in cells.values():
         p = midd / f"{c['id']}.mid"
@@ -115,18 +128,20 @@ def score(a):
             p.write_bytes(model.transcribe_to_midi(out / f"{c['id']}.wav"))
         line = skyline(str(p))[:X.T]
         own = X.stream(c["stem"], c["window"])          # always the centred-pitch stream of arm C: the same notes, for any pack
-        fed = X.shuffled(own) if c["arm"] in ("shuffled", "shuf_null") else own
+        mixed = X.shuffled(own)
+        shuf_arm = c["arm"] in ("shuffled", "shuf_null")
+        fed, other = (mixed, own) if shuf_arm else (own, mixed)
         r, flat = corr(line, fed)
-        ro, _ = corr(line, own)
+        ro, _ = corr(line, other)
         v = line >= 0
-        rows.append(dict(c, r_fed=r, r_own=ro, flat=bool(flat), pitches=int(len(np.unique(line[v]))), changes=int((np.diff(line[v]) != 0).sum()) if v.sum() else 0))
+        rows.append(dict(c, r_fed=r, r_other=ro, rl_fed=corr_local(line, fed), rl_other=corr_local(line, other), flat=bool(flat), pitches=int(len(np.unique(line[v]))), changes=int((np.diff(line[v]) != 0).sum()) if v.sum() else 0))
     (out / "scores.json").write_text(json.dumps(rows, indent=0))
     report(a, rows)
 
 
 def report(a, rows):
     out = Path(a.out)
-    ref = {r["stem"]: r["r_own"] for r in rows if r["arm"] == "ref"}
+    ref = {r["stem"]: r["r_fed"] for r in rows if r["arm"] == "ref"}
     good = {s for s, r in ref.items() if r is not None and r >= 0.5}
     by = {arm: {r["stem"]: r for r in rows if r["arm"] == arm} for arm in ARMS}
     rng = np.random.default_rng(1)
@@ -136,15 +151,20 @@ def report(a, rows):
         rs = list(by[arm].values())
         L.append(f"{arm:10s} n {len(rs)} r_fed {np.mean([r['r_fed'] or 0 for r in rs]):+.3f} flat {sum(r['flat'] for r in rs)} pitches {np.median([r['pitches'] for r in rs]):.0f} changes {np.median([r['changes'] for r in rs]):.0f}")
 
-    def pair(x, y, keep, name):
-        d = np.array([(by[x][k]["r_fed"] or 0) - (by[y][k]["r_fed"] or 0) for k in by[x] if k in by[y] and k in keep])
+    def follow(arms, keep, name, fed="r_fed", other="r_other"):
+        """The test: each render against the stream it was fed minus the stream it was not. Each arm scored only against its own stream cannot separate them, since both can follow."""
+        d = np.array([(r[fed] or 0) - (r[other] or 0) for a in arms for k, r in by[a].items() if k in keep])
         if not d.size:
-            return f"{name}: no pairs"
+            return f"{name}: no clips"
         boot = [rng.choice(d, d.size).mean() for _ in range(4000)]
         return f"{name}: {d.mean():+.3f} [{np.percentile(boot, 2.5):+.3f},{np.percentile(boot, 97.5):+.3f}] positive {int((d > 0).sum())}/{d.size}"
 
+    both, nul = ("true", "shuffled"), ("true_null", "shuf_null")
     for lab, keep in (("all crops", set(ref)), ("control >= 0.5", good)):
-        L.append(lab + ": " + pair("true", "shuffled", keep, "true-shuffled, both branches") + " | " + pair("true_null", "shuf_null", keep, "true-shuffled, null uncond"))
+        L.append(f"FOLLOW, fed minus other, {lab}: " + follow(both, keep, "both branches") + " | " + follow(nul, keep, "null uncond"))
+        L.append(f"  note scale, running mean of {LOCAL_FRAMES} frames removed, {lab}: " + follow(both, keep, "both branches", "rl_fed", "rl_other") + " | " + follow(nul, keep, "null uncond", "rl_fed", "rl_other"))
+    refs = [r for r in rows if r["arm"] == "ref"]
+    L.append(f"  note scale, decoded crops: fed {np.mean([r['rl_fed'] for r in refs]):+.3f}, other {np.mean([r['rl_other'] for r in refs]):+.3f}")
     (out / "report.txt").write_text("\n".join(L) + "\n")
     print("\n".join(L))
 
