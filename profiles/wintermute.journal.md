@@ -1198,3 +1198,6 @@ The stream was going to both CFG branches, so text got x7 and the stream x1. Zer
 
 ## 2026-11-03 E24 arm B: L3 symbols do not win
 Reopened arm B on the view that E23 only tested cross-attention. Tested properly: L3 from notes through the inlet, L3 agreement +0.020 against centred pitch's +0.028 on the same measure, decoded crops +0.209. The route and source were not what held L3 back. Kept as a negative. EXPERIMENTS E24.
+
+## 2026-11-03 Melody from notes works, on the meter
+The August pianoroll fine-tune plays invented melodies once CFG scales the stream: fed pitch on 73% of frames vs 2.5% with no stream, 36/36, transposed crops follow too. The model had this since August; the eval held it back with the roll in both CFG branches. Not heard yet. EXPERIMENTS D15, `files/evals/pianoroll_melody.html`.
