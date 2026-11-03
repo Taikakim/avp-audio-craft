@@ -121,8 +121,7 @@ loss exported to one ONNX file, 26.7 MB. ONNX Runtime on CPU against torch's rea
 **So the torch-free stack looks viable:** LiteRT for the DiT, ONNX Runtime (or a converted model) for head gradients, with a numpy sampler
 between them. FiLM still needs a re-export. Next: one steered render end to end, measured against the torch path.
 
-**Reliability note for the plan (W, 2026-11-03):** on the ROCm stack the same latent can decode to NaN or finite-but-wrong audio
-on the first render, cause unknown, and a CPU decode was reported clean. The CPU route may avoid that whole class. Not tested.
+**Withdrawn reliability note:** the decode fault was an allocator flag, not the GPU path as such (section 6), so it is no argument for the CPU route.
 
 ## 0d. First torch-free steered renders (2026-11-03)
 
@@ -261,17 +260,12 @@ experiment decides C++.
 
 ## 6. Release blockers known today
 
-1. **Decode fault on the torch path, a blocker (W, 2026-11-03, MASTER section 5).** Same request, same latent to the bit: the
-   first render's audio can be NaN **or finite but wrong**, and later renders repeat exactly. `empty_cache` between guided
-   renders made all ten NaN in a test. **The wrong-but-finite case passes a post-decode NaN check,** so that check alone is
-   not enough. A CPU decode of the same latent was reported clean, not re-tested, which favours the CPU route. Earlier
-   wording, kept for the record: a healthy latent can decode
-   to all-NaN audio, written as a full-scale DC file, and a request can come out unsteered. The first guided render of a
-   fresh process hit it in 3 of 3 tries, **but on direct `generate(latch_configs)` with the bare base model.** Through the
-   render server, the GUI's path, C found 0 dead in 714 clips and two clean first requests on a fresh server, both with a
-   DoRA installed first. The cause is not established, and a GUI on the bare base model with no DoRA is the untested
-   case. Cheap guard regardless: check the audio after decode and refuse to show a dead clip. Unknown whether this is
-   ROCm-only, so **test on NVIDIA**.
+1. **Decode fault: root-caused, no longer a blocker on its own (W, 2026-11-03 04:48, MASTER section 5).** The trigger is
+   `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`, which must not be set on ROCm. With it, the first render's audio is wrong but
+   finite, and `empty_cache` makes it NaN. Without it: 1,980 clips with 0 faults, 24 fresh processes clean, and a fresh server's first
+   guided request on the bare base is clean. **For the release:** make sure no install script, config or imported module sets this
+   flag, and refuse to start on ROCm if it is set. A post-decode check is still cheap insurance, but it cannot catch the wrong-but-finite case.
+   Earlier versions of this item (blaming `empty_cache` and the first render) were wrong.
 2. **Live-adapter render fault:** NaN or about 1e11 on identical inputs with a live DoRA; merged adapters are deterministic
    (W39 synopsis). v1 could ship merged only. Also unknown off ROCm.
 3. **A latent-std guard before decode, new work on the server path, not a default to flip (W, by reading the code, 2026-11-02).**
