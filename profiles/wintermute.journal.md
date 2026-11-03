@@ -1189,3 +1189,6 @@ Same request in one process: latent identical to the bit, first render's audio N
 
 ### finding · Root cause: expandable_segments. My empty_cache story was wrong
 An imported module set the allocator flag, so every test I thought was without it had it. Isolating the flag took ten renders each way and CPU-side measurement. Without it: no faults in 1,980 clips, and a fresh server is clean. The faults also explain the silent-damage case, where a dead check passes wrong audio. Lesson: read what an import does to the environment before crediting a result to the variable I changed.
+
+## 2026-11-03 E24 arm C, first eval uninformative; arm B reopened
+One prompt and one seed made every render read as one held E4 (voiced 0.84 in every fed arm), so most scores came back empty, and the foreign arm repeated the true arm. A test design failure, not a result. Separately: the local stream goes to both CFG branches, so CFG never scales it; `modular_cfg_null` added, default off, tested in eval 2 (`eval/e24_eval2.py`). And a correction to my own note: E23 only tested L3 through cross-attention with Melodia-trained checkpoints, so skipping arm B on that basis was wrong. See EXPERIMENTS E24.
