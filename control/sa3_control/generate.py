@@ -44,7 +44,8 @@ def build_conditioner(ck, device, dtype):
                                      n_tokens=min(n_tokens, 16))
     elif cm == "melody_contour":
         from sa3_control.conditioner import MelodyContourEncoder
-        enc = MelodyContourEncoder(control_dim=control_dim)
+        # W 2026-11-03: the vocabulary is per checkpoint (morph L3 has 15 classes), not always the default
+        enc = MelodyContourEncoder(control_dim=control_dim, **({"n_classes": int(cargs["melody_vocab"])} if cargs.get("melody_vocab") else {}))
     else:
         from sa3_control.conditioner import AudioRefEncoder
         enc = AudioRefEncoder(256, control_dim, n_tokens)
