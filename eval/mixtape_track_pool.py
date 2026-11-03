@@ -27,7 +27,7 @@ ARMS = [
     ("fullft_avp_t256_ep80", "fullft", f"{RUNS}/fullft_avp_t256/epoch=80-step=46944.weights.ckpt", (0.6, 1.8), (5, 14), 17),   # ep46 is not on disk
     ("goa5k_dora_3e-3_3033st", "adapter", f"{RUNS}/goa5k_fullft_avp_dora_3e-3_3033st/step=3033.ckpt", (0.8, 1.0), (5, 9), 17),
     ("goa5k_r128_shampoo_k5_8088", "adapter", f"{RUNS}/goa5k_r128_shampoo_subloss_k5_2026-09-26/step=8088.ckpt", (0.5, 1.5), (4, 12), 16),
-    ("fp32cmp_avp_bs4_lr1e4_ep28", "fullft", f"{RUNS}/fp32cmp_avp_t4096_bs4_lr1e4/epoch=28-step=14953.weights.ckpt", (0.4, 1.0), (4, 9), 16),   # ep20 is not on disk
+    ("fp32cmp_avp_bs4_lr1e4_ep28", "adapter", f"{RUNS}/fp32cmp_avp_t4096_bs4_lr1e4/epoch=28-step=14953.weights.ckpt", (0.4, 1.0), (4, 9), 16),   # ep20 is not on disk
 ]
 SYN = dict(
     genre=["goa trance", "psytrance", "full-on psytrance", "progressive psytrance", "psychedelic trance", "dark psytrance", "forest psytrance", "hi-tech psytrance"],
@@ -81,7 +81,7 @@ def main():
     if not os.path.exists(f"{OUT}/run_meta.json"):
         json.dump({"purpose": "Replacement track pool for the DJ mix: 100 tracks from six models, 30 s core + 45 s inpaint extension each side (core at 45-75 s). Owner will tag the ones that go into the mix on the eval page.",
                    "hypothesis": "tracks straight from the better checkpoints, extended by the same model and prompt, sound better than the old 16 (extended by the bridge adapter).",
-                   "script": "eval/mixtape_track_pool.py", "plan": rows, "caveats": "fullft_avp_t256 ep46 and fp32cmp bs4 sweep ep20 are not on disk: ep80 and ep28 used. Full-FT weight = delta scaling base+w*(ft-base).",
+                   "script": "eval/mixtape_track_pool.py", "plan": rows, "caveats": "fullft_avp_t256 ep46 and fp32cmp bs4 sweep ep20 are not on disk: ep80 and ep28 used. fp32cmp ep28 turned out to be an adapter ckpt (loaded as DoRA/LoRA). Full-FT weight = delta scaling base+w*(ft-base).",
                    "result": None, "kim_feedback": None}, open(f"{OUT}/run_meta.json", "w"), indent=1)
     arms = []
     for r in rows: 
