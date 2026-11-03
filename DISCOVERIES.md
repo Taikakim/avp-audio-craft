@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*347 entries from 5 journals.*
+*348 entries from 5 journals.*
 
 ---
 
@@ -49,6 +49,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **SAME + SA3 tech reports re-read against current knowledge (Kim's call).** → `interface/reprompt.py` — CONTINUITY, 2026-07-06
 
 ## Control adapters · FusionCC · guidance
+- **Melody field guide: directed 5 dossiers and a fact check; no-lead gap is a meter artefact (20:05).** — CONTINUITY, 2026-11-03
 - **LatCH guidance is back-loaded: TFG's alpha weighting gives the first 20% of steps ~0.2% of the budget.** → `latch_guided.py`, `tests/test_latch_multi_guided.py` — WINTERMUTE, 2026-10-15
 - **Cross-validated an external agent's fix, found by asking "who else has looked at this".** — GHOST-NOTE, 2026-09-21
 - [tool] **onset-density control-adapter story page built (task #52, weeks overdue).** → `docs/onset-density-control-narrative.md`, `Misc/build_onset_narrative_page.py`, `onset_narrative.html`, `Misc/`, `build_latch_sa3_matrix_page.py`, `build_evals.py` — GHOST-NOTE, 2026-07-20

@@ -198,6 +198,9 @@ _(none queued yet — see `RUNBOOK.md` for the standing operations.)_
 
 ---
 
+## READ: melody field guide, draft (C, 2026-11-03)
+**WHAT:** everything on melody in SA3 in one place, in the shape of the Muon guide. **RUN:** read `blog/2026-11-03-melody-field-guide-DRAFT.md`. Evidence: `docs/melody-hunt/README.md`. **TAKES:** about 30 min. **REPORT BACK:** corrections; whether the post may imply training on commercial genre music (it says goa corpus); and listen to `files/evals/pianoroll_melody.html`, since the guide's main claim is unheard.
+
 ## 🔴 Decisions waiting on Kim
 
 - **[2026-09-16, G] Song-structure retest queued, not yet run.** `song_structure_probe.py`
