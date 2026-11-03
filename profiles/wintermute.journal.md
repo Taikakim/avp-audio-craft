@@ -1204,3 +1204,6 @@ The August pianoroll fine-tune plays invented melodies once CFG scales the strea
 
 ## 2026-11-03 V8 retrain: gate fails, honest comparison favours it
 On the valid test (held-out patches, cue at another note), V8's extractor has tax 1.51 against the 1.25 gate, but beats Demucs (1.76) on MSE, cutoff and Mel-SSIM, with intervals clear of zero. Val loss still falling at epoch 20. No board. EXPERIMENTS S8.
+
+## 2026-11-03 D15 replicates; EMA reads dead
+Same invented melodies: without the fix 13%, with it 73%, other render seed 65%, other training seed 73%. EMA weights play nothing (5.0% vs 4.8%), which would have read as a dead model through the default render path. Not heard. EXPERIMENTS D15.

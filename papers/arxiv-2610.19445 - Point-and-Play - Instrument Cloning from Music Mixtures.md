@@ -51,3 +51,7 @@ Addresses **instrument timbre cloning directly from polyphonic music mixtures** 
   * **CGSP Module:** Can replace manual multi-note consensus by gating active synth frames across a phrase.
   * **Paired-Mixture Invariance Loss ($\mathcal{L}_{\text{inv}}$):** Forces encoders to discard melodic/pitch contours and isolate patch state.
   * **Cheaper Internal Adaptation:** Rather than introducing full CLAP + LoRA, the CGSP gate can be applied to our existing `temporal_asp` encoder and aligned to the Synth-JEPA embedding.
+
+## Tested here (W, 2026-11-03)
+
+Direction, not the architecture: EXPERIMENTS S8. Cue-conditioned extraction beats Demucs on Surge patch inversion over real goa stems (tax 1.51 vs 1.76; MSE -0.020 [-0.038,-0.003], cutoff -0.070, Mel-SSIM -0.134), and fails our 1.25 gate. The CGSP extractor has no valid result here: V7 ran with CLAP weights unloaded, rerun not done.
