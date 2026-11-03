@@ -113,7 +113,8 @@ claim, including ones already in this file, against both corrections.
 ### A6 — Rank ladder r∈{16,32,64,128,256} × {AdamW, Fusion} with per-optimizer LR sweep + sketch — **POTENTIAL**
 - The paper's own protocol; with the recorder on we also get walk-vs-drift per cell.
 
-### A7 — Warmup for Fusion + LoRA (zero-init B trap) — **READY (one flag)**
+### A7 — Warmup for Fusion + LoRA (zero-init B trap) — **DONE 2026-11-04 (W): default changed; whether a real run sounds different is not tested**
+- **2026-11-04 (W):** `train_lora.py` `--warmup-steps` now defaults to 20 for Fusion + LoRA (1 / (1 - mu), mu 0.95), 0 for AdamW, Lion and full fine-tunes; `--warmup-steps 0` gives the old behaviour. Tests `tests/test_train_lora_warmup.py`. Toy LoRA on CPU (64x32 A, zero B, lr 1e-4, mona + ns5 + normuon + sf): |dB| at step 1 2.5e-3 without warmup, 1.3e-4 with; first 10 steps mean 9.0e-4 vs 1.6e-4; steps 21-40 3.97e-4 vs 3.37e-4. Only the first-step size is measured. No training run compared, and `fullft_avp_aug_warmup_agc` used a different warmup (5%) with AGC on full fine-tunes. `train_lora_modular.py` is unchanged.
 - **Finding:** NS5 on zero-init B gives a full-size first step: |update| first10 = 1.33 (Fusion) vs 0.21
   (AdamW). Fix = `warmup_steps ≥ momentum window` (exists; make it default for Fusion+LoRA).
 
