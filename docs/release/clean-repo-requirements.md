@@ -124,6 +124,36 @@ between them. FiLM still needs a re-export. Next: one steered render end to end,
 **Reliability note for the plan (W, 2026-11-03):** on the ROCm stack the same latent can decode to NaN or finite-but-wrong audio
 on the first render, cause unknown, and a CPU decode was reported clean. The CPU route may avoid that whole class. Not tested.
 
+## 0d. First torch-free steered renders (2026-11-03)
+
+Upstream's LiteRT DiT, the `rms_energy_bass` head's gradient on ONNX Runtime, and a numpy ping-pong mirroring
+`sample_flow_pingpong_multi_latch_guided` (alpha schedule, gamma 0.3, n_iter 4, smooth L1 as the head trained). 8 steps, cfg 1,
+24 s, CPU. Outputs: `/home/kim/sao_runs/head_export/renders/`. **No torch at run time.**
+
+Absolute 20-150 Hz level, measured on the audio, change from the unsteered render of the same seed:
+
+| Render | Seed 1234 | Seed 77 |
+|---|---:|---:|
+| Off (dB) | -11.93 | -13.26 |
+| Low target, gain 512 | **-4.6 dB** | **-9.1 dB** |
+| High target, gain 512 | **+0.9 dB** | **+1.7 dB** |
+| Low target, gain 2048 | **-7.1 dB** | **+1.9 dB, wrong way** |
+| High target, gain 2048 | **+2.6 dB** | **+4.7 dB** |
+| With the AVP DoRA, gain 512, low / high | **-2.4 / +0.6 dB** | not run |
+
+- **Direction right in 9 of 10.** The miss, `lo_g2048_s77`, ran away: the head reads -18.1 dB, against a -36 target and -17.1 unsteered.
+  It looks like a high-gain failure on few steps, which may be the "a bit weird" behaviour Kim recalls. Not investigated.
+- **Checks:** guidance-off is byte-identical to upstream's own render. Gradients match torch on real sampling states: 6 queries, cosine 1.0000, up to 1.6e-6
+  relative error. The head's reading of final latents moves toward each target in the same 9 of 10.
+- **Cost:** 35 gradient calls, about 1.1 s per render; sampling 5.0 s against 3.9 s. Steering stays well above realtime.
+- **Not established:**
+  - **Not through the disintegration gate,** so per MASTER section 4 this says nothing about a usable range.
+  - **Not judged by ear.** Crest factor falls at high gain (seed 77: 4.06 off, 2.51 high at 2048), so louder may mean squashed. Peak reads 0.98 on every render.
+  - **Not compared to a torch render:** the card is busy, and the post-trained model through torch was not run. The sampler is a port, checked by reading and by the two checks above.
+  - One head, one prompt, two seeds. The head is goa-trained, so test only. AVP retrain still needed. FiLM not covered.
+
+**So all three runtime pieces now work together on CPU.** What remains for a release route: retrain on AVP, gate and audition, one export per head per rung (or dynamic axes), and a host around it.
+
 ## 1. The audit (2026-11-02)
 
 Static import closure from `eval/explorer_render_server.py` + `eval/forge_api.py`, lazy imports included.

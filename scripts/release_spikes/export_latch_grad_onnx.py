@@ -21,12 +21,18 @@ print('params+buffers',len(vals))
 torch.manual_seed(0); x0=torch.randn(1,256,T); t0=torch.tensor([0.6])
 with torch.no_grad(): out=head(x0,t0)
 tgt0=torch.zeros_like(out)+0.5
+LOSS=sys.argv[4] if len(sys.argv)>4 else 'mse'
+def lossf(p,tg):
+    if LOSS=='mse': return torch.mean((p-tg)**2)
+    e=p-tg; ab=torch.sqrt(e*e+1e-24)   # smooth_l1 beta=1 in plain ops, matches F.smooth_l1_loss
+    return torch.mean(torch.where(ab<1.0,0.5*e*e,ab-0.5))
+def reflossf(p,tg): return F.mse_loss(p,tg) if LOSS=='mse' else F.smooth_l1_loss(p,tg,beta=1.0)
 def refgrad(x,t,tg):
     L.F=F
-    x=x.detach().requires_grad_(True); l=F.mse_loss(ref_head(x,t),tg); g,=torch.autograd.grad(l,x); return g.detach(),l.detach()
+    x=x.detach().requires_grad_(True); l=reflossf(ref_head(x,t),tg); g,=torch.autograd.grad(l,x); return g.detach(),l.detach()
 def fn(plist,x,t,target):
     L.F=_F()
-    return F.mse_loss(functional_call(head,dict(zip(names,plist)),(x,t)),target)
+    return lossf(functional_call(head,dict(zip(names,plist)),(x,t)),target)
 cap={}
 def fw(gm,_): cap['fw']=gm; return gm
 def bw(gm,_): cap['bw']=gm; return gm

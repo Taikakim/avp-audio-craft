@@ -37,7 +37,7 @@ Readiness: **A** written up with evidence, needs rewriting for outsiders. **B** 
 | 13 | Inversion-based text-prompted separation with a faithfulness controller (eta), on a rectified-flow music model | FlowEdit is AUDEDIT's; separation as the use, and the RF-Solver eta controller, are ours | MASTER section 4 | A |
 | 14 | Beat-matched generative DJ transitions: staged per-stem hand-over, placement timeline, masked inpainting, latent-std control | The pipeline and audits | EXPERIMENTS F7, `docs/superpowers/specs/2026-10-07-dj-mix-v7-transitions-spec.md` | B |
 | 15 | Control adapters baked into an exported graph; gradient guidance over a forward-only exported model with autograd on the head alone | Deployment architecture for low-VRAM and CPU | MASTER section 5, `onnx/` | A |
-| 15b | Exporting a guidance head's loss gradient as a standalone graph, so steering runs with no autodiff framework: quantized or frozen DiT in one runtime, head gradient in another, sampler between them | Verified against torch's gradient, cosine 1.0000. **Worth disclosing before the release,** as it enables steering on devices | `docs/release/clean-repo-requirements.md` 0c, `scripts/release_spikes/export_latch_grad_onnx.py` | B: full render pending |
+| 15b | Exporting a guidance head's loss gradient as a standalone graph, so steering runs with no autodiff framework: quantized or frozen DiT in one runtime, head gradient in another, sampler between them | Verified against torch's gradient, cosine 1.0000, and a full steered render on CPU moved bass the right way in 9 of 10 cases. **Worth disclosing before the release,** as it enables steering on devices | `docs/release/clean-repo-requirements.md` 0c and 0d, `scripts/release_spikes/` | B |
 
 ## Stability and training
 
