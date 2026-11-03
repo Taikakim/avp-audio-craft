@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-11-03)
+# Last edited: WINTERMUTE 2026-11-03 -- pack P: the D15 pianoroll full fine-tune, with its (pitch, frame) F1
 """e24_eval2.py -- EXPERIMENTS E24, second eval of a trained contour arm. The first (e24_eval.py) was uninformative: one prompt and one seed made every render read as the same held note.
 
 24 crops, each with its own prompt and seed, shared by all of that crop's arms, so a comparison is paired within a crop. Checkpoint given by --run and --step. Arms:
@@ -29,7 +30,7 @@ import e24_eval as X
 
 X.N_CROPS = 24
 PROMPTS = Path("/home/kim/evals_aac/control_runs/mood_deconf_20261103/prompts.json")
-PACKS = {"C": (X.PACK, 2), "B": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_contourB"), 15)}
+PACKS = {"C": (X.PACK, 2), "B": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_contourB"), 15), "P": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_proll"), 128)}
 ARMS = ("true", "shuffled", "true_null", "shuf_null", "zero")
 LOCAL_FRAMES = 16
 
@@ -41,6 +42,59 @@ def feed(pack, stem, w):
 def plan():
     pr = list(json.loads(PROMPTS.read_text()).values())
     return [dict(stem=s, window=w, prompt=pr[i % len(pr)], seed=9000 + i) for i, (s, w) in enumerate(X.pick_crops())]
+
+
+def load_fullft(ck, device, n_channels):
+    """A full fine-tune with a mir_ctrl inlet: online weights, as its EMA has under one half-life (5,376 updates at beta 0.9999). Checks coverage, since strict=False hides a miss."""
+    import torch
+    from mir_control import MirCtrlConditioner, install_mir_control
+    from stable_audio_3 import StableAudioModel
+
+    sam = StableAudioModel.from_pretrained("medium-base", device=device)
+    tgt = sam.model.model
+    install_mir_control(sam.model, tgt.model.transformer, n_channels=n_channels, blocks="12-23")
+    sam.model.conditioner.conditioners["mir_ctrl"] = MirCtrlConditioner(n_channels=n_channels, dropout_prob=0.0)
+    raw = torch.load(ck, map_location="cpu", weights_only=False)["state_dict"]
+    pfx = "diffusion.model."
+    dt = next(tgt.parameters()).dtype
+    keys = set(tgt.state_dict())
+    sd = {k[len(pfx):]: v.to(dt) for k, v in raw.items() if k.startswith(pfx) and k[len(pfx):] in keys}
+    missing, _ = tgt.load_state_dict(sd, strict=False)
+    cov = 1 - len(missing) / max(1, len(keys))
+    print(f"loaded {ck.name}: online weights, {len(sd)} tensors, coverage {cov:.1%}, mir_ctrl {sum('mir_ctrl' in k for k in sd)}", flush=True)
+    assert cov > 0.99 and sum("mir_ctrl" in k for k in sd) == 12 * 4, missing[:3]
+    csd = {k[len("diffusion.conditioner."):]: v for k, v in raw.items() if k.startswith("diffusion.conditioner.")}
+    if csd:
+        sam.model.conditioner.load_state_dict(csd, strict=False)
+    return sam
+
+
+def roll_of(midi_path):
+    """(128, T) bool: non-drum notes on the latent grid, for the pianoroll's (pitch, frame) F1, D15's measure."""
+    import mido
+    roll = np.zeros((128, X.T), dtype=bool)
+    t, act = 0.0, {}
+    for m in mido.MidiFile(str(midi_path)):
+        t += m.time
+        if m.type not in ("note_on", "note_off") or m.channel == 9:
+            continue
+        if m.type == "note_on" and m.velocity > 0:
+            act.setdefault(m.note, t)
+        elif m.note in act:
+            s = act.pop(m.note)
+            a, b = int(s * X.FPS), min(int(t * X.FPS) + 1, X.T)
+            if a < X.T:
+                roll[m.note, a:b] = True
+    for n, s in act.items():
+        a = int(s * X.FPS)
+        if a < X.T:
+            roll[n, a:] = True
+    return roll
+
+
+def f1(r, t):
+    tp = float((r & t).sum())
+    return 2 * tp / max(1.0, float(r.sum() + t.sum()))
 
 
 def render(a):
@@ -60,7 +114,10 @@ def render(a):
         subprocess.run(["ffmpeg", "-y", "-nostdin", "-loglevel", "error", "-i", str(tmp), "-c:a", "aac", "-b:a", "192k", str(out / f"{name}.m4a")], check=True)
         tmp.replace(out / f"{name}.wav")
 
-    sam, _ = X.load_model(Path(a.run) / f"step={a.step}.ckpt", "cuda:0", n_channels=PACKS[a.pack][1])
+    if a.pack == "P":
+        sam = load_fullft(Path(a.run) / a.ckpt, "cuda:0", PACKS[a.pack][1])
+    else:
+        sam, _ = X.load_model(Path(a.run) / f"step={a.step}.ckpt", "cuda:0", n_channels=PACKS[a.pack][1])
     dit = sam.model.model.model
     with log.open("a") as f, torch.no_grad():
         for c in crops:
@@ -134,7 +191,15 @@ def score(a):
         r, flat = corr(line, fed)
         ro, _ = corr(line, other)
         v = line >= 0
-        rows.append(dict(c, r_fed=r, r_other=ro, rl_fed=corr_local(line, fed), rl_other=corr_local(line, other), flat=bool(flat), pitches=int(len(np.unique(line[v]))), changes=int((np.diff(line[v]) != 0).sum()) if v.sum() else 0))
+        row = dict(c, r_fed=r, r_other=ro, rl_fed=corr_local(line, fed), rl_other=corr_local(line, other), flat=bool(flat), pitches=int(len(np.unique(line[v]))), changes=int((np.diff(line[v]) != 0).sum()) if v.sum() else 0)
+        if a.pack == "P":
+            rr = roll_of(p)
+            own_roll = feed("P", c["stem"], c["window"]) > 0
+            mixed_roll = X.shuffled(own_roll)
+            fr, or_ = (mixed_roll, own_roll) if shuf_arm else (own_roll, mixed_roll)
+            row["f1_fed"], row["f1_other"] = f1(rr, fr), f1(rr, or_)
+            row["pc_exact"] = float((rr & fr).sum()) / max(1.0, float(rr.sum()))
+        rows.append(row)
     (out / "scores.json").write_text(json.dumps(rows, indent=0))
     report(a, rows)
 
@@ -165,6 +230,13 @@ def report(a, rows):
         L.append(f"  note scale, running mean of {LOCAL_FRAMES} frames removed, {lab}: " + follow(both, keep, "both branches", "rl_fed", "rl_other") + " | " + follow(nul, keep, "null uncond", "rl_fed", "rl_other"))
     refs = [r for r in rows if r["arm"] == "ref"]
     L.append(f"  note scale, decoded crops: fed {np.mean([r['rl_fed'] for r in refs]):+.3f}, other {np.mean([r['rl_other'] for r in refs]):+.3f}")
+    if a.pack == "P":
+        L.append("(pitch, frame) F1 against the fed roll minus the other roll, D15's measure:")
+        L.append("  all crops: " + follow(both, set(ref), "both branches", "f1_fed", "f1_other") + " | " + follow(nul, set(ref), "null uncond", "f1_fed", "f1_other"))
+        L.append(f"  decoded crops: fed {np.mean([r['f1_fed'] for r in refs]):.3f}, other {np.mean([r['f1_other'] for r in refs]):.3f}")
+        for arm in ("zero", "true", "true_null", "shuf_null"):
+            rs = list(by[arm].values())
+            L.append(f"  {arm}: F1 with its fed roll {np.mean([r['f1_fed'] for r in rs]):.3f}; share of played frames on a fed note {np.mean([r['pc_exact'] for r in rs]):.3f}")
     (out / "report.txt").write_text("\n".join(L) + "\n")
     print("\n".join(L))
 
@@ -205,6 +277,7 @@ if __name__ == "__main__":
     ap.add_argument("--run", required=True)
     ap.add_argument("--step", type=int, default=2400)
     ap.add_argument("--pack", choices=tuple(PACKS), default="C")
+    ap.add_argument("--ckpt", default=None, help="checkpoint file name in --run, for a full fine-tune (pack P)")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     {"render": render, "score": score, "gate": gate_stage}[args.stage](args)
