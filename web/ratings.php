@@ -13,6 +13,8 @@
 //     2026-10-28: flag also bad_track | bad_transition (the mixtape MARK page) and unmark (+ mark = the key it cancels).
 //   POST {type:'mixpick', action: add|remove, model, ckpt, prompt_id, cfg, w, native, file, source}   (2026-10-28, the DoRA
 //     table's cassette button: tag a clip for the long mixtape; the full recipe is joined from the render manifest by file)
+//   POST {type:'trackpick', pool, id, pick, source}   (2026-11-03, the mix track pool page: pick = in | maybe | no | clear)
+//   GET  ?trackpicks=<pool>      the current pick per track of that pool, enums only
 //   GET  ?export=1&key=<TOKEN>   ALL ratings — KIM-ONLY review/rebuild key
 //   GET  (anything else)          write_only:true, no data
 //
@@ -128,6 +130,22 @@ if ($method === 'GET') {
         }
         echo json_encode(['ok' => true, 'rated' => array_keys($seen), 'n' => count($seen)]); exit;
     }
+    // TRACK PICKS (2026-11-03): the current pick per track of one pool, so the tagging page shows the same state on any device. Enums only, no timestamps or source.
+    if (isset($_GET['trackpicks'])) {
+        $pool = (string)$_GET['trackpicks'];
+        if (!preg_match('/^[a-z0-9_-]{1,60}$/', $pool)) { http_response_code(400); echo json_encode(['error' => 'invalid pool']); exit; }
+        $picks = [];
+        if (is_file($FILE)) {
+            foreach (file($FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $ln) {
+                if (strpos($ln, '"trackpick"') === false) continue;
+                $j = json_decode($ln, true);
+                if ($j && ($j['type'] ?? '') === 'trackpick' && ($j['pool'] ?? '') === $pool) {
+                    if ($j['pick'] === 'clear') unset($picks[$j['id']]); else $picks[$j['id']] = $j['pick'];
+                }
+            }
+        }
+        echo json_encode(['ok' => true, 'picks' => (object)$picks]); exit;
+    }
     echo json_encode(['ok' => true, 'write_only' => true, 'ratings' => []]); exit;
 }
 
@@ -218,6 +236,16 @@ if ($method === 'POST') {
         $rec = ['ts' => time(), 'iso' => gmdate('c'), 'type' => 'mixpick', 'action' => $action,
                 'model' => $model, 'ckpt' => $ckpt, 'prompt_id' => $prompt_id, 'cfg' => (float)$in['cfg'], 'w' => (float)$in['w'],
                 'native' => !empty($in['native']), 'file' => $file, 'source' => $source];
+    } elseif ($type === 'trackpick') {
+        // 2026-11-03 (W): the mix track pool's tagging page. Only enums and ids: pool name, track id, pick. Appended, never deleted; the last one for a track wins.
+        $pool = (string)($in['pool'] ?? '');
+        $id   = (string)($in['id'] ?? '');
+        $pick = (string)($in['pick'] ?? '');
+        if (!preg_match('/^[a-z0-9_-]{1,60}$/', $pool) || !preg_match('/^t[0-9]{1,5}$/', $id)
+            || !in_array($pick, ['in', 'maybe', 'no', 'clear'], true)) {
+            http_response_code(400); echo json_encode(['error' => 'invalid trackpick payload']); exit;
+        }
+        $rec = ['ts' => time(), 'iso' => gmdate('c'), 'type' => 'trackpick', 'pool' => $pool, 'id' => $id, 'pick' => $pick, 'source' => $source];
     } else {
         http_response_code(400); echo json_encode(['error' => 'unknown type']); exit;
     }
