@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 # Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: WINTERMUTE (created 2026-10-15)
 # Last edited: WINTERMUTE 2026-10-24 -- advisory ring column (eval/ring_score.py -> ring_score.json): per cell + max per gain; not in the gate
@@ -154,7 +155,7 @@ for d in _dirs:
     print(f"{name}: ceiling g{ceiling}  " + "  ".join(f"g{s['gain']} {s['n_ok']}/{s['n']} r={s['r'] if s['r'] is None else round(s['r'], 2)}" for s in stats))
 
 # the FiLM adapter on the same requested densities, for scale: measured span at strength >= 1.3
-film = [x for x in json.load(open(f"{SRC}/onset_eval_54000_g11to20/onset_eval.json")) if x["gain"] >= 1.3]
+film = [x for x in json.load(open(f"{SRC}/__onsets/onset_eval_54000_g11to20/onset_eval.json")) if x["gain"] >= 1.3]
 film_span = [min(x["measured"] for x in film), max(x["measured"] for x in film)]
 _g0 = [c["meas"] for a in arms for c in a["cells"] if c["gain"] == 0 and c["meas"] is not None]
 DATA = json.dumps({"arms": arms, "pq_drift": PQ_DRIFT, "film_span": film_span, "unsteered": sum(_g0) / len(_g0) if _g0 else 0.0})

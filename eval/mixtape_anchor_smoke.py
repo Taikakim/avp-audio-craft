@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 # Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Owner: GHOST-NOTE (created 2026-10-20)
 """mixtape_anchor_smoke.py -- option 1 smoke test: re-render 5 distorted mixtape-audit clips with an air-head
@@ -22,7 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import punch_rating_server as P
 
 RUNS = "/run/media/kim/Mantu/sa3_lora_runs"
-OUT = f"{RUNS}/mixtape_anchor_smoke_2026-10-20"
+OUT = f"{RUNS}/__mixtape/mixtape_anchor_smoke_2026-10-20"
 # (label, ckpt epoch, prompt id, prompt text, seed)
 T1 = "mid 90s goa trance, melodic space mood, 140 bpm"
 T2 = "mid 90s goa trance, 148 bpm"

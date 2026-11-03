@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 # Owner: GHOST-NOTE (created 2026-11-03)
 """mixtape_track_pool.py -- generate the replacement track pool for the DJ mix (owner ask 2026-11-03, asleep: run unattended).
 
@@ -22,12 +23,12 @@ SR, STEPS, CORE, EXT = 44100, 24, 30.0, 45.0
 MM = f"{RUNS}/model_matrix"
 # name, kind, ckpt, weight range, cfg range, n tracks
 ARMS = [
-    ("soup_mean", "fullft", f"{RUNS}/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_mean.ckpt", (0.6, 1.8), (5, 14), 17),
-    ("soup_ep7_ep14", "fullft", f"{RUNS}/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_ep7_ep14.ckpt", (0.6, 1.8), (5, 14), 17),
-    ("fullft_avp_t256_ep80", "fullft", f"{RUNS}/fullft_avp_t256/epoch=80-step=46944.weights.ckpt", (0.6, 1.8), (5, 14), 17),   # ep46 is not on disk
-    ("goa5k_dora_3e-3_3033st", "adapter", f"{RUNS}/goa5k_fullft_avp_dora_3e-3_3033st/step=3033.ckpt", (0.8, 1.0), (5, 9), 17),
-    ("goa5k_r128_shampoo_k5_8088", "adapter", f"{RUNS}/goa5k_r128_shampoo_subloss_k5_2026-09-26/step=8088.ckpt", (0.5, 1.5), (4, 12), 16),
-    ("fp32cmp_avp_bs4_lr1e4_ep28", "adapter", f"{RUNS}/fp32cmp_avp_t4096_bs4_lr1e4/epoch=28-step=14953.weights.ckpt", (0.4, 1.0), (4, 9), 16),   # ep20 is not on disk
+    ("soup_mean", "fullft", f"{RUNS}/__fullft/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_mean.ckpt", (0.6, 1.8), (5, 14), 17),
+    ("soup_ep7_ep14", "fullft", f"{RUNS}/__fullft/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_ep7_ep14.ckpt", (0.6, 1.8), (5, 14), 17),
+    ("fullft_avp_t256_ep80", "fullft", f"{RUNS}/__fullft/fullft_avp_t256/epoch=80-step=46944.weights.ckpt", (0.6, 1.8), (5, 14), 17),   # ep46 is not on disk
+    ("goa5k_dora_3e-3_3033st", "adapter", f"{RUNS}/__fullft/goa5k_fullft_avp_dora_3e-3_3033st/step=3033.ckpt", (0.8, 1.0), (5, 9), 17),
+    ("goa5k_r128_shampoo_k5_8088", "adapter", f"{RUNS}/__finetunes/goa5k_r128_shampoo_subloss_k5_2026-09-26/step=8088.ckpt", (0.5, 1.5), (4, 12), 16),
+    ("fp32cmp_avp_bs4_lr1e4_ep28", "adapter", f"{RUNS}/__precision_compare/fp32cmp_avp_t4096_bs4_lr1e4/epoch=28-step=14953.weights.ckpt", (0.4, 1.0), (4, 9), 16),   # ep20 is not on disk
 ]
 SYN = dict(
     genre=["goa trance", "psytrance", "full-on psytrance", "progressive psytrance", "psychedelic trance", "dark psytrance", "forest psytrance", "hi-tech psytrance"],
@@ -38,7 +39,7 @@ SYN = dict(
 
 
 def prompt_pool():
-    spec = [v["prompt"] for v in json.load(open(f"{RUNS}/rarity_gen_set/clip_index.json")).values() if v.get("source") == "base" and v.get("prompt")]
+    spec = [v["prompt"] for v in json.load(open(f"{RUNS}/__misc/rarity_gen_set/clip_index.json")).values() if v.get("source") == "base" and v.get("prompt")]
     kl = [p["prompt"] for p in json.load(open("/home/kim/Projects/SAO/eval/kimlong_pool.json"))]
     return sorted(set(spec)), kl
 

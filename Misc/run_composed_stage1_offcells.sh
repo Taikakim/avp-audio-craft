@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Stage 1 LATCH-OFF cells only (E baseline, A FusionCC) — valid regardless of which
 # guidance head walks (the onset_envelope operating-point probe failed 2026-07-03;
@@ -27,7 +28,7 @@ boot_server() {
 mkdir -p "$OUT" "$SAO/logs"
 echo "=== Stage 1 off-cells start $(date '+%F %T') ==="
 
-[ -f "$Q/.server_ready" ] || boot_server "$RUNS/onset_Fusion_lr1e-4_randomcrop" baseline
+[ -f "$Q/.server_ready" ] || boot_server "$RUNS/__onsets/onset_Fusion_lr1e-4_randomcrop" baseline
 "$MIRPY" "$SAO/Misc/composed_sweep_eval.py" --queue-root "$Q" --out "$OUT/E_fusion" \
   --condition E_fusion --run onset_Fusion_lr1e-4_randomcrop \
   --notes "Stage 1 anchor cell E (adapter only)"
@@ -35,7 +36,7 @@ note "composed Stage1 E_fusion done ($(date +%H:%M))"
 
 pkill -f "control_eval_server.py --dit-onnx" || true
 rm -f "$Q/.server_ready"; sleep 3
-boot_server "$RUNS/onset_FusionCC_lr1e-4_randomcrop" cc
+boot_server "$RUNS/__onsets/onset_FusionCC_lr1e-4_randomcrop" cc
 "$MIRPY" "$SAO/Misc/composed_sweep_eval.py" --queue-root "$Q" --out "$OUT/A_cc" \
   --condition A_cc --run onset_FusionCC_lr1e-4_randomcrop \
   --notes "Stage 1 cell A (FusionCC adapter only)"

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 """extract_svd_adapters.py -- distill each fullft (whole-DiT fine-tune) checkpoint into
 LoRA/DoRA adapters at ranks {16,64,128} via truncated SVD of the weight delta.
 
@@ -55,7 +56,7 @@ METHODS = ("lora", "dora-rows")
 RUNS = Path("/run/media/kim/Mantu/sa3_lora_runs")
 BRACKET = Path(__file__).resolve().parent / "rarity_bracket_manifest.json"
 OUT_ROOT = RUNS / "xft_extracted"
-REFERENCE_DORA_CKPT = RUNS / "dora16_avp_8ep" / "epoch=7-step=2392.ckpt"
+REFERENCE_DORA_CKPT = RUNS / "__finetunes/dora16_avp_8ep" / "epoch=7-step=2392.ckpt"
 COVERAGE_MIN = 0.99
 
 

@@ -1,8 +1,9 @@
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 import subprocess, time, os, re
 SA3PY="/home/kim/Projects/SAO/sa3-rocm7.13-test/.venv/bin/python"
 AVP="/home/kim/Projects/SAO/stable-audio-tools/avp_sa3"
 ROOT="/run/media/kim/Lehto/sa3_control_runs"
-EVAL_LOG=f"{ROOT}/onset_AdamW_lr7.5e-5_randomcrop/eval_listen/soup_fine.log"
+EVAL_LOG=f"{ROOT}/__onsets/onset_AdamW_lr7.5e-5_randomcrop/eval_listen/soup_fine.log"
 ENV={**os.environ,"FLASH_ATTENTION_TRITON_AMD_ENABLE":"FALSE","PYTORCH_TUNABLEOP_ENABLED":"0",
      "PYTORCH_TUNABLEOP_TUNING":"0","MIOPEN_FIND_MODE":"2","OMP_NUM_THREADS":"4","MKL_NUM_THREADS":"4","OPENBLAS_NUM_THREADS":"4"}
 COMMON=["--encoded_dir","/run/media/kim/Kosmos/latents/latents_sa3","--model","medium-base","--precision","bf16",

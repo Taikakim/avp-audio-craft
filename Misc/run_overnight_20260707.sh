@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 # Overnight chain 2026-07-07 (Kim's brief before sleep):
 #   A) goa r16 Fusion comparison with the NEW dataset stack (vs HoF x20b3ygb)
 #   B) avp (Kim's music, full-mix crops only) r16 DoRA, 8 ep, normal LR
@@ -31,7 +32,7 @@ $PY scripts/train_lora.py \
   --epochs 8 --batch_size 4 --duration 47 --beat-aware-crop \
   --checkpoint_every_epochs 1 --gradient_clip_val 1.0 \
   --base_precision bf16 --no_demos --num_workers 6 --seed 42 \
-  --save_dir "$RUNS/dora16_goa_newstack_8ep" \
+  --save_dir "$RUNS/__finetunes/dora16_goa_newstack_8ep" \
   --name dora16_goa_newstack --logger csv \
   > "$SAO/logs/dora16_goa_newstack.log" 2>&1
 note "A done -> dora16_goa_newstack_8ep (exit $?)"
@@ -47,7 +48,7 @@ $PY scripts/train_lora.py \
   --accumulate_grad_batches 2 \
   --checkpoint_every_epochs 1 --gradient_clip_val 1.0 \
   --base_precision bf16 --no_demos --num_workers 6 --seed 42 \
-  --save_dir "$RUNS/dora16_avp_8ep" \
+  --save_dir "$RUNS/__finetunes/dora16_avp_8ep" \
   --name dora16_avp --logger csv \
   > "$SAO/logs/dora16_avp.log" 2>&1
 note "B done -> dora16_avp_8ep (exit $?)"
@@ -63,7 +64,7 @@ $PY scripts/train_lora.py \
   --accumulate_grad_batches 2 \
   --checkpoint_every_epochs 1 --gradient_clip_val 1.0 \
   --base_precision bf16 --no_demos --num_workers 6 --seed 42 \
-  --save_dir "$RUNS/dora128adj_avp_8ep" \
+  --save_dir "$RUNS/__finetunes/dora128adj_avp_8ep" \
   --name dora128adj_avp --logger csv \
   > "$SAO/logs/dora128adj_avp.log" 2>&1
 note "C done -> dora128adj_avp_8ep (exit $?)"
@@ -81,7 +82,7 @@ if [ -f "$SAO/.familiarity_ready" ]; then
     --familiarity_beta 1.0 \
     --checkpoint_every_epochs 1 --gradient_clip_val 1.0 \
     --base_precision bf16 --no_demos --num_workers 6 --seed 42 \
-    --save_dir "$RUNS/dora16_avp_familiarity_8ep" \
+    --save_dir "$RUNS/__finetunes/dora16_avp_familiarity_8ep" \
     --name dora16_avp_familiarity --logger csv \
     > "$SAO/logs/dora16_avp_familiarity.log" 2>&1
   note "D done -> dora16_avp_familiarity_8ep (exit $?)"

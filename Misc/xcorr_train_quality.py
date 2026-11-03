@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 import collections, json, glob, re, os, numpy as np
 from wandb.sdk.internal.datastore import DataStore
 from wandb.proto import wandb_internal_pb2 as pb
@@ -37,7 +38,7 @@ R="/run/media/kim/Mantu/sa3_control_runs"
 
 # ============ lr2e5 : scalar telemetry x control authority (n=32) ============
 print("="*70); print("lr2e5 (onset_FUSION_lr2e5_40epoch): scalar telemetry x control authority")
-wb=glob.glob(f"{R}/onset_FUSION_lr2e5_40epoch/wandb/run-*/run-*.wandb")[0]
+wb=glob.glob(f"{R}/__onsets/onset_FUSION_lr2e5_40epoch/wandb/run-*/run-*.wandb")[0]
 th=read_wandb(wb)
 qual={}
 for ev in glob.glob(f"{R}/onset_eval_lr2e5_*"):
@@ -65,7 +66,7 @@ if not opb_wb: opb_wb=glob.glob("/home/kim/Projects/SAO/stable-audio-tools/avp_s
 oth=read_wandb(opb_wb[0])
 oq={}
 for ep,step in [(5,27000),(10,54000),(14,75600),(15,81000)]:
-    ev=f"{R}/onset_Fusion_opb_lr1.5e-4_30ep/onset_eval_opb_ep{ep}"
+    ev=f"{R}/__onsets/onset_Fusion_opb_lr1.5e-4_30ep/onset_eval_opb_ep{ep}"
     if os.path.exists(f"{ev}/onset_eval.json"): oq[step]=control_authority(ev)[0]
 osteps=sorted(oq)
 # find the telemetry step nearest each eval step (layer_every=200 dense)

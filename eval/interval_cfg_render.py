@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 # Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 """interval_cfg_render.py -- interval-CFG grid (task #26 melody angle, 2026-07-23).
 
@@ -54,7 +55,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = Path("/run/media/kim/Mantu/sa3_lora_runs")
 MATRIX_DIR = RUNS / "model_matrix"
-OUT_ROOT = RUNS / "interval_cfg_2026-07-23"
+OUT_ROOT = RUNS / "__misc/interval_cfg_2026-07-23"
 RENDERS = OUT_ROOT / "renders"
 GPU_LOCK = "/home/kim/Projects/SAO/.gpu.lock"
 LOCK_HANDLE = "CONTINUITY-icfg"
@@ -82,9 +83,9 @@ PROMPT_IDS = ["kl_0", "kl_1", "kl_bracket_0", "rb_mid_3", "techno", "housestyle_
 MODELS = [
     ("base", None, "base"),
     ("fp32cmp_goa_t4096_bs4_lr1e4",
-     RUNS / "fp32cmp_goa_t4096_bs4_lr1e4/epoch=4-step=6750.ckpt", "ep4"),
+     RUNS / "__precision_compare/fp32cmp_goa_t4096_bs4_lr1e4/epoch=4-step=6750.ckpt", "ep4"),
     ("fullft_goa_t4096",
-     RUNS / "fullft_goa_t4096/epoch=7-step=10800.weights.ckpt", "ep7"),
+     RUNS / "__fullft/fullft_goa_t4096/epoch=7-step=10800.weights.ckpt", "ep7"),
 ]
 
 

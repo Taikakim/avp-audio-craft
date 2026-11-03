@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Stage 1 of the composed control x LatCH sweep (spec 2026-07-03): the 2x2 core —
 # {baseline Fusion, FusionCC} x {LatCH off, on} = 4 x 162 = 648 renders, all CPU.
@@ -44,12 +45,12 @@ mkdir -p "$OUT" "$SAO/logs"
 echo "=== Stage 1 start $(date '+%F %T')  rho_mu=$RHO_MU ==="
 
 # E/F on the baseline graph (server assumed up; boot if not)
-[ -f "$Q/.server_ready" ] || boot_server "$RUNS/onset_Fusion_lr1e-4_randomcrop" baseline
+[ -f "$Q/.server_ready" ] || boot_server "$RUNS/__onsets/onset_Fusion_lr1e-4_randomcrop" baseline
 run_cond E_fusion       onset_Fusion_lr1e-4_randomcrop   ""
 run_cond F_fusion_latch onset_Fusion_lr1e-4_randomcrop   "--latch"
 
 kill_server
-boot_server "$RUNS/onset_FusionCC_lr1e-4_randomcrop" cc
+boot_server "$RUNS/__onsets/onset_FusionCC_lr1e-4_randomcrop" cc
 run_cond A_cc       onset_FusionCC_lr1e-4_randomcrop  ""
 run_cond B_cc_latch onset_FusionCC_lr1e-4_randomcrop  "--latch"
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 # stereo_sweep_driver.sh — T=512 stereo-loss DoRA sweep, run DETACHED via setsid so the
 # harness can't reap it (the 2026-07-16 SIGTERM that killed the first attempt at ~1h).
 # Waits for a free GPU before each arm (coexists politely with W's render poll-driver),
@@ -17,7 +18,7 @@ wait_gpu() {  # block until VRAM used < 3 GB (i.e. no one else training/renderin
   done
 }
 
-rm -rf ${OUT}/stereo_sweep_w0.0 ${OUT}/stereo_sweep_w0.1 ${OUT}/stereo_sweep_w0.3
+rm -rf ${OUT}/__a2a_longform/stereo_sweep_w0.0 ${OUT}/stereo_sweep_w0.1 ${OUT}/stereo_sweep_w0.3
 for W in 0.0 0.1 0.3; do
   echo "[sweep] waiting for free GPU before w=${W} ($(date +%H:%M))"
   wait_gpu

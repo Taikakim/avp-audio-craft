@@ -1,10 +1,11 @@
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 import subprocess, math, os
 SA3PY="/home/kim/Projects/SAO/sa3-rocm7.13-test/.venv/bin/python"
 MAKE="/home/kim/Projects/SAO/stable-audio-tools/avp_sa3/sa3_control/make_soup.py"
 R="/run/media/kim/Mantu/sa3_control_runs"
-A20=f"{R}/onset_AdamW_lr7.5e-5_randomcrop_20ep"; F40=f"{R}/onset_FUSION_lr2e5_40epoch"
-AC=f"{R}/onset_AdamW_lr7.5e-5_continuous"; AR=f"{R}/onset_AdamW_lr7.5e-5_randomcrop"; FR=f"{R}/onset_Fusion_lr1e-4_randomcrop"
-VIBE=f"{R}/soups_vibe"; os.makedirs(VIBE,exist_ok=True)
+A20=f"{R}/__onsets/onset_AdamW_lr7.5e-5_randomcrop_20ep"; F40=f"{R}/__onsets/onset_FUSION_lr2e5_40epoch"
+AC=f"{R}/__onsets/onset_AdamW_lr7.5e-5_continuous"; AR=f"{R}/__onsets/onset_AdamW_lr7.5e-5_randomcrop"; FR=f"{R}/__onsets/onset_Fusion_lr1e-4_randomcrop"
+VIBE=f"{R}/__soups/soups_vibe"; os.makedirs(VIBE,exist_ok=True)
 def ck(run,ep): return f"{run}/riffer_step{5400*ep}.pt"
 def soup(out,pairs):
     print(f"=== {os.path.basename(out)} ({len(pairs)} parts) ===",flush=True)

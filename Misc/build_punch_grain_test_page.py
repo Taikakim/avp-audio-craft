@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 # Owner: WINTERMUTE (created 2026-10-16)
 """build_punch_grain_test_page.py -- blind listening test for the punch DoRA "grainy mode" prediction.
 
@@ -19,8 +20,8 @@ from comment_notes_block import notes_block
 from float_player import inject
 
 RUNS = "/run/media/kim/Mantu/sa3_control_runs"
-RATING = f"{RUNS}/punch_rating_20261014"
-NODORA = f"{RUNS}/punch_nodora_seeds_20261015"
+RATING = f"{RUNS}/__film/punch_rating_20261014"
+NODORA = f"{RUNS}/__film/punch_nodora_seeds_20261015"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 SUB = "punch_grain_test"
 os.makedirs(f"{STAGE}/{SUB}", exist_ok=True)

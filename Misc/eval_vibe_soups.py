@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 import subprocess, os, time
 R="/run/media/kim/Mantu/sa3_control_runs"
 SA3PY="/home/kim/Projects/SAO/sa3-rocm7.13-test/.venv/bin/python"
@@ -8,7 +9,7 @@ while not (os.path.exists(LOG) and "VIBE_SOUPS_DONE" in open(LOG).read()):
     if os.path.exists(LOG) and "Traceback" in open(LOG).read(): print("BUILD FAILED",flush=True); raise SystemExit(1)
     time.sleep(30)
 print("soups built; starting eval",flush=True)
-A20=f"{R}/onset_AdamW_lr7.5e-5_randomcrop_20ep"; AC=f"{R}/onset_AdamW_lr7.5e-5_continuous"; FR=f"{R}/onset_Fusion_lr1e-4_randomcrop"; VIBE=f"{R}/soups_vibe"
+A20=f"{R}/__onsets/onset_AdamW_lr7.5e-5_randomcrop_20ep"; AC=f"{R}/__onsets/onset_AdamW_lr7.5e-5_continuous"; FR=f"{R}/__onsets/onset_Fusion_lr1e-4_randomcrop"; VIBE=f"{R}/__soups/soups_vibe"
 soups=[(f"{A20}/soup_expdecay_9_20.pt",f"{A20}/eval_mp/soup_expdecay_9_20"),
        (f"{AC}/soup_exppeak.pt",f"{AC}/eval_mp/soup_exppeak"),
        (f"{FR}/soup_exppeak.pt",f"{FR}/eval_mp/soup_exppeak")]

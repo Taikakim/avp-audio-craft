@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 """mp_crossmodel_render.py — uniform 6-prompt x checkpoint grid for the multiprompt
 cross-model eval page (Kim 2026-07-10: add AVP + recent-goa HoF checkpoints to mp.html
 with explicit prompts + per-model recipes). One dir, one render config, so the
@@ -38,13 +39,13 @@ PROMPTS = {
 # label -> ckpt path (None = base model, no adapter)
 CKPTS = {
     "base":           None,
-    "orig_ep02":      f"{RUNS}/dora16_avp_originals_earlyeps/epoch=2-step=108.ckpt",
-    "orig_ep06f":     f"{RUNS}/dora16_avp_originals_densewin/epoch=6-step=252.ckpt",
-    "orig_ep31":      f"{RUNS}/dora16_avp_originals_64ep/epoch=31-step=1152.ckpt",
-    "armG_ep14":      f"{RUNS}/dora128adj_avp_aug10_lr1e4/epoch=14-step=600.ckpt",
-    "r64tiered_ep7":  f"{RUNS}/dora64_avp_tiered_lr1e4/epoch=7-step=288.ckpt",
-    "newstack_ep7":   f"{RUNS}/dora16_goa_newstack_8ep/epoch=7-step=10800.ckpt",
-    "everything_ep7": f"{RUNS}/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt",
+    "orig_ep02":      f"{RUNS}/__finetunes/dora16_avp_originals_earlyeps/epoch=2-step=108.ckpt",
+    "orig_ep06f":     f"{RUNS}/__finetunes/dora16_avp_originals_densewin/epoch=6-step=252.ckpt",
+    "orig_ep31":      f"{RUNS}/__finetunes/dora16_avp_originals_64ep/epoch=31-step=1152.ckpt",
+    "armG_ep14":      f"{RUNS}/__finetunes/dora128adj_avp_aug10_lr1e4/epoch=14-step=600.ckpt",
+    "r64tiered_ep7":  f"{RUNS}/__finetunes/dora64_avp_tiered_lr1e4/epoch=7-step=288.ckpt",
+    "newstack_ep7":   f"{RUNS}/__finetunes/dora16_goa_newstack_8ep/epoch=7-step=10800.ckpt",
+    "everything_ep7": f"{RUNS}/__finetunes/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt",
 }
 
 SEED, STRENGTH, STEPS, CFG, DUR = 1234, 1.0, 16, 5.0, 47.0

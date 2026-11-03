@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — root-variable paths updated for the __theme sorting
 """Report for eval/ablation_goa5k_chain.py: how far each arm moved by step 1011, and its loss.
 
 DoRA initialises lora_B to ZERO, so ||lora_B|| at step 1011 is exactly the distance B travelled --
@@ -18,8 +19,8 @@ from pathlib import Path
 import torch
 
 ROOT = Path("/run/media/kim/Mantu/sa3_lora_runs")
-OUT = ROOT / "ablation_goa5k_2026-09-26"
-REF = ROOT / "goa5k_r128_shampoo_subloss_k5_2026-09-26" / "step=1011.ckpt"
+OUT = ROOT / "__finetunes/ablation_goa5k_2026-09-26"
+REF = ROOT / "__finetunes/goa5k_r128_shampoo_subloss_k5_2026-09-26" / "step=1011.ckpt"
 
 
 def norms(ckpt):
