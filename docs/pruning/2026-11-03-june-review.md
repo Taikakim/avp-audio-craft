@@ -128,7 +128,7 @@ Delete list: 10729 files, 130.3 GB (`/home/kim/sao_runs/june_prune/june_delete_m
 ## H. Weight-averaged soups: 2.9 GB
 
 **What it is:** Weight-averaged checkpoints testing whether averaging beats the best single one.
-**On record:** Finding is recorded in MASTER: averaging helps. `soups_vibe` is kept.
+**On record:** MASTER's confirmed averaging finding is about EMA on a different head; the narrative doc says the soup blend ratio was not a real quality lever. `soups_vibe` is kept.
 
 | Run | Checkpoints | Audio | GB | Settings | Sidecar note |
 |---|---:|---:|---:|---|---|
