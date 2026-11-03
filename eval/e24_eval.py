@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-11-03)
+# Last edited: WINTERMUTE 2026-11-03 -- load_model takes the channel count
 """e24_eval.py -- EXPERIMENTS E24 arm C: does the centred-pitch stream steer the melody at inference? Instrument first, as E24 requires.
 
 Instrument: MuScriptor on the audio -> the same skyline and centring as the pack (eval/e24_build_contour_packs.py) -> correlation with a stream, jointly voiced frames.
@@ -74,7 +75,7 @@ def shuffled(st):
     return np.concatenate([blocks[i] for i in idx], axis=1)
 
 
-def load_model(ck_path, device):
+def load_model(ck_path, device, n_channels=2):
     """Base model + the DoRA + the trained mir_ctrl projections. Checks that both actually arrived: load_state_dict(strict=False) would hide a miss."""
     import torch
     from mir_control import MirCtrlConditioner, install_mir_control
@@ -83,8 +84,8 @@ def load_model(ck_path, device):
     sam = StableAudioModel.from_pretrained("medium-base", device=device)
     sam.load_lora([str(ck_path)])
     tfm = sam.model.model.model.transformer
-    install_mir_control(sam.model, tfm, n_channels=2, blocks="12-23")
-    sam.model.conditioner.conditioners["mir_ctrl"] = MirCtrlConditioner(n_channels=2, dropout_prob=0.0)
+    install_mir_control(sam.model, tfm, n_channels=n_channels, blocks="12-23")
+    sam.model.conditioner.conditioners["mir_ctrl"] = MirCtrlConditioner(n_channels=n_channels, dropout_prob=0.0)
     ck = torch.load(ck_path, map_location="cpu", weights_only=False)
     sd = {k[len("model.transformer."):]: v for k, v in ck["state_dict"].items() if "modular_local_embeds.mir_ctrl" in k}
     missing, unexpected = tfm.load_state_dict(sd, strict=False)
