@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 # run_latch_early_budget.sh -- wait for the GPU, then render + score the LatCH early-budget bracket.
 # Polls Misc/gpu_guard.sh every 5 min (it checks rocm-smi ground truth AND both lockfiles), holds the
@@ -6,7 +7,7 @@
 #   bash eval/run_latch_early_budget.sh            (run in background; exit = done)
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/sa3_control_runs/latch_early_budget_20261015
+OUT=/run/media/kim/Mantu/sa3_control_runs/__latch/latch_early_budget_20261015
 STAGE=$HOME/evals_aac/latch_early_budget
 export ROCR_VISIBLE_DEVICES=0
 cd "$SAO" || exit 2

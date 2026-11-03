@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-15)
 # FiLM density adapter retrained under the ModularOptimizer: LR bracket (EXPERIMENTS E12, project direction 2026-10-15).
@@ -14,7 +15,7 @@ set -u
 SAO=/home/kim/Projects/SAO
 PY=$SAO/.venv/bin/python
 MANTU=$(for p in /run/media/kim/Mantu /run/media/kim/Mantu2 /run/media/kim/Mantu1; do [ -d "$p/sa3_control_runs" ] && { echo "$p"; break; }; done)
-ROOT=$MANTU/sa3_control_runs/film_modular_bracket_20261015
+ROOT=$MANTU/sa3_control_runs/__film/film_modular_bracket_20261015
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
 export PYTORCH_TUNABLEOP_ENABLED=0 PYTORCH_TUNABLEOP_TUNING=0 MIOPEN_FIND_MODE=2
 export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 NUMEXPR_NUM_THREADS=4
@@ -57,7 +58,7 @@ for LR in 3e-4 1e-3 3e-3; do
  "recipe": {"optimizer": "modular", "mod_whitening": "shampoo", "lr": "$LR", "steps": 6000, "save_every": 2000, "ema": 0.999,
             "rest": "identical to the shipped FiLM onset_Fusion_lr1e-4_randomcrop args (batch 1, crop 512, random crop, cfg dropout 0.1, warmup 300, seed 42, logit_normal t, scalar onset_density, control_dim 768, n_tokens 256, bf16)"},
  "dataset": {"encoded_dir": "$LAT", "what": "goa corpus SA3 latents (5400 T=4096 crops + TIMESERIES companions), no augmentation"},
- "reference": "$MANTU/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt (FusionOpt lr 1e-4, 54k steps)",
+ "reference": "$MANTU/sa3_control_runs/__onsets/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt (FusionOpt lr 1e-4, 54k steps)",
  "weights": "riffer_step*.pt / riffer_final.pt: 'state' = EMA, 'state_online' = online (SF-averaged), 'model_train' = raw training iterate",
  "related": ["control/run_film_modular_bracket.sh", "docs/TRAINING.md", "EXPERIMENTS E7/E8"],
  "result": null, "kim_feedback": null}

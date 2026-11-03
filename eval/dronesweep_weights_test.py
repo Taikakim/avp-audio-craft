@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-16)
 """dronesweep_weights_test.py -- AVP drone-sweep full finetunes: EMA vs online weights, a base-model blend, and the unguided anchor.
 
@@ -13,7 +14,7 @@ UNGUIDED sampler through its step callback, final latent capped too) rescue forc
 Arms: plain_s2 (fp32, ep7), bf16_plain_s2 (ep9), force_scalar_s1 (ep7). Variants: ema, online, online_b25 (0.75 online +
 0.25 base), online_b33, online_anc (anchor s0 1.2), ema_anc. Prompts kl_0, kl_1, housestyle, kimlong with the LUMI clips'
 own seeds; cfg 7, 24 steps, 20 s (as on LUMI). z_std recorded per clip.
-Output: Mantu/sa3_control_runs/dronesweep_weights_20261016/. RUN (hold the GPU lock): SAO/.venv/bin/python eval/dronesweep_weights_test.py
+Output: Mantu/sa3_control_runs/__drones/dronesweep_weights_20261016/. RUN (hold the GPU lock): SAO/.venv/bin/python eval/dronesweep_weights_test.py
 """
 import glob
 import json
@@ -28,7 +29,7 @@ os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 
 import numpy as np  # noqa: E402
 
-OUT = "/run/media/kim/Mantu/sa3_control_runs/dronesweep_weights_20261016"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/__drones/dronesweep_weights_20261016"
 PULL = "/home/kim/Projects/SAO/renders_pull/dronesweep"
 ARMS = {
     "plain_s2": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/avp_dronesweep/plain_s2/epoch=7-step=4784.ckpt",

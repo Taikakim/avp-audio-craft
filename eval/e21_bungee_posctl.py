@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: CONTINUITY (created 2026-10-28)
 """e21_bungee_posctl.py -- positive control for EXPERIMENTS E21: pitch-shift the k=0 steered renders by 3/6/9 semitones with
 bungee (never sox), so the E21 meter must report the shift. Run with the mir pitch venv:
@@ -10,7 +11,7 @@ import numpy as np, soundfile as sf
 from bungee_python import bungee as B
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--out", default="/run/media/kim/Mantu/sa3_control_runs/e21_transposition_probe_20261028")
+ap.add_argument("--out", default="/run/media/kim/Mantu/sa3_control_runs/__chroma/e21_transposition_probe_20261028")
 ap.add_argument("--glob", default="e21__*__k0__g2048__*.wav", help="the k=0 renders to shift")
 a = ap.parse_args()
 OUT = Path(a.out)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 """build_latch_onset_matrix_ema_page.py -- listening page for eval/latch_onset_matrix_ema.py.
 
@@ -9,7 +10,7 @@ same run and epoch. Cell = measured onsets/s averaged over the two seeds, plus o
 summary row: request-vs-measured correlation, range of the cell means, gate fails. Gate:
 control_head_disintegration_eval.gate() vs the unguided clip of the same seed, quality leg = Audiobox PQ
 (|dPQ| > 1.5), as on latch_onset_grid / latch_early_budget.
-Inputs: Mantu2/sa3_control_runs/latch_onset_matrix_ema_20261015/{cells.jsonl,run_meta.json}, eval/clip_metrics.db
+Inputs: Mantu2/sa3_control_runs/__onsets/latch_onset_matrix_ema_20261015/{cells.jsonl,run_meta.json}, eval/clip_metrics.db
 rows for ~/evals_aac/latch_onset_matrix_ema/**.m4a (eval/run_latch_onset_matrix_ema.sh writes both).
 Writes ~/evals_aac/latch_onset_matrix_ema.html. No checkpoint filenames or drive paths on the page.
 """
@@ -27,7 +28,7 @@ from comment_notes_block import notes_block
 from control_head_disintegration_eval import gate
 from float_player import inject
 
-SRC = "/run/media/kim/Mantu/sa3_control_runs/latch_onset_matrix_ema_20261015"
+SRC = "/run/media/kim/Mantu/sa3_control_runs/__onsets/latch_onset_matrix_ema_20261015"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 SUB = "latch_onset_matrix_ema"
 DB = os.path.join(HERE, "..", "eval", "clip_metrics.db")

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: THE-FINN (created 2026-10-15)
 # Last edited: THE-FINN 2026-10-15 -- blind A/B/C listening page for the E3 metrical bracket
 """e3_blind_abc.py -- blind A/B/C listening test for the E3 metrical-position bracket.
@@ -27,7 +28,7 @@ import numpy as np
 import soundfile as sf
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_BRACKET = "/run/media/kim/Mantu/sa3_control_runs/e3_metrical/bracket"
+DEFAULT_BRACKET = "/run/media/kim/Mantu/sa3_control_runs/__misc/e3_metrical/bracket"
 VOTES = os.path.join(HERE, "e3_blind_votes.jsonl")
 MODELS = ("base", "real", "shuffled")
 LOCK = threading.Lock()

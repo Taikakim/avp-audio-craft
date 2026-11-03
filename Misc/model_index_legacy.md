@@ -9,10 +9,10 @@
 | Role | Model | Path | Why |
 |------|-------|------|-----|
 | **DoRA** | r128f exponential-ascending soup | `Mantu/sa3_lora_runs/soups_dora/r128f_expasc.ckpt` | Best DoRA soup; base run fréchet **0.0750** |
-| **Onset** | FusionCC (CC-loss) | `Mantu/sa3_control_runs/onset_FusionCC_lr1e-4_randomcrop/riffer_final.pt` | Best onset steering: corr g2 **.880** (vs .584 baseline) |
-| **Onset (ONNX)** | FUSION lr2e-5 40ep exppeak soup | `Mantu/sa3_control_runs/onset_FUSION_lr2e5_40epoch/soup_exppeak.pt` | Baked into ONNX DiT; monotonic 3→11 onsets/sec |
-| **Style** | fpC AdamW | `Mantu/sa3_control_runs/style_fpC_adamw/riffer_final.pt` | Ship this — genre-CC variant **hurt** steering |
-| **ES cond** | v3 field-best | `Mantu/sa3_control_runs/es_conditioner_v3/cond_fieldbest.npz` | Best grid point (a=1.17, b=−0.38) |
+| **Onset** | FusionCC (CC-loss) | `Mantu/sa3_control_runs/__onsets/onset_FusionCC_lr1e-4_randomcrop/riffer_final.pt` | Best onset steering: corr g2 **.880** (vs .584 baseline) |
+| **Onset (ONNX)** | FUSION lr2e-5 40ep exppeak soup | `Mantu/sa3_control_runs/__onsets/onset_FUSION_lr2e5_40epoch/soup_exppeak.pt` | Baked into ONNX DiT; monotonic 3→11 onsets/sec |
+| **Style** | fpC AdamW | `Mantu/sa3_control_runs/__genre_style/style_fpC_adamw/riffer_final.pt` | Ship this — genre-CC variant **hurt** steering |
+| **ES cond** | v3 field-best | `Mantu/sa3_control_runs/__evolution/es_conditioner_v3/cond_fieldbest.npz` | Best grid point (a=1.17, b=−0.38) |
 
 > [!WARNING]
 > **Earlier in this session I recommended `style_fpC_genrecc`** — that was wrong! WORKLOG says genre-CC **HURT** steering (Goa 0.92→0.65, Psy 0.46→0.03). Use `style_fpC_adamw` instead.
@@ -225,7 +225,7 @@ All under `Mantu/sa3_control_runs/`.
 
 ## 6. Onset Adapter Soups
 
-Under `Mantu/sa3_control_runs/soups/` (12 profiles for onset_FUSION_lr2e5_40epoch):
+Under `Mantu/sa3_control_runs/__soups/soups/` (12 profiles for onset_FUSION_lr2e5_40epoch):
 
 | Soup | Profile | Size |
 |------|---------|------|
@@ -242,7 +242,7 @@ Under `Mantu/sa3_control_runs/soups/` (12 profiles for onset_FUSION_lr2e5_40epoc
 | soup_A_ep10_ep40 | Simple average ep10+ep40 | 239 MB |
 | soup_ep20_ep40 | Simple average ep20+ep40 | 239 MB |
 
-Under `Mantu/sa3_control_runs/soups_vibe/` (cross-optimizer soups):
+Under `Mantu/sa3_control_runs/__soups/soups_vibe/` (cross-optimizer soups):
 
 | Soup | Notes |
 |------|-------|
@@ -276,7 +276,7 @@ Created by [mutate_weights.py](file:///home/kim/Projects/SAO/stable-audio-3/scri
 ## 8. Composition Evaluations
 
 ### composed_sweep
-- **Location:** `Mantu/sa3_control_runs/composed_sweep/`
+- **Location:** `Mantu/sa3_control_runs/__misc/composed_sweep/`
 - **Contents:** `E_fusion/` (162 cells), `A_cc/` (162 cells), `E_fusion_v2/`
 - **Verdict:** Stage1 complete (324 cells, 2 seeds). FusionCC advantage **replicates**.
 
@@ -295,8 +295,8 @@ Created by [mutate_weights.py](file:///home/kim/Projects/SAO/stable-audio-3/scri
 ```bash
 python control/sa3_control/multi_adapter_onset_eval.py \
     --dora-ckpt  /run/media/kim/Mantu/sa3_lora_runs/soups_dora/r128f_expasc.ckpt \
-    --onset-ckpt /run/media/kim/Mantu/sa3_control_runs/onset_FusionCC_lr1e-4_randomcrop/riffer_final.pt \
-    --style-ckpt /run/media/kim/Mantu/sa3_control_runs/style_fpC_adamw/riffer_final.pt \
+    --onset-ckpt /run/media/kim/Mantu/sa3_control_runs/__onsets/onset_FusionCC_lr1e-4_randomcrop/riffer_final.pt \
+    --style-ckpt /run/media/kim/Mantu/sa3_control_runs/__genre_style/style_fpC_adamw/riffer_final.pt \
     --reference-latent /home/kim/Projects/latents_sa3/003231.npy \
     --densities "5,6,7,8,9,10" \
     --onset-gains "1.0,2.0,3.0" \

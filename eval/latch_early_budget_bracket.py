@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 """latch_early_budget_bracket.py -- does LatCH guidance steer ONSETS once it gets a real early budget?
 
@@ -24,7 +25,7 @@ Every cell gets its unguided baseline (same leg, model, shape, seed) for the dis
 
 Measured per clip, inline: onsets/s (librosa onset_detect, = latch_onset_eval.py) and air-band level
 (dB RMS above 2.5 kHz). A non-finite render is NOT written (cell stays missing; resume re-renders).
-Output: Mantu2/sa3_control_runs/latch_early_budget_20261015/<leg>/<cell>.wav + cells.jsonl + run_meta.json.
+Output: Mantu2/sa3_control_runs/__latch/latch_early_budget_20261015/<leg>/<cell>.wav + cells.jsonl + run_meta.json.
 RUN (hold the GPU lock first): ROCR_VISIBLE_DEVICES=0 SAO/.venv/bin/python eval/latch_early_budget_bracket.py [--legs A,B,C,D] [--dry]
 """
 import argparse
@@ -38,7 +39,7 @@ os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-OUT = "/run/media/kim/Mantu/sa3_control_runs/latch_early_budget_20261015"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/__latch/latch_early_budget_20261015"
 ONSET = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE/E04_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt"
 AIR = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_rms_energy_air_a2_best.pt"
 PROMPT, BPM, CFG, DUR = "psytrance, 140 bpm", 140.0, 7.0, 20.0

@@ -1,10 +1,11 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 # run_latch_guide_anchor.sh -- wait for the GPU, render the guide_anchor test (146 clips, ~12 min), encode, score, release.
 #   bash eval/run_latch_guide_anchor.sh        (run in background; exit = done; resumable)
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/sa3_control_runs/latch_guide_anchor_20261015
+OUT=/run/media/kim/Mantu/sa3_control_runs/__latch/latch_guide_anchor_20261015
 STAGE=$HOME/evals_aac/latch_guide_anchor
 export ROCR_VISIBLE_DEVICES=0
 cd "$SAO" || exit 2

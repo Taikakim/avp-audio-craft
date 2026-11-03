@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-16)
 # Last edited: WINTERMUTE 2026-10-16 — extension grid: per-arm FiLM gain ladders x requests 3/5/7/9/12 (listening verdict on the first check)
 # Last edited: WINTERMUTE 2026-10-20 — arm fp32_lr3e-4 (test plan A4, fp32 optimizer state), kept out of the pick
@@ -13,7 +14,7 @@ Context = E7 "base": medium-base, "psytrance, 140 bpm", euler 50, cfg 7, 20 s, s
 x request {3, 9} onsets/s, plus one unguided render per seed. Pick rule (written before the data, used by the chain): the arm
 with the largest mean spread at gain 1.0 among arms whose final latent std stays within 1.3x the unguided seed (the
 latent-level screen, 2026-10-15); ties within 0.2 onsets/s -> the middle lr. Writes pick.json.
-Output: Mantu/sa3_control_runs/film_bracket_density_check_20261016/. RUN: SAO/.venv/bin/python eval/film_bracket_density_check.py
+Output: Mantu/sa3_control_runs/__film/film_bracket_density_check_20261016/. RUN: SAO/.venv/bin/python eval/film_bracket_density_check.py
 """
 import json
 import os
@@ -24,19 +25,19 @@ import time
 import numpy as np
 
 MANTU = "/run/media/kim/Mantu"
-OUT = f"{MANTU}/sa3_control_runs/film_bracket_density_check_20261016"
-BR = f"{MANTU}/sa3_control_runs/film_modular_bracket_20261015"
+OUT = f"{MANTU}/sa3_control_runs/__film/film_bracket_density_check_20261016"
+BR = f"{MANTU}/sa3_control_runs/__film/film_modular_bracket_20261015"
 ARMS = {"lr3e-4": f"{BR}/film_modular_lr3e-4_s6000/riffer_final.pt", "lr1e-3": f"{BR}/film_modular_lr1e-3_s6000/riffer_final.pt",
         "lr3e-3": f"{BR}/film_modular_lr3e-3_s6000/riffer_final.pt",
-        "shipped": f"{MANTU}/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt",
+        "shipped": f"{MANTU}/sa3_control_runs/__onsets/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt",
         # the shipped run's own early checkpoints: does its density response appear only with training length?
-        "shipped_s5400": f"{MANTU}/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_step5400.pt",
-        "shipped_s10800": f"{MANTU}/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_step10800.pt",
+        "shipped_s5400": f"{MANTU}/sa3_control_runs/__onsets/onset_Fusion_lr1e-4_randomcrop/riffer_step5400.pt",
+        "shipped_s10800": f"{MANTU}/sa3_control_runs/__onsets/onset_Fusion_lr1e-4_randomcrop/riffer_step10800.pt",
         # the E12 full run (modular lr 1e-3, 54k steps, finished 2026-10-16 13:12): final + its midpoint
-        "full_s54000": f"{MANTU}/sa3_control_runs/film_modular_full_20261016/film_modular_lr1e-3_s54000/riffer_final.pt",
-        "full_s27000": f"{MANTU}/sa3_control_runs/film_modular_full_20261016/film_modular_lr1e-3_s54000/riffer_step27000.pt",
+        "full_s54000": f"{MANTU}/sa3_control_runs/__film/film_modular_full_20261016/film_modular_lr1e-3_s54000/riffer_final.pt",
+        "full_s27000": f"{MANTU}/sa3_control_runs/__film/film_modular_full_20261016/film_modular_lr1e-3_s54000/riffer_step27000.pt",
         # test plan A4 (2026-10-19): the lr3e-4 arm retrained with fp32 optimizer state; same seed and data order as lr3e-4
-        "fp32_lr3e-4": f"{MANTU}/sa3_control_runs/film_precision_A_20261017/A4_fp32state_lr3e-4/riffer_final.pt"}
+        "fp32_lr3e-4": f"{MANTU}/sa3_control_runs/__film/film_precision_A_20261017/A4_fp32state_lr3e-4/riffer_final.pt"}
 SERVER = "http://127.0.0.1:8056"
 BASE = {"prompt": "psytrance, 140 bpm", "duration": 20.0, "steps": 50, "cfg_scale": 7.0, "sampler_type": "euler",
         "apg_scale": 1.0, "dora": {"name": "none", "strength": 1.0}}

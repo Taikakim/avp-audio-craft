@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 """latch_onset_matrix_ema.py -- target x gain matrix for the onset LatCH head, EMA vs online weights.
 
@@ -11,7 +12,7 @@ EMA and the online (Schedule-Free averaged) weights come from ONE trajectory and
 
 Fixed: medium-base, euler 50, cfg 7, 20 s, "psytrance, 140 bpm", guide_schedule alpha, window 0-1, seeds 1234 + 77.
 Measured per clip: onsets/s (librosa onset_detect, as latch_onset_eval.py). Non-finite renders are not written.
-Output: Mantu2/sa3_control_runs/latch_onset_matrix_ema_20261015/<weights>/<id>.wav + cells.jsonl + run_meta.json.
+Output: Mantu2/sa3_control_runs/__onsets/latch_onset_matrix_ema_20261015/<weights>/<id>.wav + cells.jsonl + run_meta.json.
 RUN (hold the GPU lock): ROCR_VISIBLE_DEVICES=0 SAO/.venv/bin/python eval/latch_onset_matrix_ema.py --ema <pt> --online <pt> [--dry]
 """
 import argparse
@@ -24,7 +25,7 @@ os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
 os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 
-OUT = "/run/media/kim/Mantu/sa3_control_runs/latch_onset_matrix_ema_20261015"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/__onsets/latch_onset_matrix_ema_20261015"
 PROMPT, BPM, CFG, DUR, STEPS = "psytrance, 140 bpm", 140.0, 7.0, 20.0, 50
 SEEDS = (1234, 77)
 TARGETS = tuple(range(0, 13))
@@ -72,7 +73,7 @@ def main():
                    "eval": {"prompt": PROMPT, "bpm_for_conversion": BPM, "cfg": CFG, "duration": DUR, "steps": STEPS, "sampler": "euler",
                             "model": "medium-base", "guide_schedule": "alpha", "window": [0.0, 1.0], "seeds": SEEDS,
                             "targets_onsets_per_s": TARGETS, "gains": GAINS},
-                   "related": ["eval/latch_early_budget_bracket.py", "Mantu2/sa3_control_runs/latch_early_budget_20261015/run_meta.json"],
+                   "related": ["eval/latch_early_budget_bracket.py", "Mantu2/sa3_control_runs/__latch/latch_early_budget_20261015/run_meta.json"],
                    "result": None, "kim_feedback": None}, open(meta_p, "w"), indent=1)
 
     model = StableAudioModel.from_pretrained("medium-base", device="cuda")

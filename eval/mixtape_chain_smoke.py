@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: GHOST-NOTE (created 2026-10-27)
 """mixtape_chain_smoke.py -- does the bass+body+air LatCH chain (the "graininess fix" from the punch work) clean up the
 hot-latent mixtape shortlist clips?
@@ -65,7 +66,7 @@ def main():
     if not os.path.exists(f"{OUT}/run_meta.json"):
         json.dump({"purpose": "Bass+body+air LatCH chain (punch 'cleanest_air' preset) on three hot-latent mixtape shortlist clips, ctl/bb/chain/chain_anc, to see whether it removes the grain that post-hoc z0 scaling could not -- owner ask 2026-10-27.",
                    "hypothesis": "Chain rounds the sound and restores bass as on the punch clips; guide_anchor keeps loudness at the unguided level. Kill: no audible gain over ctl at matched loudness.",
-                   "script": "eval/mixtape_chain_smoke.py", "preset_source": "Mantu/sa3_control_runs/punch_rating_20261014/presets.json:cleanest_air",
+                   "script": "eval/mixtape_chain_smoke.py", "preset_source": "Mantu/sa3_control_runs/__film/punch_rating_20261014/presets.json:cleanest_air",
                    "related": "EXPERIMENTS M1; eval/mixtape_anchor_smoke.py", "result": None, "kim_feedback": None},
                   open(f"{OUT}/run_meta.json", "w"), indent=1)
     print("CHAIN SMOKE DONE", flush=True)

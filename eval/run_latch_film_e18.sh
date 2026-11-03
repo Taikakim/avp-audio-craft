@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-25)
 # Last edited: WINTERMUTE 2026-10-25 -- free-card check ignores processes under 1 GiB VRAM
 # run_latch_film_e18.sh -- EXPERIMENTS E18 (smooth FiLM -> LatCH hand-off) end to end.
@@ -8,7 +9,7 @@
 #   setsid nohup bash eval/run_latch_film_e18.sh </dev/null >/dev/null 2>&1 &     (resumable)
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/sa3_control_runs/latch_film_e18_20261025
+OUT=/run/media/kim/Mantu/sa3_control_runs/__film/latch_film_e18_20261025
 STAGE=$HOME/evals_aac/latch_film_e18
 MIR_PY=/home/kim/Projects/mir/mir/bin/python
 LOG=/home/kim/sao_runs/latch_film_e18_20261025.log

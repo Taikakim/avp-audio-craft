@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """build_e1_pilot_page.py — eval page for the E1 anti-loop steering pilot.
 
 Kim's ask 2026-07-16 ("UI page for the loopy experiments"). Surfaces
-sa3_control_runs/e1_pilot_20260716 (band-hinge recurrence guide, W's pilot on
+sa3_control_runs/__misc/e1_pilot_20260716 (band-hinge recurrence guide, W's pilot on
 the longform validation plan) as a same-playhead listening page: unguided
 baselines vs the λ ladder at nl50/nl60, per-clip loop metrics + Δ-vs-baseline,
 the lam1e7 ear-verdict clip highlighted. Glob-driven — rerun after new arms
@@ -25,7 +26,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
 
-RUN = Path("/run/media/kim/Mantu/sa3_control_runs/e1_pilot_20260716")
+RUN = Path("/run/media/kim/Mantu/sa3_control_runs/__misc/e1_pilot_20260716")
 BASE = Path("/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack")
 STAGE = Path.home() / "evals_aac"
 CLIPS = STAGE / "e1_pilot"
@@ -138,7 +139,7 @@ for(const nl of [60,50]){
 document.getElementById('out').innerHTML=h;
 </script>
 __NOTES__
-<footer style="margin:18px 12px;color:#666;font-size:11px">aavepyora.online · evals · E1 anti-loop pilot · clips + metrics: sa3_control_runs/e1_pilot_20260716 (internal)</footer>
+<footer style="margin:18px 12px;color:#666;font-size:11px">aavepyora.online · evals · E1 anti-loop pilot · clips + metrics: sa3_control_runs/__misc/e1_pilot_20260716 (internal)</footer>
 </body></html>"""
 
 T = T.replace("__RECIPE__", recipe)

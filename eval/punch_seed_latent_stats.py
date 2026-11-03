@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 """punch_seed_latent_stats.py -- what does seed 764's latent have that 3050's does not?
 
@@ -21,9 +22,9 @@ import os
 import numpy as np
 
 RENDER_OUT = "/home/kim/Projects/sa3_render_out"
-RATING = "/run/media/kim/Mantu/sa3_control_runs/punch_rating_20261014"
+RATING = "/run/media/kim/Mantu/sa3_control_runs/__film/punch_rating_20261014"
 OUT = f"{RATING}/seed_latent_stats_20261015.json"
-NODORA = "/run/media/kim/Mantu/sa3_control_runs/punch_nodora_seeds_20261015"   # eval/punch_nodora_seeds.py
+NODORA = "/run/media/kim/Mantu/sa3_control_runs/__film/punch_nodora_seeds_20261015"   # eval/punch_nodora_seeds.py
 
 
 def arm_of(pe):

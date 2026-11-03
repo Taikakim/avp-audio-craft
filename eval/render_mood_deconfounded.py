@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """render_mood_deconfounded.py -- Conditional De-Confounding (Gaussian Kriging +
 Library-Floor Repulsion) test on the canonical fine-grained matrix prompt:
   PROMPT = "2020s goa trance, melodic mood, 148 bpm", SEED = 1102008041, CFG = 7.0
@@ -39,7 +40,7 @@ HEAD_CKPT = "/run/media/kim/Mantu/latch_sweep/mood_56d_best_40ep_20261031/C3_moo
 MOOD_NPY_DIR = Path("/run/media/kim/Mantu/latents_sa3_mood")
 METADATA_JSON = Path("/home/kim/Projects/mir/models/essentia/mtg_jamendo_moodtheme-discogs-effnet-1.json")
 
-OUT_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/mood_finegrained_20261031")
+OUT_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/__mood/mood_finegrained_20261031")
 OUT_AAC_DIR = Path("/home/kim/evals_aac/mood_finegrained")
 OUT_WAV_DIR.mkdir(parents=True, exist_ok=True)
 OUT_AAC_DIR.mkdir(parents=True, exist_ok=True)

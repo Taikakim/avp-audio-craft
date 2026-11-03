@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """gate_b_seed_fan.py — Gate B of the residual-preservation plan (docs/ai-research/
 residual-preservation-2026-07-19.md §3). THE load-bearing measurement: is the latent deficit
 a WITHIN-CONTEXT (conditional-mean) collapse, or per-sample oversmoothing?
@@ -31,7 +32,7 @@ from pathlib import Path
 import numpy as np
 
 CORPUS = Path("/run/media/kim/Kosmos/latents/latents_sa3")
-OUT = Path("/run/media/kim/Mantu/sa3_control_runs/gate_b_20260719"); OUT.mkdir(parents=True, exist_ok=True)
+OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__latch/gate_b_20260719"); OUT.mkdir(parents=True, exist_ok=True)
 PROMPT = "aggressive upbeat goa trance"      # rhythmic; matches the real-goa corpus
 N_SEEDS = 24
 DURATION = 26.0                               # ~280 latent frames (matches the saved gen z0 length)

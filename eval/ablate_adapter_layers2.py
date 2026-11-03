@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """ablate_adapter_layers2.py — #44 follow-up (Kim direct 2026-07-21): early+late combo and
 single-layer injection sweep of the onset FiLM adapter's 24 cross-attn taps.
 
@@ -39,8 +40,8 @@ from stable_audio_3 import StableAudioModel                                   # 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from disintegration_metrics import measure, gate                              # noqa: E402
 
-CKPT = "/run/media/kim/Mantu/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt"
-OUT = Path("/run/media/kim/Mantu/sa3_control_runs/ablate_layers2_2026-07-21")
+CKPT = "/run/media/kim/Mantu/sa3_control_runs/__onsets/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt"
+OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__film/ablate_layers2_2026-07-21")
 CONFIGS = {"all": list(range(24)), "none": [],
            "earlylate": list(range(0, 8)) + list(range(16, 24))}
 CONFIGS.update({f"L{i:02d}": [i] for i in range(24)})

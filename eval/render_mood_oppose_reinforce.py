@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """render_mood_oppose_reinforce.py -- Symmetrical prompt mood reinforcement & opposition study.
 
 Tests:
@@ -15,7 +16,7 @@ Tests:
    - Oppose: +Melodic (g=1024, 2048)
    - Oppose: -Dark (g=-1024)
 
-Outputs saved to /run/media/kim/Mantu/sa3_control_runs/mood_oppose and /home/kim/evals_aac/mood_oppose.
+Outputs saved to /run/media/kim/Mantu/sa3_control_runs/__mood/mood_oppose and /home/kim/evals_aac/mood_oppose.
 """
 import os
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
@@ -38,7 +39,7 @@ from sa3_control.audio_io import save_audio
 
 HEAD_CKPT = "/run/media/kim/Mantu/latch_sweep/mood_56d_best_40ep_20261031/C3_mood_lr8e-4_b64_cos40/latch_sa3_effnet_moodtheme_ep40.pt"
 
-OUT_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/mood_oppose")
+OUT_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/__mood/mood_oppose")
 OUT_AAC_DIR = Path("/home/kim/evals_aac/mood_oppose")
 OUT_WAV_DIR.mkdir(parents=True, exist_ok=True)
 OUT_AAC_DIR.mkdir(parents=True, exist_ok=True)
@@ -54,7 +55,7 @@ PROMPT_A = "2020s goa trance, melodic mood, 148 bpm"
 PROMPT_B = "2020s dark psytrance, dark mood, heavy bass, 148 bpm"
 
 EXISTING_AAC_DIR = Path("/home/kim/evals_aac/mood_finegrained")
-EXISTING_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/mood_finegrained_20261031")
+EXISTING_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/__mood/mood_finegrained_20261031")
 
 def transcode_to_aac(wav_path: Path, aac_path: Path):
     if aac_path.exists() and aac_path.stat().st_size > 0:

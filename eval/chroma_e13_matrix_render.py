@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: ANTIGRAVITY (created 2026-10-29)
 # Last edited: WINTERMUTE 2026-11-03 -- removed expandable_segments: on ROCm it makes decodes wrong or NaN (MASTER section 5)
 """chroma_e13_matrix_render.py -- Exploration matrix for the E13 modular retrained head
@@ -38,7 +39,7 @@ import chroma_steer_targets as T  # noqa: E402
 from chroma_steer_render import build_target_raw, _chroma12_per_frame  # noqa: E402
 from harmonic import same_chroma as sc  # noqa: E402
 
-OUT = Path("/run/media/kim/Mantu/sa3_control_runs/chroma_e13_matrix_20261029")
+OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__chroma/chroma_e13_matrix_20261029")
 E13_BASE_DIR = Path("/home/kim/evals_aac/control_runs/chroma_e13_20261028")
 
 C3_HEAD = Path("/run/media/kim/Mantu/latch_sweep/chroma_retrain_2026-10-16/C3_chroma_d512_lr1e-3/latch_sa3_same_chroma_ep10.pt")

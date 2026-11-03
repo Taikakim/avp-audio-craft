@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: ANTIGRAVITY (created 2026-10-29)
 # Last edited: WINTERMUTE 2026-11-03 -- corrected the noise-burst explanation, status notice
 """build_chroma_e13_matrix_page.py -- Builds the interactive listening dashboard
@@ -28,7 +29,7 @@ sys.path.insert(0, str(HERE))
 from comment_notes_block import notes_block
 from float_player import inject
 
-SRC = Path("/run/media/kim/Mantu/sa3_control_runs/chroma_e13_matrix_20261029")
+SRC = Path("/run/media/kim/Mantu/sa3_control_runs/__chroma/chroma_e13_matrix_20261029")
 STAGE = Path(os.path.expanduser("~/evals_aac"))
 SUB = "chroma_e13_matrix"
 DEST_AUDIO = STAGE / SUB

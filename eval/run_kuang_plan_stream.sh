@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-17)
 # run_kuang_plan_stream.sh -- the self-running part of docs/modular-opt-test-plan-2026-10-17.md, in the plan's order:
@@ -16,7 +17,7 @@ set -u
 SAO=/home/kim/Projects/SAO
 PY=$SAO/.venv/bin/python
 LPY=$SAO/.venv-rocm10-amd/bin/python
-AOUT=/run/media/kim/Mantu/sa3_control_runs/film_precision_A_20261017
+AOUT=/run/media/kim/Mantu/sa3_control_runs/__film/film_precision_A_20261017
 POUT=/run/media/kim/Mantu/latch_sweep/kuang_plan_P_20261017
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
 export PYTORCH_TUNABLEOP_ENABLED=0 PYTORCH_TUNABLEOP_TUNING=0 MIOPEN_FIND_MODE=2
@@ -41,7 +42,7 @@ cat > "$AOUT/run_meta.json" <<EOF
 {"purpose": "Test plan section A (docs/modular-opt-test-plan-2026-10-17.md): does fp32 optimizer state (--mod-state-dtype fp32) fix the bf16 rounding of ModularOptimizer steps on the FiLM adapter (KUANG F21/H1)?",
  "hypothesis": "fp32-state arms at lr 3e-4 / 1e-3 train clearly better than the bf16 E12 arms at the same lr; the lr optimum moves down.",
  "kill": "fp32 arms within noise of bf16 at every lr",
- "baseline_bf16_arms": "/run/media/kim/Mantu/sa3_control_runs/film_modular_bracket_20261015 (A1-A3, same recipe, bf16 state)",
+ "baseline_bf16_arms": "/run/media/kim/Mantu/sa3_control_runs/__film/film_modular_bracket_20261015 (A1-A3, same recipe, bf16 state)",
  "recipe": "E12 bracket: medium-base bf16, crop 512 random, batch 1, accum 2, EMA 0.999, Shampoo, warmup 300, scalar onset_density, 6000 steps, save every 2000; + --mod-state-dtype fp32",
  "reading": "6000 steps is too short for a density response (production FiLM: spread 0.2 at its own step 5400), so read loss, opt_groups.jsonl (per-group relative update) and grad_noise.jsonl; density only on a later long run",
  "dataset": "latents_sa3 (Kosmos), goa corpus, no augmentation", "result": null, "kim_feedback": null}

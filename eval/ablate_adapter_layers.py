@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """ablate_adapter_layers.py — per-layer-group ablation of the onset FiLM adapter's
 cross-attn injections (task #44, Kim green-lit 2026-07-12).
 
@@ -34,8 +35,8 @@ from sa3_control.adapters import (ControlledCrossAttention, ControlContext,   # 
 from sa3_control.conditioner import ScalarAttributeEncoder                    # noqa: E402
 from stable_audio_3 import StableAudioModel                                   # noqa: E402
 
-CKPT = "/run/media/kim/Mantu/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt"
-OUT = Path("/run/media/kim/Mantu/sa3_control_runs/ablate_layers_2026-07-12")
+CKPT = "/run/media/kim/Mantu/sa3_control_runs/__onsets/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt"
+OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__film/ablate_layers_2026-07-12")
 CONFIGS = {"all": range(24), "none": [], "early": range(0, 8),
            "mid": range(8, 16), "late": range(16, 24)}
 DENSITIES = [3.0, 6.0, 9.0, 12.0]

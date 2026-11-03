@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-25)
 """build_latch_film_e18_page.py -- listening card for EXPERIMENTS E18 (smooth FiLM -> LatCH hand-off, tapered LatCH end).
 
@@ -18,7 +19,7 @@ sys.path.insert(0, HERE)
 from comment_notes_block import notes_block
 from float_player import inject
 
-SRC = "/run/media/kim/Mantu/sa3_control_runs/latch_film_e18_20261025"
+SRC = "/run/media/kim/Mantu/sa3_control_runs/__film/latch_film_e18_20261025"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 SUB = "latch_film_e18"
 CTX_LABEL = {"base": "psytrance, 140 bpm", "house": "deep house, 122 bpm (far from the training style)"}

@@ -587,7 +587,7 @@ VERIFY:
 proxies to :8056).
 
 ## 18. Punch rating tool (rate steering 1-5, request new pairs) — G, 2026-10-14
-Local service on **:8058**, data in `/run/media/kim/Mantu/sa3_control_runs/punch_rating_20261014/` (clips as wav, `manifest.json`, `ratings.jsonl`, `presets.json`, `metrics.json`).
+Local service on **:8058**, data in `/run/media/kim/Mantu/sa3_control_runs/__film/punch_rating_20261014/` (clips as wav, `manifest.json`, `ratings.jsonl`, `presets.json`, `metrics.json`).
 
     cd /home/kim/Projects/SAO
     .venv/bin/python eval/punch_rating_server.py --batch 64        # (once) render 64 seeds; needs the render server up, ~20 min

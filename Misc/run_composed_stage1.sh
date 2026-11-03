@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Stage 1 of the composed control x LatCH sweep (spec 2026-07-03): the 2x2 core —
 # {baseline Fusion, FusionCC} x {LatCH off, on} = 4 x 162 = 648 renders, all CPU.
 # Run DETACHED (kill-wave-proof):  setsid nohup Misc/run_composed_stage1.sh <RHO_MU> \
@@ -9,7 +10,7 @@ set -u
 RHO_MU="${1:?usage: run_composed_stage1.sh <rho_mu from calibration>}"
 SAO=/home/kim/Projects/SAO
 Q="$SAO/composed_eval_queue"
-OUT=/run/media/kim/Mantu/sa3_control_runs/composed_sweep
+OUT=/run/media/kim/Mantu/sa3_control_runs/__misc/composed_sweep
 RUNS=/run/media/kim/Mantu/sa3_control_runs
 MIRPY=/home/kim/Projects/mir/mir/bin/python
 SRVPY="$SAO/stable-audio-3/.venv/bin/python"

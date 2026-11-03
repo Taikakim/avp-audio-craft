@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """
 build_layer_map_page.py -- readable report page for the layer-mapping run
 (layer_map_2026-07-10). Replaces the generic auto-player, which listed 48
@@ -23,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-SRC = Path("/run/media/kim/Mantu/sa3_control_runs/layer_map_2026-07-10")
+SRC = Path("/run/media/kim/Mantu/sa3_control_runs/__film/layer_map_2026-07-10")
 OUT = Path.home() / ".cache/evals_aac/renders/layer_map_2026-07-10/index.html"
 
 # Phase-3 concept-steering A/B (CONTINUITY, 2026-07-11): diff-in-means directions

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: GHOST-NOTE (created 2026-10-14)
 """punch_rating_metrics.py -- objective metrics for every pair in the punch rating set, so Kim's 1-5 ratings can later be matched against them.
 
@@ -17,7 +18,7 @@ import json
 import os
 import sys
 
-DATA = "/run/media/kim/Mantu/sa3_control_runs/punch_rating_20261014"
+DATA = "/run/media/kim/Mantu/sa3_control_runs/__film/punch_rating_20261014"
 CLIPS = f"{DATA}/clips"
 
 

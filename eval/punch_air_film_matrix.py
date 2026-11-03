@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 """punch_air_film_matrix.py -- the 2026-10-09 "cleanest" punch combo + the air-band LatCH head (gain x target) + FiLM on top.
 
@@ -15,7 +16,7 @@ server weight = slot gain / slot-1 gain, times the preset's explicit rho/mu). Se
 Grid: A2 air head: gain {4k, 8k, 12k, 16k, 24k, 32k} x target {-40, -30, -20, -10} dB x FiLM {off, gain 1.0 @ 6/s};
 old production air head: same gains x targets, FiLM off (reference: its high-gain glitches started the retrain);
 references: cleanest alone and cleanest + FiLM.
-Output: Mantu2/sa3_control_runs/punch_air_film_matrix_20261015/<id>.wav, cells.jsonl, run_meta.json.
+Output: Mantu2/sa3_control_runs/__film/punch_air_film_matrix_20261015/<id>.wav, cells.jsonl, run_meta.json.
 RUN: SAO/.venv/bin/python eval/punch_air_film_matrix.py render [--dry]
 """
 import argparse
@@ -30,8 +31,8 @@ import time
 # (it moved Mantu2 -> Mantu on 2026-10-15): resolve at run time, as explorer_render_server.py does.
 _MANTU = next((p for p in ("/run/media/kim/Mantu", "/run/media/kim/Mantu2", "/run/media/kim/Mantu1")
                if os.path.isdir(f"{p}/sa3_control_runs")), "/run/media/kim/Mantu")
-OUT = f"{_MANTU}/sa3_control_runs/punch_air_film_matrix_20261015"
-PRESETS = f"{_MANTU}/sa3_control_runs/punch_rating_20261014/presets.json"
+OUT = f"{_MANTU}/sa3_control_runs/__film/punch_air_film_matrix_20261015"
+PRESETS = f"{_MANTU}/sa3_control_runs/__film/punch_rating_20261014/presets.json"
 SERVER = "http://127.0.0.1:8056"
 A2 = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_rms_energy_air_a2_best.pt"
 SEEDS = (764, 3050)

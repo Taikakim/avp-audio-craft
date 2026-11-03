@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """Comprehensive MERIT scoring of EVERY rendered clip in a bracket dir.
 
 Pure MERT post-pass — no SA3, no re-render. Each `*_refonly_gain*.wav` is scored against the
@@ -22,7 +23,7 @@ import soundfile as sf
 import torch
 from sa3_control.merit_eval import MeritScorer, FACTORS
 
-DIR = sys.argv[1] if len(sys.argv) > 1 else "/run/media/kim/Mantu/sa3_control_runs/bracket6"
+DIR = sys.argv[1] if len(sys.argv) > 1 else "/run/media/kim/Mantu/sa3_control_runs/__riffer/bracket6"
 DEV = os.environ.get("MERIT_DEVICE", "cuda")
 REFS = ("hallucinogen", "morphem")
 PAT = re.compile(r"(.+)_step(\d+)_(hallucinogen|morphem)_refonly_gain([0-9.]+)\.wav$")

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 # run_after_air_queue2.sh -- WINTERMUTE's GPU work once GHOST-NOTE's air queue is done (/tmp/air_nosf.done):
 #   1. the anchor sweep (eval/punch_air_film_anchor_sweep.py, 90 renders, ~26 min) through the render server :8056,
@@ -10,7 +11,7 @@
 set -u
 SAO=/home/kim/Projects/SAO
 MANTU=$(for p in /run/media/kim/Mantu /run/media/kim/Mantu2 /run/media/kim/Mantu1; do [ -d "$p/sa3_control_runs" ] && { echo "$p"; break; }; done)
-OUT=$MANTU/sa3_control_runs/punch_air_film_anchor_sweep_20261015
+OUT=$MANTU/sa3_control_runs/__film/punch_air_film_anchor_sweep_20261015
 STAGE=$HOME/evals_aac/punch_air_film_anchor_sweep
 MIR_PY=/home/kim/Projects/mir/mir/bin/python
 cd "$SAO" || exit 2

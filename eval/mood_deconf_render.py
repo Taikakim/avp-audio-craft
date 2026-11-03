@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-11-03)
 # Last edited: WINTERMUTE 2026-11-03 -- decode inside generate(), never between renders (see below); throwaway first render, chunk controls
 """mood_deconf_render.py -- De-confounded mood targets vs the naive ones, on every prompt we use.
@@ -22,7 +23,7 @@ Targets: the de-confounded vectors from ANTIGRAVITY's deconf_targets.json, copie
 of that file cannot change them mid-run.
 
 Outputs: AAC 192k in ~/evals_aac/control_runs/mood_deconf_20261103/ (where clip_metrics looks), cells.jsonl and run_meta.json beside
-them; wavs on Mantu/sa3_control_runs/mood_deconf_20261103/. Resumable from cells.jsonl. Stops if either drive has < 15 GB free.
+them; wavs on Mantu/sa3_control_runs/__mood/mood_deconf_20261103/. Resumable from cells.jsonl. Stops if either drive has < 15 GB free.
 RUN: eval/run_mood_deconf.sh (chunks of 5 prompts, GPU lock released between chunks so others can get in).
 """
 import os

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """gain_ladder_layer_restricted.py — Kim's follow-up (2026-07-21): is there a GAIN where the
 onset adapters hold authority while staying under the disintegration thresholds?
 
@@ -35,11 +36,11 @@ from sa3_control.generate import load_adapter_state                           # 
 from stable_audio_3 import StableAudioModel                                   # noqa: E402
 
 ADAPTERS = {
-    "full24": "/run/media/kim/Mantu/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt",
-    "L8-15":  "/run/media/kim/Mantu/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop_L8-15/riffer_final.pt",
+    "full24": "/run/media/kim/Mantu/sa3_control_runs/__onsets/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt",
+    "L8-15":  "/run/media/kim/Mantu/sa3_control_runs/__onsets/onset_Fusion_lr1e-4_randomcrop_L8-15/riffer_final.pt",
 }
-OUT = Path("/run/media/kim/Mantu/sa3_control_runs/gain_ladder_2026-07-21")
-BASELINE_NONE = Path("/run/media/kim/Mantu/sa3_control_runs/ablate_layers2_2026-07-21/none_d3.wav")
+OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__misc/gain_ladder_2026-07-21")
+BASELINE_NONE = Path("/run/media/kim/Mantu/sa3_control_runs/__film/ablate_layers2_2026-07-21/none_d3.wav")
 GAINS = [0.5, 0.75, 1.0, 1.25, 1.75, 2.5]
 DENSITIES = [3.0, 6.0, 9.0, 12.0]
 SEED, DUR, STEPS, CFG = 4242, 20.0, 24, 6.0

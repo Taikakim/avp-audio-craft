@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """render_choice_clips_mood.py -- renders curated choice clips under 56-dim Mood LatCH guidance:
 1. Base (gain 0)
 2. Space (gain 1024, 2048)
@@ -33,7 +34,7 @@ HEAD_DIR = Path("/run/media/kim/Mantu/latch_sweep/mood_56d_best_40ep_20261031/C3
 HEAD_EP40 = HEAD_DIR / "latch_sa3_effnet_moodtheme_ep40.pt"
 HEAD_EMA = HEAD_DIR / "latch_sa3_effnet_moodtheme_ep40_ema0.25.pt"
 
-OUT_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/choice_clips_mood_20261031")
+OUT_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/__mood/choice_clips_mood_20261031")
 OUT_AAC_DIR = Path("/home/kim/evals_aac/choice_clips_mood")
 OUT_WAV_DIR.mkdir(parents=True, exist_ok=True)
 OUT_AAC_DIR.mkdir(parents=True, exist_ok=True)
@@ -171,7 +172,7 @@ def main():
         base_wav = OUT_WAV_DIR / f"mood_row{row_idx:02d}__{model_name}__{item['ckpt_tag']}__base__s{seed}.wav"
         base_aac = OUT_AAC_DIR / f"mood_row{row_idx:02d}__{model_name}__{item['ckpt_tag']}__base__s{seed}.m4a"
         if not (base_wav.exists() and base_aac.exists()):
-            chroma_base = Path(f"/run/media/kim/Mantu/sa3_control_runs/choice_clips_chroma_20261030/choice_{row_idx:02d}__{model_name}__{item['ckpt_tag']}__base__s{seed}.wav")
+            chroma_base = Path(f"/run/media/kim/Mantu/sa3_control_runs/__chroma/choice_clips_chroma_20261030/choice_{row_idx:02d}__{model_name}__{item['ckpt_tag']}__base__s{seed}.wav")
             chroma_aac = Path(f"/home/kim/evals_aac/choice_clips_chroma/choice_{row_idx:02d}__{model_name}__{item['ckpt_tag']}__base__s{seed}.m4a")
             if chroma_base.exists() and chroma_aac.exists():
                 import shutil

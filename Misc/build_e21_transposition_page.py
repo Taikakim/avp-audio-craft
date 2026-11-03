@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: CONTINUITY (created 2026-10-28)
 """build_e21_transposition_page.py -- listening + results page for EXPERIMENTS E21 (second run): does chroma steering follow a
 transposed target? 14 canonical matrix prompts x {hpcp, same_chroma} x {C, Eb, F#, A} x gains {512, 2048} + unguided.
@@ -17,8 +18,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), "eval"))
 from comment_notes_block import notes_block
 from float_player import inject
 
-SRC = "/run/media/kim/Mantu/sa3_control_runs/e21b_transposition_canon_20261028"
-SRC2 = "/run/media/kim/Mantu/sa3_control_runs/e21c_same_chroma_gain_20261029"
+SRC = "/run/media/kim/Mantu/sa3_control_runs/__chroma/e21b_transposition_canon_20261028"
+SRC2 = "/run/media/kim/Mantu/sa3_control_runs/__chroma/e21c_same_chroma_gain_20261029"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 SUB = "e21_transposition"
 KEYS = {"0": "C", "3": "E♭", "6": "F♯", "9": "A"}

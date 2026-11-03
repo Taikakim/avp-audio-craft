@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: CONTINUITY (created 2026-10-28)
 """e21_transposition_probe.py -- EXPERIMENTS E21: is our chroma steering transposition-equivariant?
 
@@ -27,7 +28,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import chroma_steer_render as CSR  # noqa: E402  (build_target_raw, sc, T, HEADS_DIR, FPS, STEPS, CFG)
 
-OUT = Path("/run/media/kim/Mantu/sa3_control_runs/e21_transposition_probe_20261028")
+OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__chroma/e21_transposition_probe_20261028")
 HEADS = [("hpcp", "latch_sa3_hpcp_best.pt", 12), ("same_chroma", "latch_sa3_same_chroma_best.pt", 384)]
 PROMPTS = ["piano", "synth"]
 SEEDS = [1234, 5678]

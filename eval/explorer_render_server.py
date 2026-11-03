@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Last edited: KUANG 2026-10-15 -- block profile: warn when blend "interp" meets adapter types that ignore it (adapter mixer phase 1)
 # Last edited: WINTERMUTE 2026-10-15 -- latch_hparams "guide_schedule" (alpha|flat) passed through to the guided samplers
 # Last edited: WINTERMUTE 2026-10-15 -- latch_hparams guide_rescale (0..1 per-step std rescale) passed through
@@ -183,7 +184,7 @@ DORA_REGISTRY = {
     "evr1x": f"{_MANTU}/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt",
 }
 FILM_DEFAULT_CKPT = (f"{_MANTU}/sa3_control_runs/"
-                     "onset_Fusion_lr1e-4_randomcrop/riffer_final.pt")
+                     "__onsets/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt")
 FILM_DEFAULT_GAIN = 1.75
 
 CKPT_SCAN_ROOT = _default_scan_root()      # legacy single-root default (compat)

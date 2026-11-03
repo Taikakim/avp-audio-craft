@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-16)
 # EXPERIMENTS E12 stage 2: the FiLM onset-density adapter under the ModularOptimizer at the full shipped length (54000 steps).
@@ -9,7 +10,7 @@ set -u
 LR=${1:?usage: run_film_modular_full.sh <lr>}
 SAO=/home/kim/Projects/SAO
 PY=$SAO/.venv/bin/python
-ROOT=/run/media/kim/Mantu/sa3_control_runs/film_modular_full_20261016
+ROOT=/run/media/kim/Mantu/sa3_control_runs/__film/film_modular_full_20261016
 NAME="film_modular_lr${LR}_s54000"
 DIR="$ROOT/$NAME"
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0

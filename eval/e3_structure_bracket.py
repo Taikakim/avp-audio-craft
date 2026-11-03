@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """e3_structure_bracket.py — E3 metrical_position structure-recall bracket (3-way).
 
 Design doc: docs/superpowers/specs/2026-07-31-metrical-tree-pe-design.md §4 (readouts).
@@ -23,7 +24,7 @@ Subcommands:
   render    GPU, venv SAO/.venv. 3 models x 4 prompts x 3 seeds, T=512 (47.55 s —
             LOCAL-SAFE; this script hard-refuses T>=2048), cfg 6, 24 steps. Saves wav +
             z0 fp16 (standing directive: latents next to every render) + manifest to
-            /run/media/kim/Mantu/sa3_control_runs/e3_metrical/bracket/<model>/.
+            /run/media/kim/Mantu/sa3_control_runs/__misc/e3_metrical/bracket/<model>/.
   analyze   CPU, venv SAO/.venv (librosa). Per clip: half-beat-synchronous chroma
             self-similarity matrix -> mean similarity at lag = 1 bar, lag = 8 bars (the
             PHRASE-RETURN diagnostic), and at random non-metrical (off-beat) lags (the
@@ -53,7 +54,7 @@ os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 import numpy as np
 
 SAO = Path("/home/kim/Projects/SAO")
-E3_ROOT = Path("/run/media/kim/Mantu/sa3_control_runs/e3_metrical")
+E3_ROOT = Path("/run/media/kim/Mantu/sa3_control_runs/__misc/e3_metrical")
 BRACKET = E3_ROOT / "bracket"
 ARM_DIRS = {"real": E3_ROOT / "real", "shuffled": E3_ROOT / "shuffled"}
 MANIFEST = BRACKET / "manifest.json"

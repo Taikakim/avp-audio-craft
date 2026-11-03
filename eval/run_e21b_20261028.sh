@@ -1,11 +1,12 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: CONTINUITY (created 2026-10-28)
 # EXPERIMENTS E21 second run, end to end: GPU lock -> own :8056 -> 238 renders (eval/e21b_transposition_server.py) -> stop server
 # -> bungee positive control (pitch venv) -> score -> page (~/evals_aac/e21_transposition.html). Resumable (cells.jsonl).
 #   setsid nohup bash eval/run_e21b_20261028.sh </dev/null >/dev/null 2>&1 &
 set -u
 SAO=/home/kim/Projects/SAO; cd "$SAO" || exit 2
-OUT=/run/media/kim/Mantu/sa3_control_runs/e21b_transposition_canon_20261028
+OUT=/run/media/kim/Mantu/sa3_control_runs/__chroma/e21b_transposition_canon_20261028
 LOG=/home/kim/sao_runs/e21b_20261028.log
 exec >>"$LOG" 2>&1
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0 OMP_NUM_THREADS=4 MKL_NUM_THREADS=4

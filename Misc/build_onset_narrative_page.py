@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """build_onset_narrative_page.py -- the onset-density control-adapter STORY page
 (Kim's ask, relayed via dialogue 2026-07-10ish: "these [onset_* dump pages] are
 kind of useless now, coordinate with the team to dig in their memories to
@@ -323,7 +324,7 @@ renderAB();
 
     doc.append('<footer class="src">aavepyora.online &middot; evals &middot; onset-density control-adapter story &middot; '
               'sources: WORKLOG.md, profiles/*.journal.md, docs/onset-density-control-narrative.md, '
-              'eval/onset_rescore_p95.json &middot; clips: sa3_control_runs/composed_sweep (internal)</footer>')
+              'eval/onset_rescore_p95.json &middot; clips: sa3_control_runs/__misc/composed_sweep (internal)</footer>')
     doc.append('</body></html>')
 
     OUT.write_text("\n".join(doc))

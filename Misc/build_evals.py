@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """build_evals.py — turn the served eval dumps into described, playable pages.
 
 Reads the AAC staging (~/.cache/evals_aac/{control_runs,renders}) + the run
@@ -46,7 +47,7 @@ def _resolve_mantu():
 MANTU = _resolve_mantu()
 # where a control_runs/<name> folder's REAL source lives (staging is a redacted+
 # transcoded copy whose mtimes are all transcode-day, not run-day)
-SOURCE_DIRS = [f"{MANTU}/sa3_control_runs", f"{MANTU}/sa3_control_runs/composed_sweep", f"{MANTU}/sa3_lora_runs"]
+SOURCE_DIRS = [f"{MANTU}/sa3_control_runs", f"{MANTU}/sa3_control_runs/__misc/composed_sweep", f"{MANTU}/sa3_lora_runs"]
 SA3 = f"{HOME}/Projects/SAO/stable-audio-3"
 # where a renders/<name> folder's REAL source lives (raw wavs + pq_scores.json/
 # quality_eval.json; the staging copy under STAGING/renders/<name> only has the

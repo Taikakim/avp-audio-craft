@@ -1,11 +1,12 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 # run_punch_air_film_matrix.sh -- render eval/punch_air_film_matrix.py (148 cells) through the render server :8056,
 # encode, score on CPU (the server holds the GPU). Takes no GPU lock itself. Resumable.
 #   bash eval/run_punch_air_film_matrix.sh
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/sa3_control_runs/punch_air_film_matrix_20261015
+OUT=/run/media/kim/Mantu/sa3_control_runs/__film/punch_air_film_matrix_20261015
 STAGE=$HOME/evals_aac/punch_air_film_matrix
 MIR_PY=/home/kim/Projects/mir/mir/bin/python
 cd "$SAO" || exit 2

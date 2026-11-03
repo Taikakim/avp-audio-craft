@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 """build_latch_film_combo_page.py -- listening page for EXPERIMENTS E7 (onset LatCH x FiLM) and E8 (time-gated FiLM).
 
@@ -25,8 +26,8 @@ from comment_notes_block import notes_block
 from control_head_disintegration_eval import gate
 from float_player import inject
 
-E7 = "/run/media/kim/Mantu/sa3_control_runs/latch_film_combo_e7_20261015"
-E8 = "/run/media/kim/Mantu/sa3_control_runs/latch_film_e8_20261015"
+E7 = "/run/media/kim/Mantu/sa3_control_runs/__film/latch_film_combo_e7_20261015"
+E8 = "/run/media/kim/Mantu/sa3_control_runs/__film/latch_film_e8_20261015"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 DB = os.path.join(HERE, "..", "eval", "clip_metrics.db")
 PQ_DRIFT = 1.5

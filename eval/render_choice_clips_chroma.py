@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """render_choice_clips_chroma.py -- renders the 29 curated choice clips under 4 conditions:
 1. Base (gain 0)
 2. C major triad (gain 2048)
@@ -33,7 +34,7 @@ import chroma_steer_render as CSR
 from sa3_control.audio_io import save_audio
 
 LATCH_CKPT = "/run/media/kim/Mantu/latch_sweep/chroma_retrain_2026-10-16/C3_chroma_d512_lr1e-3/latch_sa3_same_chroma_ep10.pt"
-OUT_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/choice_clips_chroma_20261030")
+OUT_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/__chroma/choice_clips_chroma_20261030")
 OUT_AAC_DIR = Path("/home/kim/evals_aac/choice_clips_chroma")
 OUT_WAV_DIR.mkdir(parents=True, exist_ok=True)
 OUT_AAC_DIR.mkdir(parents=True, exist_ok=True)

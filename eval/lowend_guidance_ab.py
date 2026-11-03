@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """lowend_guidance_ab.py — can low-end guidance fix the clips Kim called harsh?
 
 THE CHAIN THAT LED HERE (2026-09-16/17). An rms_energy_air head was supposed to damp harsh
@@ -66,7 +67,7 @@ from stable_audio_3 import StableAudioModel
 
 HEADS = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium"
 RUNS = "/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep"
-OUT = Path("/run/media/kim/Mantu/sa3_control_runs/lowend_guidance_ab_2026-09-17")
+OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__latch/lowend_guidance_ab_2026-09-17")
 
 # head standardisation, read from the checkpoints (NOT guessed)
 BASS_MEAN, BASS_STD = -21.927, 14.534

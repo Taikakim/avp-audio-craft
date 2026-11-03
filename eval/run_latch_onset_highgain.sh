@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 # run_latch_onset_highgain.sh -- wait for the GPU lock, render CONTINUITY's eval/latch_onset_highgain.py (99e4410) at
 # requests 7/3/0 x gains 4608..8192 step 512 x EMA/online x seed 1234 (48 clips), encode, score, release.
@@ -6,7 +7,7 @@
 #   bash eval/run_latch_onset_highgain.sh        (run in background; exit = done)
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/sa3_control_runs/latch_onset_highgain_20261015
+OUT=/run/media/kim/Mantu/sa3_control_runs/__onsets/latch_onset_highgain_20261015
 STAGE=$HOME/evals_aac/latch_onset_highgain
 export ROCR_VISIBLE_DEVICES=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE
 cd "$SAO" || exit 2

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """
 hardness_gain_bracket.py -- re-bracket the hardness LatCH head's guidance gain
 WITH quality gates (task #49; Kim's directive after the gain-512 negative:
@@ -25,7 +26,7 @@ import json
 import sys
 from pathlib import Path
 
-OUT_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/hardness_bracket_2026-07-10")
+OUT_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/__latch/hardness_bracket_2026-07-10")
 CKPT = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_hardness_best.pt"
 PROMPT = "energetic goa trance with driving percussion and psychedelic leads"
 GAINS = (32.0, 64.0, 128.0, 256.0)
@@ -103,7 +104,7 @@ def mode_gen():
                     "gain-512 negative (meter moved, audio broke -- 'concrete slab'/'dentist's "
                     "drill'). Finds the operating gain where steer holds AND quality survives."),
         "related": ["scripts/latch/train_latch.py (scalar_json)",
-                    "sa3_control_runs/hardness_steer_smoke (the negative)",
+                    "sa3_control_runs/__latch/hardness_steer_smoke (the negative)",
                     "control/sa3_control/hardness_gain_bracket.py"],
         "checkpoint": "hardness head (internal), EMA 20ep, std 66.19/3.49",
         "params": {"prompt": PROMPT, "seeds": list(SEEDS), "gains": list(GAINS),

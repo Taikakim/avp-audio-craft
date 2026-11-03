@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Weight-garden free-rein chain (Kim 2026-07-04: "generate clips at various
 # parameters... try with style/density guidance... 5EP LoRA on a glitched model
 # at 2x normal LR"). Serial GPU stages; each stage logs a WORKLOG note.
@@ -36,8 +37,8 @@ for PAIR in "A|$GLITCH_A|driftattn" "B|$GLITCH_B|tilttail"; do
   IFS='|' read -r _ RECIPE TAG <<< "$PAIR"
   $PY "$SAO/control/sa3_control/multi_adapter_onset_eval.py" \
     --dora-ckpt "$MANTU/sa3_lora_runs/soups_dora/r128f_expasc.ckpt" \
-    --onset-ckpt "$MANTU/sa3_control_runs/onset_FUSION_lr2e5_40epoch/soup_exppeak.pt" \
-    --style-ckpt "$MANTU/sa3_control_runs/style_fpC_genrecc/riffer_final.pt" \
+    --onset-ckpt "$MANTU/sa3_control_runs/__onsets/onset_FUSION_lr2e5_40epoch/soup_exppeak.pt" \
+    --style-ckpt "$MANTU/sa3_control_runs/__genre_style/style_fpC_genrecc/riffer_final.pt" \
     --reference-latent /run/media/kim/Kosmos/latents/latents_sa3/003231.npy \
     --densities 7 --onset-gains 2.2 --style-gains 0.25,0.5 \
     --glitch "$RECIPE" \

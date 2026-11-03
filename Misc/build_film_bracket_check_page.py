@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-16)
 # Last edited: WINTERMUTE 2026-10-20 — label for arm fp32_lr3e-4 (test plan A4)
 # Last edited: WINTERMUTE 2026-10-16 — per-arm gain x request grids for the extension
@@ -19,7 +20,7 @@ sys.path.insert(0, HERE)
 from comment_notes_block import notes_block
 from float_player import inject
 
-SRC = "/run/media/kim/Mantu/sa3_control_runs/film_bracket_density_check_20261016"
+SRC = "/run/media/kim/Mantu/sa3_control_runs/__film/film_bracket_density_check_20261016"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 SUB = "film_bracket_check"
 os.makedirs(f"{STAGE}/{SUB}", exist_ok=True)

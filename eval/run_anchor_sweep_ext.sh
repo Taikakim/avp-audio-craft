@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-16)
 # run_anchor_sweep_ext.sh -- the punch air + FiLM anchor sweep extended to anchors 1.3 / 1.4 / 1.5 (54 renders, ~15 min) after the listening
 # verdict that anchors below 1.2 drone and squash dynamics. Small slot: waits for the E12 night chain to exit, then for a free GPU, starts the
@@ -7,7 +8,7 @@
 #   bash eval/run_anchor_sweep_ext.sh        (run in background)
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/sa3_control_runs/punch_air_film_anchor_sweep_20261015
+OUT=/run/media/kim/Mantu/sa3_control_runs/__film/punch_air_film_anchor_sweep_20261015
 STAGE=$HOME/evals_aac/punch_air_film_anchor_sweep
 MIR_PY=/home/kim/Projects/mir/mir/bin/python
 DEST_FILE=/tmp/claude-1000/-home-kim-Projects-mir/b207d8c1-afa9-47b8-bbe0-60db9d0c4899/scratchpad/dest

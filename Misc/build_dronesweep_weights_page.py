@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-16)
 """build_dronesweep_weights_page.py -- listening page for eval/dronesweep_weights_test.py.
 
@@ -19,7 +20,7 @@ sys.path.insert(0, HERE)
 from comment_notes_block import notes_block
 from float_player import inject
 
-SRC = "/run/media/kim/Mantu/sa3_control_runs/dronesweep_weights_20261016"
+SRC = "/run/media/kim/Mantu/sa3_control_runs/__drones/dronesweep_weights_20261016"
 PULL = "/home/kim/Projects/SAO/renders_pull/dronesweep"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 SUB = "dronesweep_weights"

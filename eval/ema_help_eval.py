@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """ema_help_eval.py — did EMA retraining actually improve control? (Kim ask 2026-07-19,
 "EMA-help good to go"). The measured verdict the skewness win demands — not assumed.
 
@@ -24,8 +25,8 @@ from pathlib import Path
 
 SAO = Path(__file__).resolve().parent.parent
 SHIPPED = SAO / "stable-audio-3" / "latch_weights_sa3_medium"
-EMA = Path("/run/media/kim/Mantu/sa3_control_runs/latch_ema_retrain_20260719")
-OUT = Path("/run/media/kim/Mantu/sa3_control_runs/ema_help_20260719"); OUT.mkdir(parents=True, exist_ok=True)
+EMA = Path("/run/media/kim/Mantu/sa3_control_runs/__latch/latch_ema_retrain_20260719")
+OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__latch/ema_help_20260719"); OUT.mkdir(parents=True, exist_ok=True)
 
 HEADS = ["hpcp", "spectral_kurtosis", "beat_activation", "downbeat_activation",
          "onset_envelope", "rms_energy_body", "rms_energy_air"]

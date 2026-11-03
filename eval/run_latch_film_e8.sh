@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 # run_latch_film_e8.sh -- EXPERIMENTS E8 (timestep-gated FiLM) end to end, as a client of the render server :8056.
 # Waits for E7's runner to finish first (E7's punch context loads a DoRA; interleaving the two would rebuild the
@@ -6,7 +7,7 @@
 #   bash eval/run_latch_film_e8.sh        (run in background; exit = done; resumable)
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/sa3_control_runs/latch_film_e8_20261015
+OUT=/run/media/kim/Mantu/sa3_control_runs/__film/latch_film_e8_20261015
 STAGE=$HOME/evals_aac/latch_film_e8
 MIR_PY=/home/kim/Projects/mir/mir/bin/python
 cd "$SAO" || exit 2

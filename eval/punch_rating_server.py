@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: GHOST-NOTE (created 2026-10-14)
 # Last edited: GHOST-NOTE 2026-10-14 -- run_meta.json is only written for the base preset (cleanest_air batch must not overwrite it)
 """punch_rating_server.py -- rate "did the steering improve the overall sound?" 1-5 on many seeds, and request new clips with other control weights.
@@ -15,7 +16,7 @@ The render server must be running for (3): eval/forge/dev_server.sh start <HANDL
 
     SAO/.venv/bin/python eval/punch_rating_server.py --batch 64       # render the initial set (needs the render server up), then
     SAO/.venv/bin/python eval/punch_rating_server.py                  # serve http://localhost:8058
-Data: /run/media/kim/Mantu/sa3_control_runs/punch_rating_20261014/  (clips/*.wav, manifest.json, ratings.jsonl, presets.json)
+Data: /run/media/kim/Mantu/sa3_control_runs/__film/punch_rating_20261014/  (clips/*.wav, manifest.json, ratings.jsonl, presets.json)
 Latch weights: rho = 0.7 x gain of slot 0, mu = 0.6 x gain of slot 0 (read off every punch job); a latch-scale s multiplies all slot gains AND rho, mu.
 """
 import argparse
@@ -29,7 +30,7 @@ import urllib.request
 import numpy as np
 import soundfile as sf
 
-DATA = "/run/media/kim/Mantu/sa3_control_runs/punch_rating_20261014"
+DATA = "/run/media/kim/Mantu/sa3_control_runs/__film/punch_rating_20261014"
 CLIPS = f"{DATA}/clips"
 RENDER = "http://localhost:8056"
 PUNCH = "/home/kim/Music/latch/combo/punch/"

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-25)
 """latch_film_e18.py -- EXPERIMENTS E18: smooth hand-off schedule, FiLM early -> crossfade -> LatCH -> exp fade to unguided.
 
@@ -39,7 +40,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import latch_film_combo_e7 as e7  # noqa: E402
 
-OUT = "/run/media/kim/Mantu/sa3_control_runs/latch_film_e18_20261025"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/__film/latch_film_e18_20261025"
 FT = ("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/subloss_k24/subloss_k24_biggoa_t512_bf16_s1/"
       "epoch=63-step=12480.ckpt")
 BIGSET = "/run/media/kim/Kosmos/latents/latents_goa_bigset"

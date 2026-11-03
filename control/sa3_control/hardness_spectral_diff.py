@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """Hardness steering: is the head's 'harder' direction genuine timbre or just added
 distortion? (shortcut-feature hypothesis, from the two-stage scalar-guidance negative.)
 
@@ -18,7 +19,7 @@ import sys
 
 import numpy as np
 
-BRACKET = "/run/media/kim/Mantu/sa3_control_runs/hardness_bracket_2026-07-10"
+BRACKET = "/run/media/kim/Mantu/sa3_control_runs/__latch/hardness_bracket_2026-07-10"
 SR = 22050
 HI_HZ = 5000.0   # above this = candidate distortion/harmonic-garbage band
 

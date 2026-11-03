@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # night_campaign_20260719.sh — Kim away ~20h, big GPU runs OK. Chains the high-value GPU
 # work behind the running EMA retrain, all GPU-serialized (each phase owns the card).
 #
@@ -21,7 +22,7 @@ cd /home/kim/Projects/SAO
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2 \
        OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
 PY=/home/kim/Projects/SAO/.venv/bin/python
-EMA_OUT=/run/media/kim/Mantu/sa3_control_runs/latch_ema_retrain_20260719
+EMA_OUT=/run/media/kim/Mantu/sa3_control_runs/__latch/latch_ema_retrain_20260719
 log(){ echo "[night $(date +%H:%M)] $*"; }
 
 # ── PHASE A: wait for the EMA retrain to FULLY finish (all 14 runs) ──────────────────

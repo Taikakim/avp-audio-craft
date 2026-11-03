@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-16)
 # run_film_bracket_ext.sh -- the E12 FiLM bracket density check extended to per-arm gain ladders x requests 3/5/7/9/12 (258 new renders,
 # ~35 min) after the first listen ("the density seems to have little effect, mostly it coming from weight"). Waits for the E12 night chain
@@ -7,7 +8,7 @@
 #   bash eval/run_film_bracket_ext.sh        (run in background)
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/sa3_control_runs/film_bracket_density_check_20261016
+OUT=/run/media/kim/Mantu/sa3_control_runs/__film/film_bracket_density_check_20261016
 DEST_FILE=/tmp/claude-1000/-home-kim-Projects-mir/b207d8c1-afa9-47b8-bbe0-60db9d0c4899/scratchpad/dest
 cd "$SAO" || exit 2
 while pgrep -f "^bash (/home/kim/Projects/SAO/)?eval/run_(film_e12_night|anchor_sweep_ext)\.sh$" >/dev/null; do

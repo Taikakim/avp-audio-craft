@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-16)
 # Last edited: WINTERMUTE 2026-10-17 -- copied from time_film_optimizers.sh for test plan section T (KUANG C-series flags)
 # Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
@@ -8,7 +9,7 @@
 set -u
 SAO=/home/kim/Projects/SAO
 PY=$SAO/.venv/bin/python
-OUT=/run/media/kim/Mantu/sa3_control_runs/film_t_section_20261017
+OUT=/run/media/kim/Mantu/sa3_control_runs/__film/film_t_section_20261017
 SCR=/tmp/claude-1000/-home-kim-Projects-mir/b207d8c1-afa9-47b8-bbe0-60db9d0c4899/scratchpad/opt_timing_t
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
 export PYTORCH_TUNABLEOP_ENABLED=0 PYTORCH_TUNABLEOP_TUNING=0 MIOPEN_FIND_MODE=2

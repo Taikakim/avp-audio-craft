@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: GHOST-NOTE (created 2026-10-14)
 """punch_rating_analyze.py -- which objective metric tracks Kim's 1-5 improvement ratings? (run after he has rated; reads ratings.jsonl + metrics.json)
 
@@ -13,7 +14,7 @@ from collections import Counter
 
 import numpy as np
 
-DATA = "/run/media/kim/Mantu/sa3_control_runs/punch_rating_20261014"
+DATA = "/run/media/kim/Mantu/sa3_control_runs/__film/punch_rating_20261014"
 
 
 def spearman(x, y):

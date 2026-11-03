@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: GHOST-NOTE (created 2026-10-14)
 # Last edited: WINTERMUTE 2026-10-14 — floating transport bar (float_player.inject)
 """build_latch_onset_compare_page.py -- onset_eval.html-style comparison: the FiLM control adapter (existing page data) vs the six Phase E LatCH density heads, same targets.
 
 Kim 2026-10-14: "create a comparison with the same targets as onset_eval.html ... how do the gain and target amounts used compare to what we are now using?"
-Reads sa3_control_runs/onset_eval_54000_inrange + onset_eval_54000_g11to20 (FiLM reference: requested onsets/s 2..9 at adapter strengths 0.1..2; the run pair that holds the 'strength 1.5-2 for low densities, 1 for high' pattern) and onset_eval_latchE_<arm> (eval/latch_onset_eval.py).
+Reads sa3_control_runs/__onsets/onset_eval_54000_inrange + onset_eval_54000_g11to20 (FiLM reference: requested onsets/s 2..9 at adapter strengths 0.1..2; the run pair that holds the 'strength 1.5-2 for low densities, 1 for high' pattern) and onset_eval_latchE_<arm> (eval/latch_onset_eval.py).
 Shows (1) the unit/gain mapping, (2) a measured-vs-requested grid per run with same-playhead cells, (3) per run and gain: correlation, span and error vs the request,
 (4) the gain that lands closest to each request ("which weight is best at which density", the finding Kim recalled for the adapter), and (5) a DSP screen per clip
 (loudness fall, flatness, hf ratio vs the unguided clip) -- a SCREEN for 'cleaner', not the disintegration gate and not an ear.

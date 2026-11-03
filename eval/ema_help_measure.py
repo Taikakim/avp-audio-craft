@@ -1,10 +1,11 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """Measure the ema_help renders (did EMA help the retrained heads steer?). mir venv."""
 import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 sys.path.insert(0, "/home/kim/Projects/mir/src")
 from latch_sa3_sweep_measure import measure, read_audio  # reuse the exact extractors
-OUT = "/run/media/kim/Mantu/sa3_control_runs/ema_help_20260719"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/__latch/ema_help_20260719"
 man = json.load(open(os.path.join(OUT, "ema_help_manifest.json")))
 res = {}   # (feature,gain) -> {variant: (measured, target)}
 for c in man:

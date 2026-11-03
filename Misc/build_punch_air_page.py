@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: GHOST-NOTE (created 2026-10-14)
 # Last edited: WINTERMUTE 2026-10-14 — floating transport bar (float_player.inject)
 """build_punch_air_page.py -- static listening page for the punch DoRA steering set: 64 seeds x {original, bass+body RMS heads, + air-band head at 4 targets}.
@@ -16,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
 from float_player import inject
 
-DATA_DIR = "/run/media/kim/Mantu/sa3_control_runs/punch_rating_20261014"
+DATA_DIR = "/run/media/kim/Mantu/sa3_control_runs/__film/punch_rating_20261014"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 OUT = os.path.join(STAGE, "punch_air")
 os.makedirs(OUT, exist_ok=True)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: ANTIGRAVITY (created 2026-10-29)
 # Last edited: WINTERMUTE 2026-11-03 -- removed expandable_segments: on ROCm it makes decodes wrong or NaN (MASTER section 5)
 """chroma_avp_matrix_render.py -- Comparative evaluation matrix for the
@@ -45,7 +46,7 @@ import chroma_steer_targets as T  # noqa: E402
 from chroma_steer_render import build_target_raw, _chroma12_per_frame  # noqa: E402
 from harmonic import same_chroma as sc  # noqa: E402
 
-OUT = Path("/run/media/kim/Mantu/sa3_control_runs/chroma_avp_matrix_20261029")
+OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__chroma/chroma_avp_matrix_20261029")
 AAC_DIR = Path("/home/kim/evals_aac/chroma_avp_matrix")
 
 DORA_FT = Path("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/subloss_k24/subloss_k24_biggoa_t512_bf16_s1/epoch=63-step=12480.ckpt")

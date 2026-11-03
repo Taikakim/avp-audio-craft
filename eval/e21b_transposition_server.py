@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: CONTINUITY (created 2026-10-28)
 """e21b_transposition_server.py -- EXPERIMENTS E21, second run: the transposition probe on the 14 canonical matrix prompts, with
 the onset leg's best LatCH settings, rendered through the :8056 render server (a thin client, like W's E7/E18 drivers).
@@ -25,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import chroma_steer_render as CSR  # noqa: E402
 
-OUT = "/run/media/kim/Mantu/sa3_control_runs/e21b_transposition_canon_20261028"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/__chroma/e21b_transposition_canon_20261028"
 SERVER = "http://127.0.0.1:8056"
 FT = ("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/subloss_k24/subloss_k24_biggoa_t512_bf16_s1/"
       "epoch=63-step=12480.ckpt")

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 """latch_guide_anchor_test.py -- does the trajectory anchor stop LatCH from pushing loudness into distortion?
 
@@ -15,7 +16,7 @@ Grid: onset head E04 (Phase E), medium-base euler 50, cfg 7, 20 s, "psytrance, 1
 {alpha 0-1, flat 0-1, alpha 0-0.2, flat 0-0.2} x gain {512, 2048, 4096} x anchor s0 {0 (off), 1.2, 1.4} x request
 {2, 10} onsets/s, plus one unguided clip per seed. Measured per clip: onsets/s, final latent std, RAW decoded peak
 and RMS dBFS (before any normalisation).
-Output: Mantu2/sa3_control_runs/latch_guide_anchor_20261015/<id>.wav + cells.jsonl + run_meta.json.
+Output: Mantu2/sa3_control_runs/__latch/latch_guide_anchor_20261015/<id>.wav + cells.jsonl + run_meta.json.
 RUN (hold the GPU lock): ROCR_VISIBLE_DEVICES=0 SAO/.venv/bin/python eval/latch_guide_anchor_test.py [--dry]
 """
 import argparse
@@ -28,7 +29,7 @@ os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
 os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 
-OUT = "/run/media/kim/Mantu/sa3_control_runs/latch_guide_anchor_20261015"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/__latch/latch_guide_anchor_20261015"
 ONSET = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE/E04_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt"
 PROMPT, BPM, CFG, DUR, STEPS = "psytrance, 140 bpm", 140.0, 7.0, 20.0, 50
 SEEDS = (1234, 77)
@@ -75,8 +76,8 @@ def main():
                             "gains": GAINS, "anchors_s0": ANCHORS, "requests_onsets_per_s": REQS},
                    "related": ["stable_audio_3/inference/latch_guided.py::_anchor_std",
                                "tests/test_latch_multi_guided.py (guide_anchor tests)",
-                               "Mantu2/sa3_control_runs/latch_guide_rescale_20261015/run_meta.json (negative per-edit rescale)",
-                               "Mantu2/sa3_control_runs/latch_early_budget_20261015/run_meta.json (kim_feedback)"],
+                               "Mantu2/sa3_control_runs/__latch/latch_guide_rescale_20261015/run_meta.json (negative per-edit rescale)",
+                               "Mantu2/sa3_control_runs/__latch/latch_early_budget_20261015/run_meta.json (kim_feedback)"],
                    "result": None, "kim_feedback": None}, open(f"{OUT}/run_meta.json", "w"), indent=1)
 
     model = StableAudioModel.from_pretrained("medium-base", device="cuda")

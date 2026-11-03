@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 """latch_film_combo_e7.py -- EXPERIMENTS E7: onset LatCH x FiLM density adapter, density vs character drift.
 
@@ -19,7 +20,7 @@ the unguided base render, rendered once.
 Readouts: (a) onsets/s (librosa onset_detect, as every onset eval today); (b) CHARACTER DRIFT = 1 - cos(CLAP audio
 embedding, same context+seed base render), plus the two bases' mutual distance as the seed-noise reference (`clap`
 step, CPU). PQ + the disintegration gate come from clip_metrics(_audiobox) on the encoded m4a.
-Output: Mantu2/sa3_control_runs/latch_film_combo_e7_20261015/<ctx>/<id>.wav, cells.jsonl, clap.json, run_meta.json.
+Output: Mantu2/sa3_control_runs/__film/latch_film_combo_e7_20261015/<ctx>/<id>.wav, cells.jsonl, clap.json, run_meta.json.
 RUN: SAO/.venv/bin/python eval/latch_film_combo_e7.py render   (server must be up)
      SAO/.venv/bin/python eval/latch_film_combo_e7.py clap     (CPU)
 """
@@ -30,7 +31,7 @@ import shutil
 import sys
 import time
 
-OUT = "/run/media/kim/Mantu/sa3_control_runs/latch_film_combo_e7_20261015"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/__film/latch_film_combo_e7_20261015"
 SERVER = "http://127.0.0.1:8056"
 HEAD = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE/E04ema_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt"
 PUNCH_PROMPT = ("90s psytrance, mystical aggressive goa trance,hypnotic, energetic, 143 bpm, the music consists of  "

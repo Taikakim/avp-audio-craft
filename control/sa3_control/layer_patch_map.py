@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """
 layer_patch_map.py -- causal per-(block, module) attribute localization on SA3 medium.
 
@@ -24,7 +25,7 @@ Design notes baked in (don't re-derive):
   * medium-base, euler, fixed seed -> deterministic; same init noise for A/B/P by seed.
 
 Run (SA3 venv, GPU; ~1800 gens full grid, resumable):
-  ../.venv/bin/python layer_patch_map.py --out /run/media/kim/Mantu/sa3_control_runs/layer_map_2026-07-10 \
+  ../.venv/bin/python layer_patch_map.py --out /run/media/kim/Mantu/sa3_control_runs/__film/layer_map_2026-07-10 \
       [--smoke] [--concepts onset_density,brightness] [--pairs 3] [--seeds 2]
 """
 from __future__ import annotations

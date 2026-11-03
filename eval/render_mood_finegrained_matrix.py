@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """render_mood_finegrained_matrix.py -- fine-grained weight matrix and model combinations
 on the canonical benchmark prompt rb_bracket_0 ("2020s goa trance, melodic mood, 148 bpm", s1102008041, cfg 7).
 
@@ -37,7 +38,7 @@ from sa3_control.audio_io import save_audio
 
 HEAD_CKPT = "/run/media/kim/Mantu/latch_sweep/mood_56d_best_40ep_20261031/C3_mood_lr8e-4_b64_cos40/latch_sa3_effnet_moodtheme_ep40.pt"
 
-OUT_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/mood_finegrained_20261031")
+OUT_WAV_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/__mood/mood_finegrained_20261031")
 OUT_AAC_DIR = Path("/home/kim/evals_aac/mood_finegrained")
 OUT_WAV_DIR.mkdir(parents=True, exist_ok=True)
 OUT_AAC_DIR.mkdir(parents=True, exist_ok=True)

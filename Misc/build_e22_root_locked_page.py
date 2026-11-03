@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: ANTIGRAVITY <antigravity@aavepyora.online>
 """build_e22_root_locked_page.py -- listening + results page for EXPERIMENTS E22:
 steer a chord SHAPE (colour) while the root stays where prompt and seed put it.
@@ -25,9 +26,9 @@ from comment_notes_block import notes_block
 from float_player import inject
 import model_matrix_gen as M
 
-SRC = "/run/media/kim/Mantu/sa3_control_runs/e22_root_locked_chroma_20261029"
-BASE_E21B = "/run/media/kim/Mantu/sa3_control_runs/e21b_transposition_canon_20261028"
-SRC_E21C = "/run/media/kim/Mantu/sa3_control_runs/e21c_same_chroma_gain_20261029"
+SRC = "/run/media/kim/Mantu/sa3_control_runs/__chroma/e22_root_locked_chroma_20261029"
+BASE_E21B = "/run/media/kim/Mantu/sa3_control_runs/__chroma/e21b_transposition_canon_20261028"
+SRC_E21C = "/run/media/kim/Mantu/sa3_control_runs/__chroma/e21c_same_chroma_gain_20261029"
 
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 SUB = "e22_root_locked_chroma"

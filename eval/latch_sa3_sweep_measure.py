@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """latch_sa3_sweep_measure.py — measure achieved LatCH target features on the
 rendered sweep clips (stage 2/3, see latch_sa3_sweep_render.py's docstring).
 
@@ -27,7 +28,7 @@ import numpy as np
 from core.file_utils import read_audio
 from spectral.timeseries_features import _compute_multiband_rms_ts, _compute_spectral_ts
 
-OUT_DIR = "/run/media/kim/Mantu/sa3_control_runs/latch_sa3_sweep_20260719"
+OUT_DIR = "/run/media/kim/Mantu/sa3_control_runs/__latch/latch_sa3_sweep_20260719"
 MANIFEST = os.path.join(OUT_DIR, "latch_sweep_manifest.json")
 SCORES = os.path.join(OUT_DIR, "scores.json")
 

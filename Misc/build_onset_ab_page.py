@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """FiLM onset-density A/B audition page — cautious vs baseline, canonical 3-prompt sweep.
 
 Reads onset_eval_<label>/onset_eval.json ({prompt_idx, prompt, gain, requested, measured})
@@ -18,7 +19,7 @@ def main():
     ap.add_argument("--eval-root", default="/run/media/kim/Mantu/sa3_control_runs")
     ap.add_argument("--labels", nargs="+",
                     default=["Fusion_baseline", "FusionCaut", "soup_baseline", "soup_caut"])
-    ap.add_argument("--out", default="/run/media/kim/Mantu/sa3_control_runs/onset_ab_audition")
+    ap.add_argument("--out", default="/run/media/kim/Mantu/sa3_control_runs/__onsets/onset_ab_audition")
     ap.add_argument("--bitrate", default="128k")
     a = ap.parse_args()
     clipdir = os.path.join(a.out, "clips"); os.makedirs(clipdir, exist_ok=True)

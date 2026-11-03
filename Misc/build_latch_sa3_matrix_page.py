@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """build_latch_sa3_matrix_page.py — the LatCH steering hyperparameter sweep page
 (Kim ask 2026-07-19: "a big DoRA-page for the FiLM/LatCH models, sweeping
 through the hyperparameters"). Companion to Misc/build_model_matrix.py (DoRA)
@@ -23,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
 
-RUN = "/run/media/kim/Mantu/sa3_control_runs/latch_sa3_sweep_20260719"
+RUN = "/run/media/kim/Mantu/sa3_control_runs/__latch/latch_sa3_sweep_20260719"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 CLIPS = os.path.join(STAGE, "latch_sa3_sweep")
 os.makedirs(CLIPS, exist_ok=True)
@@ -144,7 +145,7 @@ D.heads.forEach(hd=>{
 document.getElementById('out').innerHTML=h;
 </script>
 __NOTES__
-<footer style="margin:18px 12px;color:#666;font-size:11px">aavepyora.online · evals · LatCH sweep · clips + metrics: sa3_control_runs/latch_sa3_sweep_20260719 (internal)</footer>
+<footer style="margin:18px 12px;color:#666;font-size:11px">aavepyora.online · evals · LatCH sweep · clips + metrics: sa3_control_runs/__latch/latch_sa3_sweep_20260719 (internal)</footer>
 </body></html>"""
 
 T = T.replace("__NOTES__", notes_block(

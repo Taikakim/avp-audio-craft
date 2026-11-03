@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 """punch_nodora_seeds.py -- the punch rating set's 64 seeds rendered WITHOUT the DoRA (and without LatCH).
 
@@ -11,7 +12,7 @@ prompt and sampler on the plain base model, so the DoRA's own shift of the laten
 Client of :8056 /generate. Base payload = the rating server's "cleanest" preset minus its LatCH slots and DoRA
 (dora "none"): the punch prompt, euler 30 steps, cfg 9, 48 s, same schedule fields. Seeds = the 64 of
 punch_rating_20261014/manifest.json. The latent is copied beside each wav (<id>.z0.npy).
-Output: Mantu2/sa3_control_runs/punch_nodora_seeds_20261015/. RUN: SAO/.venv/bin/python eval/punch_nodora_seeds.py [--dry]
+Output: Mantu2/sa3_control_runs/__film/punch_nodora_seeds_20261015/. RUN: SAO/.venv/bin/python eval/punch_nodora_seeds.py [--dry]
 """
 import argparse
 import copy
@@ -23,8 +24,8 @@ import time
 
 _MANTU = next((p for p in ("/run/media/kim/Mantu", "/run/media/kim/Mantu2", "/run/media/kim/Mantu1")
                if os.path.isdir(f"{p}/sa3_control_runs")), "/run/media/kim/Mantu")   # removable drive: name varies
-OUT = f"{_MANTU}/sa3_control_runs/punch_nodora_seeds_20261015"
-RATING = f"{_MANTU}/sa3_control_runs/punch_rating_20261014"
+OUT = f"{_MANTU}/sa3_control_runs/__film/punch_nodora_seeds_20261015"
+RATING = f"{_MANTU}/sa3_control_runs/__film/punch_rating_20261014"
 SERVER = "http://127.0.0.1:8056"
 
 

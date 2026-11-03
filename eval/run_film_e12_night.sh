@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-16)
 # run_film_e12_night.sh -- the E12 night chain, after GHOST-NOTE's air queue:
 #   1. wait until the air queue is really done: /tmp/air_nosf.done AND no air driver / LatCH trainer process left
@@ -9,7 +10,7 @@
 #   bash eval/run_film_e12_night.sh        (run in background)
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/sa3_control_runs/film_bracket_density_check_20261016
+OUT=/run/media/kim/Mantu/sa3_control_runs/__film/film_bracket_density_check_20261016
 DEST_FILE=/tmp/claude-1000/-home-kim-Projects-mir/b207d8c1-afa9-47b8-bbe0-60db9d0c4899/scratchpad/dest
 cd "$SAO" || exit 2
 

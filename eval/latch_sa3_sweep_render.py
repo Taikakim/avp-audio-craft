@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """latch_sa3_sweep_render.py — the LatCH equivalent of model_matrix's gain x
 prompt grid (Kim ask 2026-07-19: "a big DoRA-page for the FiLM/LatCH models,
 sweeping through the hyperparameters"). This is the LatCH half; onset_eval.html
@@ -43,7 +44,7 @@ os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 HERE = os.path.dirname(os.path.abspath(__file__))
 SAO = os.path.dirname(HERE)
 HEADS_DIR = os.path.join(SAO, "stable-audio-3", "latch_weights_sa3_medium")
-OUT_DIR = "/run/media/kim/Mantu/sa3_control_runs/latch_sa3_sweep_20260719"
+OUT_DIR = "/run/media/kim/Mantu/sa3_control_runs/__latch/latch_sa3_sweep_20260719"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac", "latch_sa3_sweep")
 
 GAIN_LADDER = [64.0, 128.0, 512.0, 2048.0, 8192.0]   # straddles the known dead zone (128) + operating point (512)

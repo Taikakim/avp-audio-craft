@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 """latch_film_e8.py -- EXPERIMENTS E8: timestep-gated FiLM (full strength early, faded out for the low-noise tail),
 optionally with alpha-weighted LatCH late.
@@ -14,7 +15,7 @@ seeds and unguided renders as E7 (eval/latch_film_combo_e7.py), so E7's FiLM-onl
 goa, where the leak should show). Grid per context x seed: FiLM gain {1.0, 1.75} x gate sigma_min {0.8, 0.6, 0.4}
 (FiLM on for sigma >= gate, linear fade over 0.1 below it) x density {3, 6, 9}; plus FiLM 1.75 gated at 0.6 +
 LatCH 512 (alpha 0-1, the transparent setting) x density.
-Output: Mantu2/sa3_control_runs/latch_film_e8_20261015/<ctx>/<id>.wav, cells.jsonl, clap.json, run_meta.json.
+Output: Mantu2/sa3_control_runs/__film/latch_film_e8_20261015/<ctx>/<id>.wav, cells.jsonl, clap.json, run_meta.json.
 RUN: SAO/.venv/bin/python eval/latch_film_e8.py render ; sat-venv python eval/latch_film_e8.py clap
 """
 import argparse
@@ -27,7 +28,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import latch_film_combo_e7 as e7  # noqa: E402
 
-OUT = "/run/media/kim/Mantu/sa3_control_runs/latch_film_e8_20261015"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/__film/latch_film_e8_20261015"
 CTXS = ("base", "house")
 FILM_GAINS = (1.0, 1.75)
 GATES = (0.8, 0.6, 0.4)

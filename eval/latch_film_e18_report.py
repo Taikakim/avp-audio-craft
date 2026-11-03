@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-25)
 """latch_film_e18_report.py -- EXPERIMENTS E18 numbers from the finished renders (no GPU, no re-render).
 
@@ -21,7 +22,7 @@ from collections import defaultdict
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from control_head_disintegration_eval import DB, gate  # noqa: E402
 
-OUT = "/run/media/kim/Mantu/sa3_control_runs/latch_film_e18_20261025"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/__film/latch_film_e18_20261025"
 AAC = os.path.expanduser("~/evals_aac/latch_film_e18")
 ARMS = ("film", "A1", "A2", "A3", "A4a", "A4b", "A4c", "A5")
 BPM = {"base": 140.0, "house": 122.0}

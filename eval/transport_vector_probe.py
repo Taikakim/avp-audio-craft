@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """transport_vector_probe.py — is the SAME latent "bandwidth-aligned"? (Kim 2026-08-08,
 after arXiv 2608.03721 "On the Geometry of Music Bandwidth Extension in Latent Spaces of
 Audio Codecs", Koops/Tan/Quinton). Their claim: a SINGLE transport vector = clean−degraded
@@ -20,7 +21,7 @@ from pathlib import Path
 
 import numpy as np
 
-NPZ = "/run/media/kim/Mantu/sa3_control_runs/analysis/mp3_latent_sensitivity_2026-08-04/latents.npz"
+NPZ = "/run/media/kim/Mantu/sa3_control_runs/__misc/analysis/mp3_latent_sensitivity_2026-08-04/latents.npz"
 OUT = Path("/home/kim/Projects/SAO/eval/musicology/transport_vector_probe_2026-08-08")
 OUT.mkdir(parents=True, exist_ok=True)
 BITRATES = {1: "320k", 2: "256k", 3: "192k", 4: "128k"}

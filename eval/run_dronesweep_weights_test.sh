@@ -1,11 +1,12 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-16)
 # run_dronesweep_weights_test.sh -- the AVP drone-sweep weights test (eval/dronesweep_weights_test.py, 72 renders + 3 ckpt loads)
 # in the free afternoon slot: waits for the E12 night chain (FiLM full run) to finish, then the GPU lock + free VRAM; encodes, scores.
 #   bash eval/run_dronesweep_weights_test.sh        (run in background)
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu/sa3_control_runs/dronesweep_weights_20261016
+OUT=/run/media/kim/Mantu/sa3_control_runs/__drones/dronesweep_weights_20261016
 STAGE=$HOME/evals_aac/dronesweep_weights
 MIR_PY=/home/kim/Projects/mir/mir/bin/python
 export ROCR_VISIBLE_DEVICES=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE

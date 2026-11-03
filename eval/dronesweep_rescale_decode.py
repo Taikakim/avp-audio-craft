@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-16)
 """dronesweep_rescale_decode.py -- does scaling the runaway latents of force_scalar back to a healthy level rescue them?
 
@@ -8,7 +9,7 @@ of ~3 at every cfg, including cfg 1 (healthy SA3 ~1.0-1.15), i.e. the fine-tuned
 two ways: each latent rescaled to std 1.1, and all divided by 3. If the content is still musical underneath, this is cheap; if it
 drifted off-manifold, it will be a quieter drone (then the in-sampler anchor or a base blend is the route).
 Set: force_scalar_s1 + _s2, ep7, cfg 7, prompts kl_0/kl_1/kl_2/housestyle/kimlong/rb_common_0 (12 latents x 2 variants).
-Output: Mantu/sa3_control_runs/dronesweep_rescale_20261016/. RUN: SAO/.venv/bin/python eval/dronesweep_rescale_decode.py
+Output: Mantu/sa3_control_runs/__drones/dronesweep_rescale_20261016/. RUN: SAO/.venv/bin/python eval/dronesweep_rescale_decode.py
 """
 import glob
 import json
@@ -19,7 +20,7 @@ import sys
 import numpy as np
 
 SRC = "/home/kim/Projects/SAO/renders_pull/dronesweep"
-OUT = "/run/media/kim/Mantu/sa3_control_runs/dronesweep_rescale_20261016"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/__drones/dronesweep_rescale_20261016"
 PROMPTS = ("kl_0", "kl_1", "kl_2", "housestyle", "kimlong", "rb_common_0")
 TARGET_STD = 1.1
 

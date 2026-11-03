@@ -1,3 +1,4 @@
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """chroma_steer_render.py — render the extended chroma-steering eval set (Kim ask
 2026-07-19). Solo instruments × harmonic targets (static keys/colours AND chord
 progressions between colours/keys) × every chroma steering head × a gain sweep.
@@ -55,7 +56,7 @@ from sa3_control.chroma_guided_generator import (  # noqa: E402
 from harmonic import same_chroma as sc  # noqa: E402
 
 HEADS_DIR = SAO / "stable-audio-3" / "latch_weights_sa3_medium"
-OUT_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/chroma_steer_20260719")
+OUT_DIR = Path("/run/media/kim/Mantu/sa3_control_runs/__chroma/chroma_steer_20260719")
 DATA_JSON = SAO / "riffer-evals" / "chroma_steer_data.json"   # the page reads this
 MODELS_FILTER = None   # None = all; else a set of model ids (set via --models)
 

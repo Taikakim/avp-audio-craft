@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # latch_ema_retrain_driver.sh — Kim ask 2026-07-19: "for all models that seem medium or
 # dead, train them longer (2x epochs) and try that." The EVIDENCE-BASED version:
 #
@@ -27,7 +28,7 @@ cd /home/kim/Projects/SAO
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2 \
        OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
 PY=/home/kim/Projects/SAO/.venv/bin/python
-OUT=/run/media/kim/Mantu/sa3_control_runs/latch_ema_retrain_20260719
+OUT=/run/media/kim/Mantu/sa3_control_runs/__latch/latch_ema_retrain_20260719
 TRAIN=stable-audio-3/scripts/latch/train_latch.py
 
 # medium/dead heads (MASTER §5): dead activation/spectral + hpcp (chroma), medium energies.

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: CONTINUITY (created 2026-10-29)
 # EXPERIMENTS E22 root-locked chroma steering (Kim 2026-10-29): GPU lock -> own :8056 (loads the new cosine_rotinv loss)
 # -> 224 renders (eval/e22_root_locked_chroma.py) -> stop server -> score. Resumable (cells.jsonl).
@@ -23,7 +24,7 @@ for _ in $(seq 90); do curl -sf -m 5 http://127.0.0.1:8056/status >/dev/null && 
 curl -sf -m 5 http://127.0.0.1:8056/status >/dev/null || { echo "server not up"; exit 1; }
 echo "$(date +%H:%M) server up (pid $SRV)"
 .venv/bin/python eval/e22_root_locked_chroma.py render
-echo "$(date +%H:%M) render done; cells: $(wc -l < /run/media/kim/Mantu/sa3_control_runs/e22_root_locked_chroma_20261029/cells.jsonl) / 238"
+echo "$(date +%H:%M) render done; cells: $(wc -l < /run/media/kim/Mantu/sa3_control_runs/__chroma/e22_root_locked_chroma_20261029/cells.jsonl) / 238"
 kill "$SRV"; SRV=
 Misc/gpu_guard.sh release CONTINUITY >/dev/null 2>&1
 .venv/bin/python eval/e22_root_locked_chroma.py score

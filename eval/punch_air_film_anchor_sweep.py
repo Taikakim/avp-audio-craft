@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: WINTERMUTE (created 2026-10-15)
 # Last edited: WINTERMUTE 2026-10-16 — anchors 1.3/1.4/1.5 added (listening: anchors below 1.2 drone and squash dynamics)
 """punch_air_film_anchor_sweep.py -- punch combo + A2 air head (low gains) + FiLM, across trajectory-anchor values.
@@ -10,7 +11,7 @@ the anchor on, and, out of curiosity, what tighter anchors do: s0 1.2 / 1.1 / 1.
 ~1.0-1.15 the anchor starts pulling every render quieter/flatter, not only the runaway ones).
 Grid: seeds 764 + 3050; air gain {500, 1000, 2000, 3000} x target {-20, -10} dB x anchor {1.2, 1.1, 1.0, 0.9, 0.8}, FiLM 1.0 @ 6/s
 on top; references: combo + FiLM at each anchor. Same base payload as eval/punch_air_film_matrix.py; z_std recorded per clip.
-Output: Mantu/sa3_control_runs/punch_air_film_anchor_sweep_20261015/. RUN: SAO/.venv/bin/python eval/punch_air_film_anchor_sweep.py render
+Output: Mantu/sa3_control_runs/__film/punch_air_film_anchor_sweep_20261015/. RUN: SAO/.venv/bin/python eval/punch_air_film_anchor_sweep.py render
 """
 import os
 import sys
@@ -21,7 +22,7 @@ import punch_air_film_matrix as m  # noqa: E402
 ANCHORS = (1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8)
 GAINS = (500, 1000, 2000, 3000)
 TARGETS = (-20.0, -10.0)
-m.OUT = f"{m._MANTU}/sa3_control_runs/punch_air_film_anchor_sweep_20261015"
+m.OUT = f"{m._MANTU}/sa3_control_runs/__film/punch_air_film_anchor_sweep_20261015"
 m.__doc__ = __doc__
 _payload = m.payload
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """drift_prediction_analysis.py — does the latent-encodability screen PREDICT LatCH head
 viability? (CONTINUITY 2026-07-20, CPU, pure join — no render, no re-extract.)
 
@@ -38,8 +39,8 @@ from collections import defaultdict
 import numpy as np
 
 R2_CSV = "/home/kim/Projects/mir/stats/latent_dim_feature_xcorr.csv"
-SWEEP = "/run/media/kim/Mantu/sa3_control_runs/latch_sa3_sweep_20260719/scores.json"
-EMA = "/run/media/kim/Mantu/sa3_control_runs/ema_help_20260719/ema_help_manifest.json"
+SWEEP = "/run/media/kim/Mantu/sa3_control_runs/__latch/latch_sa3_sweep_20260719/scores.json"
+EMA = "/run/media/kim/Mantu/sa3_control_runs/__latch/ema_help_20260719/ema_help_manifest.json"
 OUT = "/home/kim/Projects/SAO/eval/drift_prediction.json"
 
 # head name (in sweep clips) -> feature key (in W's R2 csv). strip is mostly identity+_ts.

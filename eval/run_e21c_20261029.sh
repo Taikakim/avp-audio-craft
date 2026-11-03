@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: CONTINUITY (created 2026-10-29)
 # EXPERIMENTS E21 follow-up (E21c, Kim 2026-10-29 "E21 after that"): is same_chroma's weak steering in E21b only a GAIN problem,
 # and does the E13-retrained same_chroma head (C3 lr 1e-3 ep10, W's winner) fix it at the usual gains? Same 14 canonical prompts,
@@ -9,8 +10,8 @@
 #   setsid nohup bash eval/run_e21c_20261029.sh </dev/null >/dev/null 2>&1 &
 set -u
 SAO=/home/kim/Projects/SAO; cd "$SAO" || exit 2
-OUT=/run/media/kim/Mantu/sa3_control_runs/e21c_same_chroma_gain_20261029
-BASE=/run/media/kim/Mantu/sa3_control_runs/e21b_transposition_canon_20261028
+OUT=/run/media/kim/Mantu/sa3_control_runs/__chroma/e21c_same_chroma_gain_20261029
+BASE=/run/media/kim/Mantu/sa3_control_runs/__chroma/e21b_transposition_canon_20261028
 C3=/run/media/kim/Mantu/latch_sweep/chroma_retrain_2026-10-16/C3_chroma_d512_lr1e-3/latch_sa3_same_chroma_ep10.pt
 LOG=/home/kim/sao_runs/e21c_20261029.log
 exec >>"$LOG" 2>&1

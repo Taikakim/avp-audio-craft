@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """eval_layer_restricted_arms.py — authority + disintegration screen for the layer-restricted
 onset adapters (task #56, trained 2026-07-21: L8-15 and L13-15, exact 07-12 baseline recipe).
 
@@ -34,11 +35,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from disintegration_metrics import measure, gate                              # noqa: E402
 
 ARMS = {
-    "L8-15":  "/run/media/kim/Mantu/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop_L8-15/riffer_final.pt",
-    "L13-15": "/run/media/kim/Mantu/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop_L13-15/riffer_final.pt",
+    "L8-15":  "/run/media/kim/Mantu/sa3_control_runs/__onsets/onset_Fusion_lr1e-4_randomcrop_L8-15/riffer_final.pt",
+    "L13-15": "/run/media/kim/Mantu/sa3_control_runs/__onsets/onset_Fusion_lr1e-4_randomcrop_L13-15/riffer_final.pt",
 }
-OUT = Path("/run/media/kim/Mantu/sa3_control_runs/layer_restricted_eval_2026-07-21")
-BASELINE_NONE = Path("/run/media/kim/Mantu/sa3_control_runs/ablate_layers2_2026-07-21/none_d3.wav")
+OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__film/layer_restricted_eval_2026-07-21")
+BASELINE_NONE = Path("/run/media/kim/Mantu/sa3_control_runs/__film/ablate_layers2_2026-07-21/none_d3.wav")
 DENSITIES = [3.0, 6.0, 9.0, 12.0]
 GAIN, SEED, DUR, STEPS, CFG = 1.75, 4242, 20.0, 24, 6.0
 PROMPT = "psychedelic goa trance"

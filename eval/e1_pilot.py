@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 """e1_pilot.py -- E1 anti-loop guide pilot (validation plan 2026-07-15 §2-E1).
 
 Guided arms of the a2a_kaikkialla_newstack ladder: SAME track/ckpt/prompt/seed/
@@ -20,7 +21,7 @@ from stable_audio_3 import StableAudioModel  # noqa: E402
 
 TRACK = "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-flac/009 goddess guerrilla (2006)/Aavepyora - Goddess Guerilla - Kaikki-Alla.flac"
 CKPT = "/run/media/kim/Mantu/sa3_lora_runs/dora16_goa_newstack_8ep/epoch=3-step=5400.ckpt"
-OUT = Path("/run/media/kim/Mantu/sa3_control_runs/e1_pilot_20260716")
+OUT = Path("/run/media/kim/Mantu/sa3_control_runs/__misc/e1_pilot_20260716")
 PROMPT, SEED, STEPS, CFG = "aggressive upbeat goa trance", 1234, 24, 6.0
 import os as _os
 EDGE = float(_os.environ.get("E1_EDGE", "0.738"))

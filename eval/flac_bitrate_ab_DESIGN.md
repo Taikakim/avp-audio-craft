@@ -18,7 +18,7 @@ mastering lowpass), not to distrust the set. The verified-LOSSLESS subset of Goa
 Dataset IS the reference.
 
 ## Prerequisite — verified-lossless subset (done)
-`sa3_control_runs/analysis/goa_flac_provenance_2026-08-05/` (Mantu eval drive) scans
+`sa3_control_runs/__misc/analysis/goa_flac_provenance_2026-08-05/` (Mantu eval drive) scans
 every FLAC, decodes 30 s from the track middle, computes a Welch power spectrum,
 finds the HF brickwall cutoff + rolloff sharpness, and classifies each file
 LOSSLESS / MP3-LIKE / DARK-INCONCLUSIVE. Method distinguishes a hard MP3 cliff-to-a-
@@ -79,7 +79,7 @@ port; per-GCD /tmp MIOpen/Triton dirs).
 Let `BIGSET_LOCAL` = local staging root, `VL` = the verified-lossless filelist.
 ```bash
 # 0. paths
-VL=/run/media/kim/Mantu/sa3_control_runs/analysis/goa_flac_provenance_2026-08-05/goa_dataset_verified_lossless.txt
+VL=/run/media/kim/Mantu/sa3_control_runs/__misc/analysis/goa_flac_provenance_2026-08-05/goa_dataset_verified_lossless.txt
 BIGSET_LOCAL=/run/media/kim/Mantu/sa3_control_runs/data/goa_bitrate_ab
 
 # 1. build the 5 corpus arms locally (idempotent; ~1200-track cap; generic captions)
@@ -106,4 +106,4 @@ After the job: 5 run dirs under `/scratch/.../runs/flac_bitrate_ab/` with
 - `eval/flac_bitrate_transcode.py` — builds the 5 corpus arms + caption sidecars (idempotent, `--limit`).
 - `lumi/sbatch/flac_bitrate_ab.sbatch` — the 5-arm training job (NOT launched).
 - `eval/flac_bitrate_ab_DESIGN.md` — this file.
-- provenance outputs — `sa3_control_runs/analysis/goa_flac_provenance_2026-08-05/`.
+- provenance outputs — `sa3_control_runs/__misc/analysis/goa_flac_provenance_2026-08-05/`.
