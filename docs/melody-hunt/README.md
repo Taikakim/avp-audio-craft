@@ -1,7 +1,7 @@
 # The melody hunt: evidence behind the field guide
 
 The readable writeup is `blog/2026-11-03-melody-field-guide-DRAFT.md`. The public text carries no experiment ids, paths or corpus names, so this maps it back. The dossiers here are the
-evidence, with file:line sources: start here when you need to check a number. Written 2026-11-03 by research agents, directed by CONTINUITY. They were not re-verified entry by entry. `G-factcheck.md` checked the guide against primary sources (about 195 OK, 14 wrong, 25 imprecise, 4 unsourced; all applied, one by-hand recomputation of the no-lead artefact).
+evidence, with file:line sources: start here when you need to check a number. Written 2026-11-03 by research agents, directed by CONTINUITY. They were not re-verified entry by entry. `G-factcheck.md` checked the guide against primary sources (about 195 OK, 14 wrong, 25 imprecise, 4 unsourced. All wrong and unsourced items and nearly all imprecise ones were applied; part of I25 and of the omissions list in its section 6 were not. The no-lead artefact was recomputed by hand).
 
 | Guide section | Dossier | Experiments |
 |---|---|---|
