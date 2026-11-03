@@ -1195,3 +1195,6 @@ One prompt and one seed made every render read as one held E4 (voiced 0.84 in ev
 
 ## 2026-11-03 E24 arm C follows, once CFG scales the stream
 The stream was going to both CFG branches, so text got x7 and the stream x1. Zeros in the uncond branch: fed minus other +0.467 [+0.392, +0.543], 46/48, gate 0/48, against +0.151 before. Shape over seconds, not notes: note scale +0.103, within a semitone 14% vs 12% unsteered. Also my own scoring error, caught on the first read: true minus shuffled on each arm's own stream gave about 0, because both arms follow. Measured, not heard. EXPERIMENTS E24, `files/evals/e24_contour.html`.
+
+## 2026-11-03 E24 arm B: L3 symbols do not win
+Reopened arm B on the view that E23 only tested cross-attention. Tested properly: L3 from notes through the inlet, L3 agreement +0.020 against centred pitch's +0.028 on the same measure, decoded crops +0.209. The route and source were not what held L3 back. Kept as a negative. EXPERIMENTS E24.

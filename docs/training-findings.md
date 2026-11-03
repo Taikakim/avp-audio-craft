@@ -681,3 +681,7 @@ over 40 ep with 0.68-ep warmup (AWc) 0.2002; AWc + AdaGC lambda 1.04 (AWcG) 0.25
 Muon -> AdamW switch from the epoch-27 Muon head: at lr 3e-4/1e-3 with no warmup the first epoch kicks the head 0.180 -> 0.338
 (lr 1e-3 diverged); at lr 1e-4 with a 1-epoch warmup and cosine (C1) 0.1839, i.e. no gain over the Muon head (0.1802).
 *Rule:* a fresh AdamW on a trained head needs warmup and a low lr — at step 1 every weight moves by about lr.
+
+## 2026-11-03 (W): a per-frame control stream must be nulled in CFG's uncond branch to have authority
+
+`mir_ctrl` through the per-block inlet goes to both CFG branches by default, so at cfg 7 the text is scaled 7x and the stream is not. With zeros in the uncond branch, the null the inlet trains on (dropout 0.2), the same checkpoint and seeds move from fed-minus-shuffled +0.151 to +0.467 [+0.392, +0.543], 46/48, gate 0/48 (E24 arm C, `dit.py` `modular_cfg_null`). Confidence: high on the meter, one checkpoint, not heard. Changes a decision on other runs: every per-frame inlet eval before this date understates control, and a "weak conditioner" verdict through this inlet is not a verdict until re-read this way. Cross-attention adapters already use a null uncond, so this does not explain them. Negative beside it: K&P L3 symbols from notes through the same inlet do no better than centred pitch on their own measure (+0.020 vs +0.028, decoded crops +0.209).
