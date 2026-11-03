@@ -677,7 +677,7 @@ genuinely does not port to our RF setup.
 with correct phase (corr ~0.5 — follows the shape, loosely). That is the regime Pons
 et al. (2603.04366) report as working. It does NOT license fast, note-level timing:
 the pianoroll adapter measured **true−shuffled +0.022, n.s.** on exactly that axis
-(EXPERIMENTS D15). So a trajectory-conditioned pipeline is viable for
+(EXPERIMENTS D15; **superseded 2026-11-03, see `files/evals/pianoroll_melody.html`: with CFG scaling the stream, that same fine-tune follows notes it never trained on, so this null measured the eval, not the model. Measured, not heard.**). So a trajectory-conditioned pipeline is viable for
 ARRANGEMENT-level structure (density envelopes, builds, drops, sections) and unproven
 for bar-level rhythm. Where the ceiling sits between those is an open one-axis sweep
 over the pulse period. Tests: `eval/tests/test_target_raw_passthrough.py`.
