@@ -261,7 +261,11 @@ experiment decides C++.
 
 ## 6. Release blockers known today
 
-1. **Dead decode (W, 2026-11-02, MASTER section 5), a watch item more than a blocker so far.** A healthy latent can decode
+1. **Decode fault on the torch path, a blocker (W, 2026-11-03, MASTER section 5).** Same request, same latent to the bit: the
+   first render's audio can be NaN **or finite but wrong**, and later renders repeat exactly. `empty_cache` between guided
+   renders made all ten NaN in a test. **The wrong-but-finite case passes a post-decode NaN check,** so that check alone is
+   not enough. A CPU decode of the same latent was reported clean, not re-tested, which favours the CPU route. Earlier
+   wording, kept for the record: a healthy latent can decode
    to all-NaN audio, written as a full-scale DC file, and a request can come out unsteered. The first guided render of a
    fresh process hit it in 3 of 3 tries, **but on direct `generate(latch_configs)` with the bare base model.** Through the
    render server, the GUI's path, C found 0 dead in 714 clips and two clean first requests on a fresh server, both with a
