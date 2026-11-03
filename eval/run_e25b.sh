@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Owner: CONTINUITY (created 2026-11-03)
-# run_e25b.sh -- EXPERIMENTS E25b. Waits its turn on the GPU, renders 504 clips (about 45 min), lock released between models, then scores. Resumable.
+# run_e25b.sh -- EXPERIMENTS E25b. Waits its turn on the GPU, renders the clips still missing, lock released between models, then scores. Resumable.
 #   setsid nohup bash eval/run_e25b.sh </dev/null >/dev/null 2>&1 &
 set -u
 SAO=/home/kim/Projects/SAO

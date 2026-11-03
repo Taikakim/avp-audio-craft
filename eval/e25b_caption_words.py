@@ -8,7 +8,7 @@ both arms share one sampler path and the gain-0 baseline trap does not apply.
 
 Words: those the merge raises most (goa_archive and goa_src), `euphoric` (which it cuts); PLACEBOS (blue, wooden, tuesday: any change of text moves a
 render, so these are the noise floor); `ambient` is the known positive for the meter.
-Grid: 14 canonical prompts x 2 models x (plain + 17 words) = 504 clips, 20 s, 24 Euler steps, cfg 7.
+Grid: 14 canonical prompts x 2 models x (plain + 23 words) = 672 clips (504 in the first pass), 20 s, 24 Euler steps, cfg 7.
 Read with eval/e25b_report.py. KILL for a word: its change is not more consistent across prompts than the placebos'.
 RUN: eval/run_e25b.sh (GPU lock, CPU scoring).
 """
@@ -21,9 +21,10 @@ import mood_deconf_render as W  # noqa: E402  (models, canonical prompts, render
 
 OUT = Path("/home/kim/evals_aac/control_runs/e25b_caption_words_20261103")
 TEST = ["dark", "tense", "aggressive", "industrial", "minimalist", "mechanical", "dystopian", "raw", "unsettling", "gritty", "introspective", "acidic", "euphoric"]
-PLACEBO = ["blue", "wooden", "tuesday"]
-POSITIVE = ["ambient"]
+PLACEBO = ["blue", "wooden", "tuesday", "seven", "paper", "window"]
+POSITIVE = ["ambient", "solo piano", "ambient, no drums", "heavy metal"]   # the last two passes added after `ambient` alone failed as a known positive
 WORDS = TEST + PLACEBO + POSITIVE
+slug = lambda w: w.replace(", ", "_").replace(" ", "_")
 MODELS = ("base", "goa")
 
 
@@ -32,7 +33,7 @@ def prompts():
 
 
 def cells(model):
-    return [dict(id=f"{model}__{p['id']}__{w or 'plain'}", model=model, pid=p["id"], seed=p["seed"], word=w or "plain",
+    return [dict(id=f"{model}__{p['id']}__{slug(w) if w else 'plain'}", model=model, pid=p["id"], seed=p["seed"], word=slug(w) if w else "plain",
                  text=p["text"] if not w else f"{p['text']}, {w}") for p in prompts() for w in [None] + WORDS]
 
 

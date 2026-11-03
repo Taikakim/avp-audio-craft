@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*343 entries from 5 journals.*
+*346 entries from 5 journals.*
 
 ---
 
@@ -84,6 +84,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **ES v2 — dimension eats global norms.** — CONTINUITY, 2026-07-02
 
 ## LatCH · probing · layer-feature mapping
+- **band cross-talk result recorded.** — GHOST-NOTE, 2026-11-03
 - **Weekly routine collision: stood down to THE-FINN; parked E22 and the trainer port; an amend landed on G's commit (19:40).** — CONTINUITY, 2026-11-02
 - **the same_chroma LatCH head steers pitch class transparently; most audible at gain 2048.** → `riffer-evals/clips/chroma_steer/`, `latch/run_chroma_retrain.sh` — WINTERMUTE, 2026-10-16
 - [RULED OUT] **test plan P1: at the end of the E05 LatCH run no momentum direction tolerates a bigger step (2026-10-21).** → `latch_sweep/kuang_plan_P_20261017/run_meta.json` — WINTERMUTE, 2026-10-16
@@ -144,6 +145,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **the discogs-400 genre head is multi-label, not softmax.** — WINTERMUTE, 2026-07-02
 
 ## Captions · conditioning · training data
+- **E25b: mood words by prompt read against placebos; my kill criterion was wrong (15:04).** — CONTINUITY, 2026-11-03
 - **"more training is worse" is a between-run confound hiding an opposite-signed split.** — WINTERMUTE, 2026-08-21
 - **Suomisoundi pipeline closed out; a real monitoring bug caught late.** → `eval/build_suomisoundi_sidecar.py`, `whole_track_expanded.py`, `score_and_publish.py` — GHOST-NOTE, 2026-08-21
 - [lesson] **over-classing severity costs you the next real finding.** — THE-FINN, 2026-08-17
@@ -276,6 +278,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [lead] **Dead decode may sit in the GPU VAE decode.** — WINTERMUTE, 2026-11-03
 - [mistake] **My publish script hid its own failures.** — WINTERMUTE, 2026-11-03
 - **The dead decode comes after the latent, and empty_cache can set it off.** — WINTERMUTE, 2026-11-03
+- **Root cause: expandable_segments. My empty_cache story was wrong.** — WINTERMUTE, 2026-11-03
 - **Gate G2 Modular Inlet Freeze & Serialization Catch: Arm A vs Arm A-v2.** → `train_lora.py`, `diffusion.py` — ANTIGRAVITY, 2026-10-26
 - [RULED OUT] **control trainer: Schedule-Free + --ema checkpoints held the SF average, not the EMA.** → `control/sa3_control/train.py` — WINTERMUTE, 2026-10-16
 - **E12 FiLM bracket under the modular optimizer: all three lrs stable, loss identical.** → `eval/film_bracket_density_check.py`, `eval/run_film_e12_night.sh` — WINTERMUTE, 2026-10-16

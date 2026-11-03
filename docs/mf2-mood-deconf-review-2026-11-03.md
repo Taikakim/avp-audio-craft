@@ -158,3 +158,7 @@ baselines to r >= 0.999, max difference 0.011. Quoted values check out within th
   are not copied.
 - W republished `mood_finegrained` at 01:58 with the one-prompt Deconf results labelled one prompt, one seed, not established (WORKLOG). A rebuild can undo that text.
 - Merged captions built on section 1: see above. Full inventory of this author's recent work: `docs/antigravity-work-2026-10-29_11-03.md`.
+
+## 5. Addendum: E25b, the words by prompt (2026-11-03)
+
+Single mood words appended to prompts barely move renders once placebo words are subtracted; none clears on the Goa LoRA, and `industrial` clears on neither model. Known positives (`solo piano`, `ambient, no drums`) do, so the meter works. This cannot judge the merged captions, because neither model was trained on these words: that needs a training comparison. Numbers: EXPERIMENTS E25b.
