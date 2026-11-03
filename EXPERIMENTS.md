@@ -705,7 +705,8 @@ not the actual corpus-render or user-facing generation path.
 - ⚠️ bigmix/goa preflight requires latents_sa3 .json metas on scratch (rsync from local);
   submitted into the flash-metadata storm — expect slow staging until the mirctrl hang clears.
 
-### D16 — Where is the TEMPORAL CEILING of trajectory guidance? — **PLANNED, not started (C, 2026-08-28)**
+### D16 — Where is the TEMPORAL CEILING of trajectory guidance? — **DONE for pitch 2026-11-03 (W); files/evals/f0_contour.html**
+- **RESULT (`eval/d16_contour_ceiling.py`, lead f0 head, gain 16384, triangle waves, in phase vs antiphase, 6 prompts x 2 seeds, 120 clips).** Follow +0.16 at 10 s (interval +0.02 to +0.29, 16/24), -0.08 at 5 s, -0.07 at 2.5 s, -0.04 at 1.25 s, -0.02 at 0.625 s; all from 5 s down include or sit just below 0. So for this head the ceiling is above a 10 s period: arrangement-level, not phrase or note. Compare the onset head's phase-locked 3.3 s pulse (+0.49, MASTER target_raw), a different feature. Baseline correlations with slow targets are large by chance (0.52 at 10 s), so slow-period numbers are noisy.
 **Why it exists.** Two measurements bracket the answer and nothing fills the gap:
 ⚠ **PREMISE CORRECTED 2026-09-03 (C).** This entry was written against D15's FIRST, RETRACTED number and its framing has not caught up: D15's revised verdict is that note-level timing **DOES** transfer — `true−shuffled +0.100` melody F1, 6/6 positive, sign test p=0.016, measured by MuScriptor transcription. The `+0.022 n.s.` below came from the chroma screen that could not separate "adopted the key" from "followed the melody", and it is exactly the audit-the-instrument case. The gap D16 probes is therefore NOT "does timing transfer at all" but **how FAST a trajectory the control can still follow** — the ceiling between note-level (which works) and the latent Nyquist. Re-scope before running. Original text follows:
 
@@ -1452,7 +1453,10 @@ exactly this reason.)*
 ### E3 — Re-validate the 14 production LatCH heads (all were train-loss-selected) — **GATED on Kim's decision**
 - Steering authority ≠ held-out regression; energy heads first.
 
-### E4 — Guided-gen eval + disintegration gate for the f0 heads — **PLANNED** (no "works" claim before this).
+### E4 — Guided-gen eval + disintegration gate for the f0 heads — **DONE 2026-11-03 (W), measured, not heard; files/evals/f0_contour.html**
+- **E4 (`eval/e4_f0_head_gate.py`, base model, 6 prompts x 2 seeds, 156 clips, guided gain-0 baselines, Melodia on the mix).** Lead head (val30_f0_other_ema0.999), rising minus falling target, slope in semitones per clip: +7.4 at gain 512, +11.0 at 2048, +22.1 at 8192 (interval +15.9 to +29.4, 12/12), gate 0/24 at each. Bass head: no separation (+0.5, +1.0, +2.7, intervals include 0), gate 0/24.
+- **E4b (`eval/e4b_f0_shapes.py`, 144 clips).** Is it following or a side effect? Follow = corr with target minus corr with its mirror (chance 0, max 2): up/down +0.81, +1.12, +1.28 and arch/valley +0.63, +0.94, +1.14 at 8192, 16384, 32768. Same measure on spectral centroid +0.15 to +0.35. Octave-jump rate falls. Gate 0/48, 5/48, 13/48, mostly latent level.
+- **Reading.** The first gate-clean pitch-direction control we have measured, but see D16: a slow gesture over the clip, not a melody. A tracker on a mix may read an existing voice getting louder. Listening decides.
 
 ### E6 — Air-band RMS head retrained under the ModularOptimizer; stability at high lr — **BRACKET + OVERNIGHT DONE 2026-10-15; lr 1e-2 is the ceiling (G)**
 - **Why (project owner, 2026-10-14/15):** the production `rms_energy_air` head (AdamW, depth 4, no EMA, 20 ep) glitches at large guidance weights and changes content (onsets, hats), unlike bass/mid/body.
