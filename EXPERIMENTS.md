@@ -1174,7 +1174,9 @@ positions; a reference excerpt gets its own positions.
   tests are trivial for gradient guidance (∇L is conservative by construction) — only meaningful for
   non-gradient controls (adapters, concept directions, Head-B). After the deliverable work.
 
-### D10 — Intermittency of melody formation (X1) — **PLANNED (fold into `eval/melody_r2_vs_t.py`)**
+### D10 — Intermittency of melody formation (X1) — **DONE 2026-11-03 (CONTINUITY), NEGATIVE: updates are heavy-tailed, but melody is no more so than a random subspace; thread closed**
+- **RESULT (`eval/d10_melody_intermittency.py`, `eval/musicology/d10_melody_intermittency_2026-11-03/results.json`).** 42 unguided medium-base renders, 14 canonical prompts x 3 seeds, 20 s, 50 Euler steps, cfg 7, per frame and step, schedule divided out. Melody basis: excess kurtosis 24.5 (interval 15.9-35.8), tail exponent 4.11. Random orthogonal 15-d subspace, the null: 23.0 (16.8-27.3), 3.58. Whole complement: 22.1, 3.79. Melody exceeds the null in 23 of 42 clips, which is chance. Largest updates cluster for all three at steps 13-23 (t about 0.98 to 0.92). Meter: Gaussian 0.009 and tail 20.9, Pareto a=2 tail 1.98, so it reads both ends correctly.
+- **Reading.** Large updates are a property of the latent's trajectory, not of melody forming, so there is no case for moving the R²(t) gate to an event-weighted one. Limits: base model, unguided; a 15-d linear basis rather than the per-band chroma readout the entry named; heavy tails can partly be differences between clips and frames, not bursts in time; intervals are wide.
 - From the Carbone/Servidio 2607.14796 assessment (08-19): record ‖Δĉ‖ per adjacent denoising step
   (ĉ = W_c·x̂₀|t) across samples; report kurtosis/tail exponent per band and whether heavy steps cluster
   in t. HEAVY-TAILED ⇒ melody forms in a few crucial updates ⇒ upgrade the R²(t) gate (B2) from a

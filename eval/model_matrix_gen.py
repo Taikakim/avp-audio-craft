@@ -34,7 +34,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNS = Path("/run/media/kim/Mantu/sa3_lora_runs")
 BRACKET = ROOT / "eval/rarity_bracket_manifest.json"
 KIMLONG_POOL = ROOT / "eval/kimlong_pool.json"
-RARITY_CLIP_INDEX = RUNS / "rarity_gen_set/clip_index.json"
+RARITY_CLIP_INDEX = RUNS / "__misc/rarity_gen_set/clip_index.json"
 
 STAGING = Path.home() / ".cache/evals_aac/model_matrix"
 MANIFEST = STAGING / "manifest.jsonl"

@@ -19,8 +19,8 @@ for m in base goa; do
   for attempt in 1 2 3; do .venv/bin/python eval/e25b_caption_words.py --model "$m"; rc=$?; echo "$(date '+%F %T') $m attempt $attempt rc=$rc"; [ "$rc" -eq 0 ] && break; sleep 30; done
   unlock; sleep 20
 done
-"$MIRPY" eval/e25b_score.py; echo "$(date '+%F %T') scores rc=$?"
+"$MIRPY" eval/e25b_score.py; rc=$?; echo "$(date "+%F %T") scores rc=$rc"
 lock "E25b Audiobox scoring"
-"$MIRPY" control/sa3_control/clip_metrics_audiobox.py --roots control_runs --pattern e25b_caption_words_20261103; echo "$(date '+%F %T') audiobox rc=$?"
+"$MIRPY" control/sa3_control/clip_metrics_audiobox.py --roots control_runs --pattern e25b_caption_words_20261103; rc=$?; echo "$(date "+%F %T") audiobox rc=$rc"
 unlock
 echo "$(date '+%F %T') ALL DONE"

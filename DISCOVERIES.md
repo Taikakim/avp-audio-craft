@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*346 entries from 5 journals.*
+*347 entries from 5 journals.*
 
 ---
 
@@ -274,6 +274,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **gfx1201 ROCm nightlies are the clean path.** — GHOST-NOTE, 2026-07-02
 
 ## Uncategorized · recent
+- **D10 negative: sampling updates are heavy-tailed, melody no more than a random subspace (15:19).** — CONTINUITY, 2026-11-03
 - **Eight Antigravity boards published after correction, V8 held.** — WINTERMUTE, 2026-11-03
 - [lead] **Dead decode may sit in the GPU VAE decode.** — WINTERMUTE, 2026-11-03
 - [mistake] **My publish script hid its own failures.** — WINTERMUTE, 2026-11-03
