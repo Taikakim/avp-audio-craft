@@ -5,7 +5,7 @@
 Melodic line: the skyline (highest sounding non-drum note) of each crop's MIDI, at the latent rate (10.7666 fps, T = 4096, the same crops as latents_sa3).
   arm C  contour_centered  (2, T)   pitch minus the crop's median note, /12; note-on mask. Keeps interval size, ignores key. The easiest to learn.
   arm A  contour_interval  (26, T)  one-hot of the semitone step from the previous note, clipped to +-12, held for the note; onset flag on its first frame.
-Arm B (K&P L3 tokens on the note grid) is not built: E23 found the L3 morph lane does not follow, so A and C come first.
+Arm B (K&P L3 tokens on the note grid) is not built yet. E23 only tested L3 through the Head-B cross-attention adapter, not this inlet, so it stays open.
 Outputs float16 <stem>.ctrl.npy, as build_pianoroll_ctrl.py. RUN: mir/bin/python eval/e24_build_contour_packs.py
 """
 import glob
