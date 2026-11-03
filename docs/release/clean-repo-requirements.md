@@ -107,8 +107,10 @@ shared checkout untouched.
   (median 30% relative on random W0, which exaggerates it). So renders at other strengths will not match our corpus, and
   **Kim's by-ear notes at weights other than 1 were made on the old behaviour.** `lora_interp` is kept.
 - 53 LatCH, longform and warmup tests: same result on both trees (53 passed, 2 skipped).
-- **Not done:** `test_lora.py` needs a GPU (same failure on both trees on CPU). A GPU render comparison waits for the card. `tests`
-  in `SAO/.venv` is shadowed by a site-packages package, so `test_lora.py` fails to collect there; an unrelated existing fault.
+- **GPU check done (2026-11-03 05:03):** latents **bit-identical** old vs old and old vs merged, bare and with the DoRA at strength 1
+  (24 steps, cfg 3, seed 1234). `test_lora.py` passes on both. Outputs: `/home/kim/sao_runs/merge_check/`. Each render process exits rc=134 after
+  saving, on both trees alike, so not from the merge; cause not read. Audio decode and strengths other than 1 were not rendered.
+- `tests` in `SAO/.venv` is shadowed by a site-packages package, so `test_lora.py` needs a path workaround there; an unrelated existing fault.
 
 **3. Head gradient without torch: works.** A production head (`latch_sa3_hardness_best.pt`, 4.9 M params) with its MSE guidance
 loss exported to one ONNX file, 26.7 MB. ONNX Runtime on CPU against torch's real gradient, 4 seeds and timesteps:
