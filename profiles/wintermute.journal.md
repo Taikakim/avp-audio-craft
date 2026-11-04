@@ -1213,3 +1213,6 @@ Fusion + LoRA warms up over 20 steps by default; only the first-step size is mea
 
 ## 2026-11-04 Leak scan missed the sidecars
 Publishing 8 boards, my leak scan read only the HTML and my manifest included run_meta.json, so a local path went public for a few minutes. Removed and confirmed 404. Sidecars stay local; a scan that skips a file type says nothing about it.
+
+## 2026-11-04 D6 negative
+Stabilisers for chroma guidance add nothing on the E13 head: there was nothing to stabilise, gate already 1/24 and 0/24. Stopping at 80% at high gain pushes the budget early and fails on latent level. EXPERIMENTS D6.

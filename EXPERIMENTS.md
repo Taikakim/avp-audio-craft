@@ -1192,7 +1192,8 @@ positions; a reference excerpt gets its own positions.
   not turbulence). "Phase-transition threshold" in the paper is hedged conjecture over 5 confounded
   runs — do not let it travel unhedged.
 
-### D6 — Stabilisers for readout-space guidance — **READY (one-liners)**
+### D6 — Stabilisers for readout-space guidance — **DONE 2026-11-04 (W), NEGATIVE; files/evals/chroma_stabilisers.html**
+- **RESULT (`eval/d6_stabilisers.py`, measured, not heard). same_chroma C3 lr 1e-3 ep10 EMA, medium-base, 24 steps, cfg 7, 3 prompts x 4 targets x 2 seeds, gains 4096 and 16384, 390 clips, 0 faults.** Plain guidance reproduces E13 (mid cos +0.363 vs +0.354 at 4096) and is already clean, gate 1/24 and 0/24, so there was little to stabilise. Change in mid-band strongest-class hit, paired against plain: 1% step cap +0.007 [-0.016, +0.032] at 4096, cos -0.052; 0.3% cap -0.107 [-0.147, -0.072], cos -0.194; stop at R2 95%, -0.011 [-0.030, +0.004]; 80%, -0.007 at 4096 and +0.041 [-0.023, +0.109] at 16384, where cos +0.022 and bass hit +0.036 [+0.003, +0.075], but gate 6/24 on latent level (z ratio 1.21); Tier-2 band weights -0.007 and -0.029, cos +0.008 to +0.013; mid band only cos +0.02 to +0.025 while hit falls 0.064 at both gains. No arm lands more frames on the note at equal cleanliness. 14 comparisons, no correction, so the two small positives at 16384 are not findings. R2 99% is never reached on this schedule (last sigma 0.16). `latch_guided` keeps `guide_softclip` and `dim_weights`, off by default. A cap might matter on a head that collapses; this one does not up to 32768 (E13x).
 - Soft-clamped normalised gradient; stop-late from OUR R²(t); per-band reliability weights from Tier-2.
 
 ### D11 — Frame-shuffle null on Tier-2 air — **DONE 2026-08-21: ~half fingerprint, half temporal — kill-condition does NOT fire**
