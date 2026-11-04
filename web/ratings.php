@@ -241,7 +241,7 @@ if ($method === 'POST') {
         $pool = (string)($in['pool'] ?? '');
         $id   = (string)($in['id'] ?? '');
         $pick = (string)($in['pick'] ?? '');
-        if (!preg_match('/^[a-z0-9_-]{1,60}$/', $pool) || !preg_match('/^t[0-9]{1,5}$/', $id)
+        if (!preg_match('/^[a-z0-9_-]{1,60}$/', $pool) || !preg_match('/^[a-z0-9_-]{1,80}$/', $id)
             || !in_array($pick, ['in', 'maybe', 'no', 'clear'], true)) {
             http_response_code(400); echo json_encode(['error' => 'invalid trackpick payload']); exit;
         }
