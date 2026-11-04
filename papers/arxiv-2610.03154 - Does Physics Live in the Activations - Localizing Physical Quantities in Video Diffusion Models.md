@@ -53,7 +53,10 @@ PDF: `arxiv-2610.03154 - Does Physics Live in the Activations - Localizing Physi
 
 **DIRECTLY USABLE PROTOCOL: it is our July 8, 2026 layer-by-feature map with the controls we skipped, plus a steering test.** See `docs/layer-feature-map.md` and `latch/extract_layer_activations.py`.
 - Our map (150 crops, σ 0.2/0.5/0.8, ridge on all 24 block outputs) found spectral features already in the latent, and rhythm computed mid-stack (beat 0.40 → 0.80 at L14).
-- Its only pitch feature was HPCP (0.39 → 0.46 at L19). **No melody or contour feature has been mapped.**
+- Its only pitch feature was HPCP (0.39 → 0.46 at L19). **No melody or contour feature has been mapped inside the DiT.**
+- Register has been probed in the clean latent only, and is present but coarse:
+  - z88: centroid correlation 0.50–0.52 (S22);
+  - z_f0height: correlation 0.51 linear / 0.56 MLP, mean error 6.4–6.7 semitones against about 8.05 for a constant guess (S29, `docs/melody-hunt/A-substrate.md`).
 
 **What to add (inference; untested):**
 1. **Melodic targets.**
@@ -61,7 +64,7 @@ PDF: `arxiv-2610.03154 - Does Physics Live in the Activations - Localizing Physi
    - Exact labels need rendered MIDI (the render bank) as the simulator analog. Real audio with extractor labels is kept separate, because those labels are noisy.
    - Folds split by song.
 2. **Their six-level σ grid**, which maps directly to our rectified-flow σ, so the SNRs compare.
-3. **A nonlinear input baseline: a LatCH head on z_t.** Beating linear z_t is close to guaranteed. The question that matters for us is whether blocks beat what our LatCH heads already read.
+3. **A nonlinear input baseline: a LatCH head on z_t.** For pitch, the existing lead f0 head is that baseline. Beating linear z_t is close to guaranteed. The question that matters for us is whether blocks beat what our LatCH heads already read.
 4. **Controls:**
    - the permutation null;
    - a random-initialization DiT and control tasks for selectivity;
@@ -77,7 +80,7 @@ PDF: `arxiv-2610.03154 - Does Physics Live in the Activations - Localizing Physi
 
 **Decisions it would settle:**
 - **A block/σ band where contour beats the LatCH-on-z_t reading:** inject the melody conditioner there, or read a contour head from that block.
-- **Chroma readable at high σ but contour only at low σ:** explains why chroma guidance moves pitch class but not contour; move contour guidance later.
+- **Phrase-rate contour (2–5 s periods) readable in some block/σ band but not in z_t:** explains why the lead f0 head, which reads z_t, sets whole-clip direction (E4b) but not contours of 5 s or faster (D16). The fix would be an f0 head read from that band, as the map already recommended for rhythm.
 - **Contour readable at the conditioner's injection point but gone downstream:** the model ignores the conditioner (the null E-series result), so fix training rather than the signal.
 - **Readable nowhere beyond the input:** no internal contour to steer, so put the effort into input-side control.
 

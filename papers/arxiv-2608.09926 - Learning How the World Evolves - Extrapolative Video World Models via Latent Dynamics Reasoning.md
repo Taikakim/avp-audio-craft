@@ -42,9 +42,11 @@ PDF: `arxiv-2608.09926 - Learning How the World Evolves - Extrapolative Video Wo
 
 **LOW for the generator, USEFUL AS A DESIGN PRINCIPLE for melody meters and planners.** The paper says nothing about blocks, timesteps or guidance inside a diffusion transformer. What transfers is "measure the low orders, learn only a bounded residual, judge on OOD gaps" (all inference, untested):
 
-1. **Unfolded pitch, not chroma, for contour.** Twelve-bin chroma folds octaves, so it cannot carry contour by construction. This fits our result that chroma guidance moves pitch class but not contour.
-   - The structured-latent analog is a LatCH head that outputs pitch salience over about 48–72 semitone bins, read by a soft-argmax into a differentiable centroid (contour) and extent (register spread).
-   - Guide on the centroid trajectory. Success: contour correlation with the target rises while chroma accuracy stays the same.
+1. **Unfolded pitch exists here already; the structured form does not.**
+   - We have octave-unwrapped f0 LatCH heads: lead and bass, regressing Melodia f0 (from separated stems) in Hz. Targets date from August 12, 2026 (`docs/melody-hunt/B-guidance.md` B-11).
+   - The lead head sets the pitch direction over a whole clip (E4/E4b, November 3, 2026), but does not follow contours with periods of 5 s or less (D16).
+   - What this paper adds is the form of the output: a salience distribution over about 48–72 semitone bins, read by a soft-argmax into a centroid (contour) and an extent (register spread). A scalar Hz regression has to average across octave ambiguity and unvoiced frames.
+   - Untested whether this helps. Cheap A/B: against the current lead head on the D16 triangle test.
 2. **Supervise differences as well as levels.** Interval (Δpitch) and turning points (Δ²pitch, often phrase boundaries) as their own targets, next to absolute pitch. In probing, this separates relative from absolute melody coding.
 3. **The ID/OOD protocol as a meter.** Our OOD axes are transposition, tempo and instrument. A representation that holds across them encodes melody structure rather than spectral templates; judge probes and heads by the gap, not by the in-distribution fit.
 4. **For long-form continuation planners** (tempo, energy and density trajectories that become guidance targets), the musical integrator is phase accumulation (beat and bar phase += tempo·Δt), not polynomial kinematics.
