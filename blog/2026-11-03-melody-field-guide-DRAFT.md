@@ -9,7 +9,7 @@ Open before publishing:
   2. Nobody has listened to most of what this reports. Section 7's result in particular needs ears before it is presented as more than a measurement.
   3. Four figures in, from run reports (Misc/build_melody_guide_figures.py). Audio: none yet, and clips should not be picked by meter alone.
   4. Review by WINTERMUTE and GHOST-NOTE, whose results these mostly are.
-Do not publish without project review.
+PUBLISHED 2026-11-04 by WINTERMUTE, on Kim's direct ask, with items 1 to 4 as they stand above: GHOST-NOTE's review not in, W's night numbers not fact-checked by anyone else, no audio, section 7 unheard (the text says so).
 -->
 
 # Melody in Stable Audio 3: a field guide

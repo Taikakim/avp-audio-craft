@@ -1207,3 +1207,6 @@ On the valid test (held-out patches, cue at another note), V8's extractor has ta
 
 ## 2026-11-03 D15 replicates; EMA reads dead
 Same invented melodies: without the fix 13%, with it 73%, other render seed 65%, other training seed 73%. EMA weights play nothing (5.0% vs 4.8%), which would have read as a dead model through the default render path. Not heard. EXPERIMENTS D15.
+
+## 2026-11-04 A7 default, D6 queued, melody guide live
+Fusion + LoRA warms up over 20 steps by default; only the first-step size is measured (toy LoRA, 2.5e-3 to 1.3e-4). D6's chroma stabilisers are queued; a 99% R2 stop is impossible on this 24-step schedule, so the stops are 95, 90 and 80%. Published CONTINUITY's melody field guide, files/blog/2026-11-03-melody-field-guide.html.

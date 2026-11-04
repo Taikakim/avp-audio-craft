@@ -4,8 +4,8 @@
 Head: same_chroma C3 lr 1e-3 ep10 EMA, the E13 winner. Same 3 prompts x 4 targets, 2 seeds, medium-base, 20 s, 24 steps, cfg 7 as E13's ladder. Two gains.
   raw      the reference, reproduces E13's ladder
   clipA/B  soft cap on the guidance step's norm relative to the state (latch_guided._soft_clip_step); caps picked from the probe
-  stopR95  no guidance once the melody subspace is 95% recovered, from lumi/melody_r2_vs_t_medium-base.json
-  stopR99  the same at 99%
+  stopR95  no guidance once the melody subspace is 95% recovered, from lumi/melody_r2_vs_t_medium-base.json; the budget moves to the earlier steps
+  stopR90, stopR80  the same at 90% and 80%. 99% is never reached on this 24-step schedule, whose last sigma is 0.16
   tier2    per-band weights from Tier-2's reliability, D11: bass 0.323-0.136, mid 0.449-0.220, air 0.526-0.266, matched minus null
   midonly  all weight on the mid band, the band E13 is scored on, as an extreme of the same idea
 Scoring and gate as E13 (eval/chroma_e13_render.measure, control_head_disintegration_eval.gate); every arm against the same-prompt, same-seed guided gain-0 render.
@@ -33,7 +33,8 @@ GAINS = (4096, 16384)
 TARGETS = ("C", "Am", "keylift", "i-VI-III-VII")
 SEEDS = (1234, 5678)
 BAND = 128
-CLIPS = {"clipA": 0.02, "clipB": 0.005}  # replaced by --clips after the probe
+# Probe, goa C: the variance step is 0.2% to 1.6% of ||x|| at gain 4096, 0.2% to 10% at 16384, largest from sigma 0.68 down.
+CLIPS = {"clipA": 0.01, "clipB": 0.003}
 TIER2 = {"bass": 0.323 - 0.136, "mid": 0.449 - 0.220, "air": 0.526 - 0.266}
 
 
@@ -53,7 +54,7 @@ def stop_pct(sigmas, frac):
 
 def arms(sigmas, clips):
     m = max(TIER2.values())
-    a = {"raw": {}, "stopR95": {"end_pct": stop_pct(sigmas, 0.95)}, "stopR99": {"end_pct": stop_pct(sigmas, 0.99)}, "tier2": {"dim_weights": band_weights(TIER2["bass"] / m, TIER2["mid"] / m, TIER2["air"] / m)}, "midonly": {"dim_weights": band_weights(0, 1, 0)}}
+    a = {"raw": {}, "stopR95": {"end_pct": stop_pct(sigmas, 0.95)}, "stopR90": {"end_pct": stop_pct(sigmas, 0.90)}, "stopR80": {"end_pct": stop_pct(sigmas, 0.80)}, "tier2": {"dim_weights": band_weights(TIER2["bass"] / m, TIER2["mid"] / m, TIER2["air"] / m)}, "midonly": {"dim_weights": band_weights(0, 1, 0)}}
     for k, c in clips.items():
         a[k] = {"softclip": c}
     return a
