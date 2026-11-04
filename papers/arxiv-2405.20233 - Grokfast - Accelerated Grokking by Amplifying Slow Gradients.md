@@ -53,7 +53,7 @@ PDF: `arxiv-2405.20233 - Grokfast - Accelerated Grokking by Amplifying Slow Grad
   - Under AdamW, per-coordinate normalization also absorbs much of the (1 + lambda) gain.
   - The paper has no proof for either optimizer.
 - **Our regime is not grokking.** We fine-tune a pretrained 1.4B rectified-flow DiT and judge by ear. Diffusion models are argued to generalize first and memorize only later with more training. That reverses grokking's order, so "train longer and wait" is a memorization risk for us, not a generalization payoff.
-  - Lead: Bonnaire, Urfin, Biroli, Mézard 2025, "Why Diffusion Models Don't Memorize". Cited from memory, not read, not indexed.
+  - Source: Bonnaire, Urfin, Biroli, Mézard 2025, "Why Diffusion Models Don't Memorize" (2505.17638), now deep-read and indexed; see its sidecar for the two-timescale result and the memorization meters.
 - **If a slow-momentum mix is wanted,** test it as an optimizer in the AdamW arm, not as a gradient hook.
   - Lead: AdEMAMix (2409.03137). Not read, not indexed.
 - **One connection worth keeping (our interpretation, not the paper's claim).** Grokfast amplifies the persistent direction of the updates. Scaling a finished fine-tune's change past 1x (base + w * (ft - base), w > 1) is the same move done once, after training.
