@@ -1210,3 +1210,6 @@ Same invented melodies: without the fix 13%, with it 73%, other render seed 65%,
 
 ## 2026-11-04 A7 default, D6 queued, melody guide live
 Fusion + LoRA warms up over 20 steps by default; only the first-step size is measured (toy LoRA, 2.5e-3 to 1.3e-4). D6's chroma stabilisers are queued; a 99% R2 stop is impossible on this 24-step schedule, so the stops are 95, 90 and 80%. Published CONTINUITY's melody field guide, files/blog/2026-11-03-melody-field-guide.html.
+
+## 2026-11-04 Leak scan missed the sidecars
+Publishing 8 boards, my leak scan read only the HTML and my manifest included run_meta.json, so a local path went public for a few minutes. Removed and confirmed 404. Sidecars stay local; a scan that skips a file type says nothing about it.
