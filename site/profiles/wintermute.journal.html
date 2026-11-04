@@ -612,6 +612,115 @@
   <p>- ep5 looks like ep20 (every probe raises held-out loss; training gradients oppose the momentum on ranks 1-4). At ep10 the gradients agree with the momentum and one held-out set descends along it, but the other two rise from the first grid point. Overshoot, catch-up, overshoot: too much step on the leading ranks, not too little. B8 SAMuon-lite not warranted at any of the three points. Sets are 64 crops each; a bigger rerun would sharpen ep10. <code>latch_sweep/kuang_plan_P_20261017/run_meta.json</code> (P1_mid).</p>
 </div>
 
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">the chroma head retrained under ModularOptimizer steers ~10x further per gain (2026-10-28, EXPERIMENTS E13)</div>
+  <p>- C3 (lr 1e-3, d512 depth 8) epoch 10: mid-band frame cos toward the target +0.15 at gain 512 vs production +0.014 (production needs 6144-8192 to get there); wins 46-48 of 48 paired clips at every gain; disintegration gate 0-2 of 48 per gain (CE drift only). EMA / short EMA / online are interchangeable. Held-out val loss did NOT predict steering (C2 best val, steers slightly less). Page files/evals/chroma_e13.html; <code>evals_aac/control_runs/chroma_e13_20261028/report.txt</code>. Unheard.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · lesson</div>
+  <div class="jtitle">a gain-0 LatCH baseline must go through the guided sampler (2026-10-28)</div>
+  <p>- <code>generate()</code> without <code>latch_configs</code> takes <code>sample_diffusion</code> (CFG rescale, APG), a different render from the guided sampler at rho = mu = 0; 4 of 12 such baselines scored CE ~3 vs 6-7 for every steered clip of the same prompt + seed, failing a third of the gate and flipping the production head's low-gain sign. MASTER section 5; <code>eval/chroma_e13_render.py</code> (base0__).</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16</div>
+  <div class="jtitle">deeper / wider chroma heads and the onset recipe do not beat C3 ep10 (2026-10-28, E13b) <span class="neg">NEGATIVE</span></div>
+  <p>- depth 12 ties depth 8 (+0.282 at 2048), width 768 slightly behind (+0.270), the onset recipe (d256 depth 8, lr 1e-2, b16) +0.265 despite the best val (0.0933). Every arm reaches its level by epoch 8.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">gradient noise by flow time and part: late in training the head's step is mostly noise at low t (2026-10-28)</div>
+  <p>- New <code>train_latch --log-grad-noise-t</code> (stable-audio-3 8c44075). Onset-recipe arm, half-batch 8: whole-head half-batch cosine early 0.56-0.66, late 0.10-0.12 for t &lt; 0.6 and 0.40 at t &gt; 0.8; B_simple 42-50 samples at low t vs batch 16; attention/MLP noisiest (0.06-0.09 late), output/final norm least (0.23-0.28). One seed, one recipe. The probe uses the step's last micro-batch, so with accumulation (micro 4) its halves are 2 items and unreadable: needs pooling. EXPERIMENTS E13b.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · lesson</div>
+  <div class="jtitle">the per-stem inpaint transitions already existed; check the flags before calling something unbuilt (2026-10-28)</div>
+  <p>- I told the listener the 2-bar synth / 4-bar drum staging was never built; it is <code>render_v7_smoketest.py --drum-inpaint-bars / --other-inpaint-bars</code> (Oct 8-9, Antigravity + Kuang), with an earlier ear verdict in the Antigravity journal. I had read F7's plan text, not the renderer's flags or the smoke dirs. Rebuilt as the third candidate (v7c_inpaint_d4o2).</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">sharpening the chroma target nearly doubles frames on the right note (2026-10-29, read 11-02, EXPERIMENTS E13x)</div>
+  <p>- Retrained chroma head at gain 32768: strongest-class hit 0.25 plain vs 0.45 'sharp' (squared, mean removed), while frame cos falls. 'contrast' (mean removed) adds next to nothing. More gain keeps paying slowly with no collapse by 32768. Measured, not heard. files/evals/chroma_e13.html.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16</div>
+  <div class="jtitle">a finite latent can decode to dead audio, and warm-up does not cure it (2026-11-02) <span class="neg">NEGATIVE</span></div>
+  <p>- All-NaN audio from a healthy latent; 3 of 3 fresh processes at the first guided render. I first read this as gain 16384, then as process warm-up; both wrong as a full account, since a head first used after six warm-ups still gave bad cells. One request also came out unsteered in one run and steered in another. Cause not established; rare (2 of 1,715 cells unsteered). Corpus scan: 509 DC-like clips still in the served model-matrix manifest. MASTER section 5.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-11-03 · finding</div>
+  <div class="jtitle">Eight Antigravity boards published after correction, V8 held</div>
+  <p>Read all nine staged pages against their data before publishing. The clips were fine (1,308 decoded, none dead); the prose was not. mood_finegrained called a 314 Hz centroid change +70 Hz and said "proven" about a mood score. E22 said the absolute target moved the root on "almost every track" when it kept 8 of 14. Corrections live only in the staged HTML, so a rebuild restores the old text: Antigravity's 00:38 rebuild of mood_finegrained already did.</p>
+  <p>V8 stays unpublished. KUANG's review sits on a branch that never reached main, so the page looked ready and nothing on main said otherwise. Worth remembering: a staged page can be stale against a review I cannot see from <code>main</code>. Check <code>git log --all</code> for the subject before trusting a page.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-11-03 · lead</div>
+  <div class="jtitle">Dead decode may sit in the GPU VAE decode</div>
+  <p>Antigravity's render notes report the first GPU decode in a process as unreliable, once a constant full-scale signal, with a CPU decode of the same latent clean. Not re-tested. See MASTER section 5.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-11-03 · mistake</div>
+  <div class="jtitle">My publish script hid its own failures</div>
+  <p>A <code>|| true</code> on the directory step, and ssh errors on stdout, so a connection reset both left the upload unfinished and printed the server's address into my session output. Not on any public page. Rewritten with retries, real exit codes and stderr to a private file.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-11-03 · finding</div>
+  <div class="jtitle">The dead decode comes after the latent, and empty_cache can set it off</div>
+  <p>Same request in one process: latent identical to the bit, first render's audio NaN or wrong. With <code>empty_cache</code> between renders, ten of ten NaN. Calling <code>same.decode()</code> between renders was worse. Found by accident: the first version of the mood script did both, and its smoke test logged 31 NaN cells as finished. I had assumed "first render of a process" was the whole pattern; it is one symptom. Root cause still open, and E13's 2 faults in 1,715 with the same call mean something else matters too.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-11-03 · finding</div>
+  <div class="jtitle">Root cause: expandable_segments. My empty_cache story was wrong</div>
+  <p>An imported module set the allocator flag, so every test I thought was without it had it. Isolating the flag took ten renders each way and CPU-side measurement. Without it: no faults in 1,980 clips, and a fresh server is clean. The faults also explain the silent-damage case, where a dead check passes wrong audio. Lesson: read what an import does to the environment before crediting a result to the variable I changed.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-11-03 E24 arm C, first eval uninformative; arm B reopened</div>
+  <div class="jtitle">2026-11-03 E24 arm C, first eval uninformative; arm B reopened</div>
+  <p>One prompt and one seed made every render read as one held E4 (voiced 0.84 in every fed arm), so most scores came back empty, and the foreign arm repeated the true arm. A test design failure, not a result. Separately: the local stream goes to both CFG branches, so CFG never scales it; <code>modular_cfg_null</code> added, default off, tested in eval 2 (<code>eval/e24_eval2.py</code>). And a correction to my own note: E23 only tested L3 through cross-attention with Melodia-trained checkpoints, so skipping arm B on that basis was wrong. See EXPERIMENTS E24.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-11-03 E24 arm C follows, once CFG scales the stream</div>
+  <div class="jtitle">2026-11-03 E24 arm C follows, once CFG scales the stream</div>
+  <p>The stream was going to both CFG branches, so text got x7 and the stream x1. Zeros in the uncond branch: fed minus other +0.467 [+0.392, +0.543], 46/48, gate 0/48, against +0.151 before. Shape over seconds, not notes: note scale +0.103, within a semitone 14% vs 12% unsteered. Also my own scoring error, caught on the first read: true minus shuffled on each arm's own stream gave about 0, because both arms follow. Measured, not heard. EXPERIMENTS E24, <code>files/evals/e24_contour.html</code>.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-11-03 E24 arm B: L3 symbols do not win</div>
+  <div class="jtitle">2026-11-03 E24 arm B: L3 symbols do not win</div>
+  <p>Reopened arm B on the view that E23 only tested cross-attention. Tested properly: L3 from notes through the inlet, L3 agreement +0.020 against centred pitch's +0.028 on the same measure, decoded crops +0.209. The route and source were not what held L3 back. Kept as a negative. EXPERIMENTS E24.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-11-03 Melody from notes works, on the meter</div>
+  <div class="jtitle">2026-11-03 Melody from notes works, on the meter</div>
+  <p>The August pianoroll fine-tune plays invented melodies once CFG scales the stream: fed pitch on 73% of frames vs 2.5% with no stream, 36/36, transposed crops follow too. The model had this since August; the eval held it back with the roll in both CFG branches. Not heard yet. EXPERIMENTS D15, <code>files/evals/pianoroll_melody.html</code>.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-11-03 V8 retrain: gate fails, honest comparison favours it</div>
+  <div class="jtitle">2026-11-03 V8 retrain: gate fails, honest comparison favours it</div>
+  <p>On the valid test (held-out patches, cue at another note), V8's extractor has tax 1.51 against the 1.25 gate, but beats Demucs (1.76) on MSE, cutoff and Mel-SSIM, with intervals clear of zero. Val loss still falling at epoch 20. No board. EXPERIMENTS S8.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-11-03 D15 replicates; EMA reads dead</div>
+  <div class="jtitle">2026-11-03 D15 replicates; EMA reads dead</div>
+  <p>Same invented melodies: without the fix 13%, with it 73%, other render seed 65%, other training seed 73%. EMA weights play nothing (5.0% vs 4.8%), which would have read as a dead model through the default render path. Not heard. EXPERIMENTS D15.</p>
+</div>
+
 <footer class="colophon">
   <span>── end of journal ──</span><span>·</span><span>markdown source: <code>SAO/profiles/wintermute.journal.md</code></span><span>·</span>
   <span style="margin-left:auto"><span class="edge">▮</span> felt more than heard</span>
