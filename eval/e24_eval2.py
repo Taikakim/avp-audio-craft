@@ -35,6 +35,7 @@ PACKS = {
     "B": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_contourB"), 15),
     "A": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_contourA"), 26),
     "P": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_proll"), 128),
+    "PS": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_proll_skyline"), 128),
 }
 ARMS = ("true", "shuffled", "true_null", "shuf_null", "zero")
 LOCAL_FRAMES = 16
@@ -119,7 +120,7 @@ def render(a):
         subprocess.run(["ffmpeg", "-y", "-nostdin", "-loglevel", "error", "-i", str(tmp), "-c:a", "aac", "-b:a", "192k", str(out / f"{name}.m4a")], check=True)
         tmp.replace(out / f"{name}.wav")
 
-    if a.pack == "P":
+    if a.pack in ("P", "PS"):
         sam = load_fullft(Path(a.run) / a.ckpt, "cuda:0", PACKS[a.pack][1])
     else:
         sam, _ = X.load_model(Path(a.run) / f"step={a.step}.ckpt", "cuda:0", n_channels=PACKS[a.pack][1])
@@ -197,9 +198,9 @@ def score(a):
         ro, _ = corr(line, other)
         v = line >= 0
         row = dict(c, r_fed=r, r_other=ro, rl_fed=corr_local(line, fed), rl_other=corr_local(line, other), flat=bool(flat), pitches=int(len(np.unique(line[v]))), changes=int((np.diff(line[v]) != 0).sum()) if v.sum() else 0)
-        if a.pack == "P":
+        if a.pack in ("P", "PS"):
             rr = roll_of(p)
-            own_roll = feed("P", c["stem"], c["window"]) > 0
+            own_roll = feed(a.pack, c["stem"], c["window"]) > 0
             mixed_roll = X.shuffled(own_roll)
             fr, or_ = (mixed_roll, own_roll) if shuf_arm else (own_roll, mixed_roll)
             row["f1_fed"], row["f1_other"] = f1(rr, fr), f1(rr, or_)
@@ -235,7 +236,7 @@ def report(a, rows):
         L.append(f"  note scale, running mean of {LOCAL_FRAMES} frames removed, {lab}: " + follow(both, keep, "both branches", "rl_fed", "rl_other") + " | " + follow(nul, keep, "null uncond", "rl_fed", "rl_other"))
     refs = [r for r in rows if r["arm"] == "ref"]
     L.append(f"  note scale, decoded crops: fed {np.mean([r['rl_fed'] for r in refs]):+.3f}, other {np.mean([r['rl_other'] for r in refs]):+.3f}")
-    if a.pack == "P":
+    if a.pack in ("P", "PS"):
         L.append("(pitch, frame) F1 against the fed roll minus the other roll, D15's measure:")
         L.append("  all crops: " + follow(both, set(ref), "both branches", "f1_fed", "f1_other") + " | " + follow(nul, set(ref), "null uncond", "f1_fed", "f1_other"))
         L.append(f"  decoded crops: fed {np.mean([r['f1_fed'] for r in refs]):.3f}, other {np.mean([r['f1_other'] for r in refs]):.3f}")
