@@ -118,6 +118,9 @@ def main():
         r["length_frames"] = int(m_len.group(1)) if m_len else None
         m_w = re.search(r"w(\d+)", f.name)
         r["adapter_weight"] = float(m_w.group(1)) / 100.0 if m_w else None
+        m_cfg = re.search(r"cfg(\d+)", f.name)
+        r["cfg"] = float(m_cfg.group(1)) if m_cfg else 6.0
+        r["prompt"] = "acid145" if "acid145" in f.name else ("melodic151" if "melodic151" in f.name else "p07")
         results.append(r)
         print(f"   PQ: {r.get('audiobox_pq')} | RT60: {r.get('rt60_s')}s | Flatness: {r.get('spectral_flatness')} | Onsets: {r.get('onsets_per_sec')}/s ({time.time()-t0:.1f}s)")
 

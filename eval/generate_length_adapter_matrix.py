@@ -88,6 +88,36 @@ def load_existing_manifest(path):
                         pass
     return done
 
+def build_tasks():
+    tasks = []
+    # Baseline matrix: lengths 128 to 4096 at CFG 6.0
+    for p_key in PROMPTS:
+        for w in ADAPTER_WEIGHTS:
+            for f in LENGTHS:
+                w_str = f"w{int(round(w * 100)):03d}"
+                tasks.append({
+                    "prompt_key": p_key,
+                    "weight": w,
+                    "frames": f,
+                    "cfg": 6.0,
+                    "clip_id": f"matrix_{p_key}_{w_str}_len{f:04d}"
+                })
+
+    # High-CFG matrix for long lengths 2048 & 4096 at CFG 12.0 and 16.0
+    for p_key in PROMPTS:
+        for w in ADAPTER_WEIGHTS:
+            for f in [2048, 4096]:
+                for cfg in [12.0, 16.0]:
+                    w_str = f"w{int(round(w * 100)):03d}"
+                    tasks.append({
+                        "prompt_key": p_key,
+                        "weight": w,
+                        "frames": f,
+                        "cfg": cfg,
+                        "clip_id": f"matrix_{p_key}_{w_str}_len{f:04d}_cfg{int(cfg):02d}"
+                    })
+    return tasks
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ckpt", type=str, default=DEFAULT_CKPT)
@@ -100,13 +130,11 @@ def main():
     os.makedirs(AAC_DIR, exist_ok=True)
 
     completed = load_existing_manifest(MANIFEST_PATH)
-    total_tasks = len(LENGTHS) * len(ADAPTER_WEIGHTS) * len(PROMPTS)
+    all_tasks = build_tasks()
+    total_tasks = len(all_tasks)
 
-    print(f"=== Length x Adapter Matrix Generator ===")
-    print(f"Lengths: {LENGTHS}")
-    print(f"Weights: {ADAPTER_WEIGHTS}")
-    print(f"Prompts: {list(PROMPTS.keys())}")
-    print(f"Total combinations: {total_tasks}")
+    print(f"=== Length x Adapter Matrix Generator (with High CFG 12 & 16) ===")
+    print(f"Total tasks: {total_tasks}")
     print(f"Already completed: {len(completed)}")
 
     if args.dry_run:
@@ -121,72 +149,76 @@ def main():
     print(f"Loading LoRA adapter: {args.adapter}...")
     model.load_lora([args.adapter])
 
-    current_idx = 0
+    current_weight = None
+
     with open(MANIFEST_PATH, "a", encoding="utf-8") as manifest_file:
-        for p_key, p_info in PROMPTS.items():
+        for current_idx, t in enumerate(all_tasks, 1):
+            p_key = t["prompt_key"]
+            p_info = PROMPTS[p_key]
             prompt_text = p_info["text"]
             bpm = p_info["bpm"]
+            w = t["weight"]
+            f = t["frames"]
+            cfg = t["cfg"]
+            clip_id = t["clip_id"]
 
-            for w in ADAPTER_WEIGHTS:
-                w_str = f"w{int(round(w * 100)):03d}" # w075, w030, w000
+            wav_file = os.path.join(WAV_DIR, f"{clip_id}.wav")
+            aac_file = os.path.join(AAC_DIR, f"{clip_id}.m4a")
+
+            if clip_id in completed and os.path.exists(wav_file) and os.path.exists(aac_file):
+                print(f"[{current_idx}/{total_tasks}] SKIP {clip_id} (already exists)")
+                continue
+
+            if current_weight != w:
                 model.set_lora_strength(w)
+                current_weight = w
 
-                for f in LENGTHS:
-                    current_idx += 1
-                    dur_sec = (f * DOWNSAMPLING_RATIO) / SR
-                    bars = (dur_sec / (60.0 / bpm)) / 4.0
+            dur_sec = (f * DOWNSAMPLING_RATIO) / SR
+            bars = (dur_sec / (60.0 / bpm)) / 4.0
 
-                    clip_id = f"matrix_{p_key}_{w_str}_len{f:04d}"
-                    wav_file = os.path.join(WAV_DIR, f"{clip_id}.wav")
-                    aac_file = os.path.join(AAC_DIR, f"{clip_id}.m4a")
+            print(f"[{current_idx}/{total_tasks}] Generating {clip_id}: {p_key}, weight {w}, {f} frames ({dur_sec:.2f}s / {bars:.1f} bars), CFG {cfg}...", flush=True)
+            torch.cuda.reset_peak_memory_stats()
+            t0 = time.time()
 
-                    if clip_id in completed and os.path.exists(wav_file) and os.path.exists(aac_file):
-                        print(f"[{current_idx}/{total_tasks}] SKIP {clip_id} (already exists)")
-                        continue
+            out = model.generate(
+                prompt=prompt_text,
+                duration=dur_sec,
+                steps=args.steps,
+                cfg_scale=cfg,
+                seed=SEED,
+                batch_size=1
+            )
+            gen_elapsed = time.time() - t0
+            peak_vram = torch.cuda.max_memory_allocated() / 1e9
 
-                    print(f"[{current_idx}/{total_tasks}] Generating {clip_id}: {p_key}, weight {w}, {f} frames ({dur_sec:.2f}s / {bars:.1f} bars)...", flush=True)
-                    torch.cuda.reset_peak_memory_stats()
-                    t0 = time.time()
+            audio = out[0].squeeze(0).cpu().numpy()
+            if audio.ndim == 2:
+                audio = audio.T
+            sf.write(wav_file, audio, SR, subtype="PCM_16")
 
-                    out = model.generate(
-                        prompt=prompt_text,
-                        duration=dur_sec,
-                        steps=args.steps,
-                        cfg_scale=CFG,
-                        seed=SEED,
-                        batch_size=1
-                    )
-                    gen_elapsed = time.time() - t0
-                    peak_vram = torch.cuda.max_memory_allocated() / 1e9
+            convert_to_aac(wav_file, aac_file)
 
-                    audio = out[0].squeeze(0).cpu().numpy()
-                    if audio.ndim == 2:
-                        audio = audio.T
-                    sf.write(wav_file, audio, SR, subtype="PCM_16")
+            meta = {
+                "clip_id": clip_id,
+                "prompt_key": p_key,
+                "prompt_label": p_info["label"],
+                "prompt": prompt_text,
+                "adapter_weight": w,
+                "frames": f,
+                "dur": round(dur_sec, 2),
+                "bars": round(bars, 1),
+                "cfg": cfg,
+                "seed": SEED,
+                "gen_time_s": round(gen_elapsed, 2),
+                "peak_vram_gb": round(peak_vram, 2),
+                "wav_path": wav_file,
+                "aac_path": aac_file,
+                "m4a_rel": f"length_adapter_matrix/{clip_id}.m4a"
+            }
+            manifest_file.write(json.dumps(meta) + "\n")
+            manifest_file.flush()
 
-                    convert_to_aac(wav_file, aac_file)
-
-                    meta = {
-                        "clip_id": clip_id,
-                        "prompt_key": p_key,
-                        "prompt_label": p_info["label"],
-                        "prompt": prompt_text,
-                        "adapter_weight": w,
-                        "frames": f,
-                        "dur": round(dur_sec, 2),
-                        "bars": round(bars, 1),
-                        "cfg": CFG,
-                        "seed": SEED,
-                        "gen_time_s": round(gen_elapsed, 2),
-                        "peak_vram_gb": round(peak_vram, 2),
-                        "wav_path": wav_file,
-                        "aac_path": aac_file,
-                        "m4a_rel": f"length_adapter_matrix/{clip_id}.m4a"
-                    }
-                    manifest_file.write(json.dumps(meta) + "\n")
-                    manifest_file.flush()
-
-                    print(f"   -> Done in {gen_elapsed:.1f}s (peak VRAM: {peak_vram:.2f} GB)")
+            print(f"   -> Done in {gen_elapsed:.1f}s (peak VRAM: {peak_vram:.2f} GB)")
 
     print(f"\nAll {total_tasks} clips generated successfully!")
     os._exit(0)

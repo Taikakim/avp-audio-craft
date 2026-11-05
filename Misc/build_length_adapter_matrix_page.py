@@ -82,8 +82,8 @@ def build_page():
         sorted_lengths = sorted(p_data.keys())
         for f in sorted_lengths:
             items = p_data[f]
-            # sort items by adapter_weight descending (0.75, 0.30, 0.00)
-            items.sort(key=lambda x: -x["adapter_weight"])
+            # sort items by CFG ascending, then adapter_weight descending (0.75, 0.30, 0.00)
+            items.sort(key=lambda x: (x.get("cfg", 6.0), -x["adapter_weight"]))
 
             dur = items[0]["dur"]
             bars = items[0]["bars"]
@@ -101,7 +101,7 @@ def build_page():
               <div class="len-header">
                 <span class="len-title">{f} Frames ({dur:.1f}s / {bars:.1f} bars)</span>
                 {tier_badge}
-                <span class="dim" style="margin-left:auto">{len(items)}/3 weights rendered</span>
+                <span class="dim" style="margin-left:auto">{len(items)} clips rendered</span>
               </div>
               <div class="grid-cards">
             """
@@ -110,6 +110,7 @@ def build_page():
             for it in items:
                 cid = it["clip_id"]
                 w = it["adapter_weight"]
+                cfg = it.get("cfg", 6.0)
                 gen_s = it.get("gen_time_s", 0)
                 vram = it.get("peak_vram_gb", 0)
                 audio_rel = f"{SUB_DIR}/{cid}.m4a"
@@ -121,11 +122,21 @@ def build_page():
                 else:
                     w_badge = '<span class="badge weight-none">Backbone Only (w=0.0)</span>'
 
+                if cfg == 6.0:
+                    cfg_badge = '<span class="badge cfg-std">CFG 6</span>'
+                elif cfg == 12.0:
+                    cfg_badge = '<span class="badge cfg-high">CFG 12</span>'
+                elif cfg == 16.0:
+                    cfg_badge = '<span class="badge cfg-ext">CFG 16</span>'
+                else:
+                    cfg_badge = f'<span class="badge cfg-std">CFG {cfg}</span>'
+
                 card_html = f"""
-                <div class="card" id="{cid}" data-len="{f}" data-weight="{w}" data-prompt="{pk}">
+                <div class="card" id="{cid}" data-len="{f}" data-weight="{w}" data-cfg="{cfg}" data-prompt="{pk}">
                   <div class="top">
                     <span class="tid">{cid}</span>
                     {w_badge}
+                    {cfg_badge}
                     <span class="dim gen-stats">{gen_s:.1f}s gen · {vram:.1f}G VRAM</span>
                   </div>
                   <div class="clip-controls">
@@ -180,6 +191,9 @@ def build_page():
 .weight-hot{{background:#fbeae5;color:#c0392b}}
 .weight-mild{{background:#e8f8f5;color:#16a085}}
 .weight-none{{background:#eaeded;color:#5d6d7e}}
+.cfg-std{{background:#edf2f7;color:#4a5568}}
+.cfg-high{{background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8}}
+.cfg-ext{{background:#fffaf0;color:#c05621;border:1px solid #feebc8}}
 .gen-stats{{margin-left:auto;font-size:10px;color:var(--dim)}}
 .clip-controls{{display:flex;flex-direction:column;gap:8px;margin-top:4px}}
 button.pl{{font:inherit;font-size:12px;font-weight:600;padding:8px 12px;border:1px solid var(--edge);border-radius:4px;background:var(--edge);color:#fff;cursor:pointer;text-align:left;transition:all .15s ease}}
@@ -217,8 +231,8 @@ button.pl.playing{{background:#000;border-color:#000}}
   <h1 style="font-size:18px;margin:4px 0 10px;color:var(--ink)">Sequence Length x Adapter Gain Matrix</h1>
 
   <div class="ex">
-    <strong>A/B Matrix Design:</strong> Evaluating sequence length scaling (128 to 4096 frames / 11.9s to 6.3m) across three adapter weight conditions (<strong>w=0.75</strong> hot, <strong>w=0.30</strong> mild, and <strong>w=0.00</strong> backbone only) and two contrast prompts.<br>
-    <strong>Core Question:</strong> Does beat map disintegration and whitening at long sequence lengths stem from cumulative adapter gain over unrolled attention tokens, or backbone DiT RoPE length extrapolation drift?
+    <strong>A/B/CFG Matrix Design:</strong> Evaluating sequence length scaling (128 to 4096 frames / 11.9s to 6.3m) across three adapter weight conditions (<strong>w=0.75</strong> hot, <strong>w=0.30</strong> mild, and <strong>w=0.00</strong> backbone only), two contrast prompts, and guidance scales (<strong>CFG 6.0</strong>, <strong>CFG 12.0</strong>, and <strong>CFG 16.0</strong> at long sequence lengths).<br>
+    <strong>Core Question:</strong> Long latents exhibit a fragile attractor / dipole dynamic (stable driving passages alternating with arrhythmic kick stumble). Does high CFG (12 &amp; 16) lock the trajectory into the rhythmic basin, or induce high-frequency burnout?
   </div>
 
   <div id="bar">
@@ -231,6 +245,14 @@ button.pl.playing{{background:#000;border-color:#000}}
         <option value="1024">1024 Frames (95.1s)</option>
         <option value="2048">2048 Frames (3.2m)</option>
         <option value="4096">4096 Frames (6.3m)</option>
+      </select>
+    </label>
+    <label>CFG Scale:
+      <select id="sel-cfg">
+        <option value="all">All CFGs</option>
+        <option value="6">CFG 6.0 (Baseline)</option>
+        <option value="12">CFG 12.0 (High Attractor)</option>
+        <option value="16">CFG 16.0 (Extreme Attractor)</option>
       </select>
     </label>
     <label>Adapter Weight:
@@ -248,7 +270,7 @@ button.pl.playing{{background:#000;border-color:#000}}
         <option value="melodic151">Prompt B (Melodic 151 BPM)</option>
       </select>
     </label>
-    <span class="score-summary" id="score-summary">0/36 scored</span>
+    <span class="score-summary" id="score-summary">0/{len(records)} scored</span>
   </div>
 
   {body_content}
@@ -484,19 +506,22 @@ document.addEventListener('click', e => {{
 // Filter controls
 function applyFilters() {{
   const lenVal = document.getElementById('sel-len').value;
+  const cfgVal = document.getElementById('sel-cfg').value;
   const wVal = document.getElementById('sel-weight').value;
   const pVal = document.getElementById('sel-prompt').value;
 
   document.querySelectorAll('.card').forEach(card => {{
     const cLen = card.getAttribute('data-len');
+    const cCfg = card.getAttribute('data-cfg');
     const cW = card.getAttribute('data-weight');
     const cP = card.getAttribute('data-prompt');
 
     const matchLen = (lenVal === 'all' || lenVal === cLen);
+    const matchCfg = (cfgVal === 'all' || parseFloat(cfgVal) === parseFloat(cCfg));
     const matchW = (wVal === 'all' || parseFloat(wVal) === parseFloat(cW));
     const matchP = (pVal === 'all' || pVal === cP);
 
-    if (matchLen && matchW && matchP) {{
+    if (matchLen && matchCfg && matchW && matchP) {{
       card.style.display = 'flex';
     }} else {{
       card.style.display = 'none';
@@ -506,7 +531,7 @@ function applyFilters() {{
   // Hide empty len-sections
   document.querySelectorAll('.len-section').forEach(sec => {{
     const visibleCards = sec.querySelectorAll('.card[style*="display: flex"]');
-    if (visibleCards.length === 0 && (lenVal !== 'all' || wVal !== 'all' || pVal !== 'all')) {{
+    if (visibleCards.length === 0 && (lenVal !== 'all' || cfgVal !== 'all' || wVal !== 'all' || pVal !== 'all')) {{
       sec.style.display = 'none';
     }} else {{
       sec.style.display = 'block';
@@ -525,6 +550,7 @@ function applyFilters() {{
 }}
 
 document.getElementById('sel-len').addEventListener('change', applyFilters);
+document.getElementById('sel-cfg').addEventListener('change', applyFilters);
 document.getElementById('sel-weight').addEventListener('change', applyFilters);
 document.getElementById('sel-prompt').addEventListener('change', applyFilters);
 
