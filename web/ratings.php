@@ -133,7 +133,7 @@ if ($method === 'GET') {
     // TRACK PICKS (2026-11-03): the current pick per track of one pool, so the tagging page shows the same state on any device. Enums only, no timestamps or source.
     if (isset($_GET['trackpicks'])) {
         $pool = (string)$_GET['trackpicks'];
-        if (!preg_match('/^[a-z0-9_-]{1,60}$/', $pool)) { http_response_code(400); echo json_encode(['error' => 'invalid pool']); exit; }
+        if (!preg_match('/^[a-zA-Z0-9_-]{1,60}$/', $pool)) { http_response_code(400); echo json_encode(['error' => 'invalid pool']); exit; }
         $picks = [];
         if (is_file($FILE)) {
             foreach (file($FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $ln) {
@@ -242,7 +242,7 @@ if ($method === 'POST') {
         $id   = (string)($in['id'] ?? '');
         $pick = (string)($in['pick'] ?? '');
         if (!preg_match('/^[a-zA-Z0-9_-]{1,60}$/', $pool) || !preg_match('/^[a-zA-Z0-9._-]{1,80}$/', $id)
-            || !in_array($pick, ['in', 'maybe', 'no', 'clear'], true)) {
+            || !in_array($pick, ['in', 'maybe', 'no', 'clear', '1', '2', '3', '4', '5'], true)) {
             http_response_code(400); echo json_encode(['error' => 'invalid trackpick payload']); exit;
         }
         $rec = ['ts' => time(), 'iso' => gmdate('c'), 'type' => 'trackpick', 'pool' => $pool, 'id' => $id, 'pick' => $pick, 'source' => $source];

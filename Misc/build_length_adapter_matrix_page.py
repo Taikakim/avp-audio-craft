@@ -187,16 +187,23 @@ button.pl:hover{{filter:brightness(1.1)}}
 button.pl.playing{{background:#000;border-color:#000}}
 .score-group{{display:flex;align-items:center;gap:4px;background:#f9f9f9;padding:4px 6px;border-radius:4px;border:1px solid #eee}}
 .score-label{{font-size:11px;color:var(--dim);margin-right:2px}}
-.score-btn{{font:inherit;font-size:12px;font-weight:600;width:30px;height:28px;padding:0;border:1px solid #ccc;border-radius:3px;background:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .1s ease}}
+.score-btn{{font:inherit;font-size:13px;font-weight:700;width:34px;height:32px;padding:0;border:1px solid #ccc;border-radius:4px;background:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:all .1s ease}}
 .score-btn:hover{{border-color:#888;background:#f0f0f0}}
-.score-btn.active{{background:var(--edge);color:#fff;border-color:var(--edge)}}
+.score-btn.active[data-v="1"]{{background:#90a4ae!important;border-color:#607d8b!important;color:#fff!important}}
+.score-btn.active[data-v="2"]{{background:#ffb74d!important;border-color:#f57c00!important;color:#fff!important}}
+.score-btn.active[data-v="3"]{{background:#ffd54f!important;border-color:#ffa000!important;color:#000!important}}
+.score-btn.active[data-v="4"]{{background:#81c784!important;border-color:#388e3c!important;color:#fff!important}}
+.score-btn.active[data-v="5"]{{background:#0c807c!important;border-color:#0c807c!important;color:#fff!important;box-shadow:0 0 6px rgba(12,128,124,0.4)!important}}
 .score-summary{{font-size:11.5px;color:var(--dim);margin-left:auto}}
 @media (max-width:600px){{
   .grid-cards{{grid-template-columns:1fr}}
-  .wrap{{padding:8px 8px 100px}}
+  .wrap{{padding:8px 8px 110px}}
   .len-header{{flex-direction:column;align-items:flex-start;gap:4px}}
   .card .top{{flex-direction:column;align-items:flex-start;gap:4px}}
   .gen-stats{{margin-left:0}}
+  .clip-controls{{flex-direction:column;align-items:stretch;gap:8px}}
+  .score-group{{width:100%;justify-content:space-between;margin-top:4px}}
+  .score-btn{{flex:1;height:42px;font-size:16px}}
 }}
 </style>
 </head>
@@ -369,6 +376,89 @@ a.addEventListener('play', () => {{
   }}
 }});
 
+const POOL = 'length_adapter_matrix';
+const API = '/files/ratings.php';
+let scores = {{}};
+
+try {{
+  scores = JSON.parse(localStorage.getItem(POOL + '_scores') || '{{}}');
+}} catch(e) {{
+  scores = {{}};
+}}
+
+function updateScoreUI() {{
+  const allCards = document.querySelectorAll('.card');
+  let scoredCount = 0;
+
+  allCards.forEach(card => {{
+    const cid = card.id;
+    const sc = scores[cid] || '';
+    const btns = card.querySelectorAll('.score-btn');
+    if (sc) {{
+      scoredCount++;
+      card.classList.add('rated');
+      btns.forEach(b => {{
+        b.classList.toggle('active', b.getAttribute('data-v') === String(sc));
+      }});
+    }} else {{
+      card.classList.remove('rated');
+      btns.forEach(b => b.classList.remove('active'));
+    }}
+  }});
+
+  const summary = document.getElementById('score-summary');
+  if (summary) {{
+    summary.textContent = `${{scoredCount}}/${{allCards.length}} scored`;
+  }}
+}}
+
+async function saveScore(cid, val) {{
+  if (val) {{
+    scores[cid] = String(val);
+  }} else {{
+    delete scores[cid];
+  }}
+  try {{
+    localStorage.setItem(POOL + '_scores', JSON.stringify(scores));
+  }} catch(e) {{}}
+  updateScoreUI();
+
+  try {{
+    await fetch(API, {{
+      method: 'POST',
+      headers: {{'Content-Type': 'application/json'}},
+      body: JSON.stringify({{
+        type: 'trackpick',
+        pool: POOL,
+        id: cid,
+        pick: val ? String(val) : 'clear',
+        source: POOL
+      }})
+    }});
+  }} catch(e) {{
+    console.warn('Live rating sync failed, kept in local storage', e);
+  }}
+}}
+
+async function loadServerScores() {{
+  try {{
+    const r = await fetch(API + '?trackpicks=' + encodeURIComponent(POOL), {{ cache: 'no-store' }});
+    if (r.ok) {{
+      const d = await r.json();
+      if (d.picks) {{
+        for (const [k, v] of Object.entries(d.picks)) {{
+          if (v && v !== 'clear') scores[k] = v;
+          else if (v === 'clear') delete scores[k];
+        }}
+        localStorage.setItem(POOL + '_scores', JSON.stringify(scores));
+        updateScoreUI();
+      }}
+    }}
+  }} catch(e) {{
+    console.warn("Could not fetch server ratings", e);
+  }}
+}}
+
 document.addEventListener('click', e => {{
   const plBtn = e.target.closest('.cell.pl');
   if (plBtn) {{
@@ -376,11 +466,18 @@ document.addEventListener('click', e => {{
     return;
   }}
 
-  if (e.target.classList.contains('score-btn')) {{
-    const val = parseInt(e.target.getAttribute('data-v'));
-    const group = e.target.closest('.score-group');
+  const sBtn = e.target.closest('.score-btn');
+  if (sBtn) {{
+    const group = sBtn.closest('.score-group');
     const cid = group.getAttribute('data-id');
-    syncRating(cid, val);
+    const val = sBtn.getAttribute('data-v');
+    const curVal = scores[cid];
+
+    if (curVal === val) {{
+      saveScore(cid, ''); // toggle off
+    }} else {{
+      saveScore(cid, val); // set score
+    }}
   }}
 }});
 
@@ -431,9 +528,8 @@ document.getElementById('sel-len').addEventListener('change', applyFilters);
 document.getElementById('sel-weight').addEventListener('change', applyFilters);
 document.getElementById('sel-prompt').addEventListener('change', applyFilters);
 
-document.addEventListener('DOMContentLoaded', () => {{
-  updateScoreUI();
-}});
+updateScoreUI();
+loadServerScores();
 </script>
 </body>
 </html>
