@@ -202,7 +202,46 @@ a.loop = true;
 window.a = a;
 if (window.__fp_attach) window.__fp_attach(a);
 let cur = null;
+let isSwitching = false;
+let wasPaused = false;
+let manualSeek = false;
 const card = b => b.closest('.card');
+
+a.addEventListener('ended', () => {{
+  a.currentTime = 0;
+  a.play().catch(e => console.error("Loop error:", e));
+}});
+
+a.addEventListener('pause', () => {{
+  if (!isSwitching) {{
+    wasPaused = true;
+    manualSeek = false;
+  }}
+  if (cur) {{
+    cur.classList.remove('playing');
+    if (card(cur)) card(cur).classList.remove('now');
+  }}
+}});
+
+a.addEventListener('seeking', () => {{
+  if (a.paused) {{
+    manualSeek = true;
+  }}
+}});
+
+a.addEventListener('play', () => {{
+  if (wasPaused && !isSwitching) {{
+    if (!manualSeek) {{
+      a.currentTime = 0;
+    }}
+    wasPaused = false;
+    manualSeek = false;
+  }}
+  if (cur) {{
+    cur.classList.add('playing');
+    if (card(cur)) card(cur).classList.add('now');
+  }}
+}});
 
 function paint() {{
   document.querySelectorAll('.card').forEach(c => {{
@@ -233,6 +272,9 @@ function start(b) {{
   const f = SUB + '/' + b.dataset.f;
   const c = card(b);
   const same = a.src.endsWith('/' + f);
+  const isPlaying = !a.paused && !a.ended && a.currentTime > 0;
+  const t = isPlaying ? a.currentTime : 0;
+
   if (cur && cur !== b) {{
     cur.classList.remove('playing');
     if (card(cur)) card(cur).classList.remove('now');
@@ -240,19 +282,67 @@ function start(b) {{
   cur = b;
   b.classList.add('playing');
   if (c) c.classList.add('now');
+
   if (same) {{
-    if (a.paused) a.play();
+    // Was paused/stopped: restart from beginning
+    a.currentTime = 0;
+    wasPaused = false;
+    manualSeek = false;
+    a.play().catch(e => console.error("Play error:", e));
     return;
   }}
-  // If changing clip: start from beginning if playback had stopped,
-  // otherwise maintain playhead position for synchronized A/B comparison
-  const wasStopped = a.paused || a.ended;
-  const t = wasStopped ? 0 : a.currentTime;
-  a.src = f;
-  a.addEventListener('loadedmetadata', () => {{
-    a.currentTime = (t < (a.duration || 1e9)) ? t : 0;
-    a.play();
-  }}, {{once: true}});
+
+  if (isPlaying && t > 0) {{
+    // Keep playing and preserve playhead when switching
+    isSwitching = true;
+    wasPaused = false;
+    manualSeek = false;
+    a.src = f;
+
+    let seekDone = false;
+    const applySeek = () => {{
+      if (seekDone) return;
+      const d = a.duration;
+      if (d && isFinite(d) && d > 0) {{
+        a.currentTime = (t < d) ? t : (t % d);
+        seekDone = true;
+      }}
+    }};
+
+    a.addEventListener('loadedmetadata', applySeek, {{ once: true }});
+    a.addEventListener('canplay', applySeek, {{ once: true }});
+
+    const p = a.play();
+    if (p !== undefined) {{
+      p.then(() => {{
+        applySeek();
+        setTimeout(() => {{ isSwitching = false; }}, 80);
+      }}).catch(err => {{
+        console.error("Audio playback error:", err);
+        isSwitching = false;
+      }});
+    }} else {{
+      setTimeout(() => {{ isSwitching = false; }}, 80);
+    }}
+  }} else {{
+    // Was paused/stopped: restart from beginning
+    isSwitching = false;
+    wasPaused = false;
+    manualSeek = false;
+    a.src = f;
+    a.currentTime = 0;
+
+    a.addEventListener('loadedmetadata', () => {{
+      a.currentTime = 0;
+    }}, {{ once: true }});
+
+    const p = a.play();
+    if (p !== undefined) {{
+      p.then(() => {{
+        a.currentTime = 0;
+      }}).catch(err => console.error("Playback error:", err));
+    }}
+  }}
 }}
 
 document.addEventListener('click', async e => {{

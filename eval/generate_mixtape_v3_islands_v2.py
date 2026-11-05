@@ -58,7 +58,7 @@ TRACKS = [
         "bpm": 143.0,
         "key": "G minor",
         "prompt_core": "2020s goa trance, space retro mood, 143 bpm",
-        "prompt_ext": "2020s goa trance, space retro mood, 143 bpm, Roland SH-101 lead, euphoric mood, in original key, steady 143 bpm, tight groove, high fidelity",
+        "prompt_ext": "2020s goa trance, space retro mood, 143 bpm, G minor, Roland SH-101 lead, euphoric mood, steady 143 bpm, tight groove, high fidelity",
         "prompt_bridge": "2020s goa trance, 143 bpm, atmospheric breakdown, soaring filter sweep, cosmic resonance, steady tempo"
     },
     {
@@ -67,7 +67,7 @@ TRACKS = [
         "bpm": 136.0,
         "key": "F# minor",
         "prompt_core": "psychedelic trance, 136 bpm, bubbling acid line, pulsating sub bass, tight kick and hi-hats, mystical",
-        "prompt_ext": "psychedelic trance, 136 bpm, bubbling acid line, pulsating sub bass, tight kick and hi-hats, mystical, goa trance, TB-303 resonance, in original key, steady 136 bpm",
+        "prompt_ext": "psychedelic trance, 136 bpm, bubbling acid line, pulsating sub bass, tight kick and hi-hats, mystical, goa trance, TB-303 resonance, F# minor, steady 136 bpm",
         "prompt_bridge": "psychedelic trance, 136 bpm, bubbling 303 acid line build-up, resonant filter modulation, rising tension, steady groove"
     },
     {
@@ -76,7 +76,7 @@ TRACKS = [
         "bpm": 125.0,
         "key": "Eb major",
         "prompt_core": "high-energy psytrance, driving classic goa trance, polished production, 125 bpm, E-flat major, lush jazzy lift",
-        "prompt_ext": "high-energy psytrance, driving classic goa trance, polished production, 125 bpm, E-flat major, analog lead, cosmic mood, in original key, steady 125 bpm",
+        "prompt_ext": "high-energy psytrance, driving classic goa trance, polished production, 125 bpm, E-flat major, analog lead, cosmic mood, steady 125 bpm",
         "prompt_bridge": "driving classic goa trance, 125 bpm, Eb major, lush jazzy lift, euphoric arpeggio sweep, transitional bridge, steady tempo"
     },
     {
@@ -85,7 +85,7 @@ TRACKS = [
         "bpm": 132.0,
         "key": "A minor",
         "prompt_core": "2020s tech trance, trance, space mood, 132 bpm",
-        "prompt_ext": "2020s tech trance, trance, space mood, 132 bpm, goa trance, euphoric mood, in original key, steady 132 bpm, metallic pluck texture",
+        "prompt_ext": "2020s tech trance, trance, space mood, 132 bpm, goa trance, euphoric mood, A minor, steady 132 bpm, metallic pluck texture",
         "prompt_bridge": "2020s tech trance, 132 bpm, space mood, rising arpeggiator, industrial percussion build, transitional sweep"
     },
     {
@@ -94,7 +94,7 @@ TRACKS = [
         "bpm": 151.0,
         "key": "D minor",
         "prompt_core": "mid 90s goa trance, melodic mood, 151 bpm",
-        "prompt_ext": "mid 90s goa trance, melodic mood, 151 bpm, hypnotic arpeggio, uplifting mood, in original key, steady 151 bpm, soaring harmony",
+        "prompt_ext": "mid 90s goa trance, melodic mood, 151 bpm, hypnotic arpeggio, uplifting mood, D minor, steady 151 bpm, soaring harmony",
         "prompt_bridge": "mid 90s goa trance, 151 bpm, melodic mood, soaring dual-lead harmony, frantic 16th-note arpeggios, atmospheric build"
     },
     {
@@ -103,7 +103,7 @@ TRACKS = [
         "bpm": 110.0,
         "key": "C minor",
         "prompt_core": "mid 90s goa trance, ambient, space soundscape mood, 110 bpm",
-        "prompt_ext": "mid 90s goa trance, ambient, space soundscape mood, 110 bpm, mystical pads, deep meditation, in original key, steady 110 bpm",
+        "prompt_ext": "mid 90s goa trance, ambient, space soundscape mood, 110 bpm, mystical pads, deep meditation, C minor, steady 110 bpm",
         "prompt_bridge": "mid 90s goa trance ambient, 110 bpm, Polivoks psychedelic sfx, dirty analog tape delay, atmospheric drone sweep"
     },
     {
@@ -112,7 +112,7 @@ TRACKS = [
         "bpm": 102.0,
         "key": "E minor",
         "prompt_core": "early 90s downtempo, ambient, meditative soundscape mood, 102 bpm",
-        "prompt_ext": "early 90s downtempo, ambient, meditative soundscape mood, 102 bpm, goa trance, lush synth, in original key, steady 102 bpm",
+        "prompt_ext": "early 90s downtempo, ambient, meditative soundscape mood, 102 bpm, goa trance, lush synth, E minor, steady 102 bpm",
         "prompt_bridge": "early 90s downtempo ambient, 102 bpm, Buchla generative blips, warm Rhodes chords, deep warm sub bass build"
     },
     {
@@ -121,7 +121,7 @@ TRACKS = [
         "bpm": 145.0,
         "key": "F minor",
         "prompt_core": "early 2000s goa trance, melodic dark mood, 145 bpm",
-        "prompt_ext": "early 2000s goa trance, melodic dark mood, 145 bpm, driving acid lead, energetic mood, in original key, steady 145 bpm",
+        "prompt_ext": "early 2000s goa trance, melodic dark mood, 145 bpm, driving acid lead, energetic mood, F minor, steady 145 bpm",
         "prompt_bridge": "early 2000s goa trance, 145 bpm, dark minor 9th bittersweet arpeggios, screaming resonance, sinister space drone build"
     },
     {
@@ -139,7 +139,7 @@ TRACKS = [
         "bpm": 147.0,
         "key": "B minor",
         "prompt_core": "late 90s goa trance, 147 bpm",
-        "prompt_ext": "late 90s goa trance, 147 bpm, melodic lead, euphoric mood, in original key, steady 147 bpm, TB-303 resonance",
+        "prompt_ext": "late 90s goa trance, 147 bpm, melodic lead, euphoric mood, B minor, steady 147 bpm, TB-303 resonance",
         "prompt_bridge": "late 90s goa trance, 147 bpm, dual 303 acid battle, resonant bandpass filter sweeps, punchy 909 snare rolls build"
     }
 ]
