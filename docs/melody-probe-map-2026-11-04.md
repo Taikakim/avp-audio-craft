@@ -82,3 +82,48 @@ $PY latch/melody_probe_map.py analyze --latent-dir $LAT --acts-dir $OUT/acts \
 - **The f0 head's training split** may include some of these crops. That would inflate the head baseline, making the "blocks beat the head" test conservative.
 - **Off-trajectory activations.** They come from forward-noised real latents, not the model's own sampling path. A positive result should be checked on rendered trajectories.
 - **Tested on the CPU only.** 7 tests: the targets (band separation on a synthetic contour), the grouped ridge, and a full extract → analyze pass on a fake DiT and corpus. The real model, real companions, run time and disk use are untested.
+
+## Results (Run 2026-11-04/05)
+
+Raw results: [`eval/melody_probe_2026-11-04/melody_probe_map.json`](file:///home/kim/Projects/SAO/eval/melody_probe_2026-11-04/melody_probe_map.json)
+
+160 crops, 66 artists, 25053 voiced frames, window 320 frames; ridge R^2, folds grouped by artist.
+
+| sigma | target | best block (R^2) | x_t ctx | f0 head | z0 ctx | hpcp oracle | random-init best | null |
+|---|---|---|---|---|---|---|---|---|
+| 0.99 | f0_semi | 3 (-0.013) | -0.019 | -0.001 | 0.220 | -0.044 | - | - |
+| 0.99 | f0_slow | 3 (-0.013) | -0.023 | -0.000 | 0.206 | -0.059 | - | -0.058 |
+| 0.99 | f0_phrase | 6 (-0.002) | -0.003 | -0.001 | 0.008 | -0.000 | - | -0.003 |
+| 0.99 | f0_note | 8 (-0.002) | -0.001 | -0.000 | -0.001 | -0.000 | - | - |
+| 0.99 | f0_delta | 6 (-0.002) | -0.003 | -0.000 | 0.000 | -0.000 | - | - |
+| 0.99 | beat | 14 (0.005) | -0.002 | - | 0.606 | - | - | - |
+| 0.909 | f0_semi | 1 (0.152) | 0.037 | 0.282 | 0.220 | -0.044 | - | - |
+| 0.909 | f0_slow | 1 (0.171) | 0.039 | 0.340 | 0.206 | -0.059 | - | -0.045 |
+| 0.909 | f0_phrase | 6 (0.007) | -0.001 | 0.003 | 0.008 | -0.000 | - | -0.003 |
+| 0.909 | f0_note | 9 (-0.001) | -0.001 | -0.000 | -0.001 | -0.000 | - | - |
+| 0.909 | f0_delta | 10 (-0.001) | -0.003 | -0.000 | 0.000 | -0.000 | - | - |
+| 0.909 | beat | 22 (0.635) | 0.044 | - | 0.606 | - | - | - |
+| 0.715 | f0_semi | 13 (0.287) | 0.153 | 0.397 | 0.220 | -0.044 | - | - |
+| 0.715 | f0_slow | 15 (0.322) | 0.150 | 0.466 | 0.206 | -0.059 | - | -0.075 |
+| 0.715 | f0_phrase | 16 (0.026) | 0.004 | 0.021 | 0.008 | -0.000 | - | -0.002 |
+| 0.715 | f0_note | 14 (0.003) | -0.000 | 0.000 | -0.001 | -0.000 | - | - |
+| 0.715 | f0_delta | 12 (0.006) | -0.002 | -0.000 | 0.000 | -0.000 | - | - |
+| 0.715 | beat | 14 (0.820) | 0.356 | - | 0.606 | - | - | - |
+| 0.5 | f0_semi | 12 (0.327) | 0.205 | 0.454 | 0.220 | -0.044 | 0.112 | - |
+| 0.5 | f0_slow | 12 (0.346) | 0.195 | 0.525 | 0.206 | -0.059 | 0.108 | -0.064 |
+| 0.5 | f0_phrase | 12 (0.029) | 0.007 | 0.037 | 0.008 | -0.000 | 0.002 | -0.003 |
+| 0.5 | f0_note | 11 (0.006) | -0.000 | 0.001 | -0.001 | -0.000 | -0.002 | - |
+| 0.5 | f0_delta | 12 (0.006) | -0.000 | -0.000 | 0.000 | -0.000 | -0.002 | - |
+| 0.5 | beat | 14 (0.828) | 0.518 | - | 0.606 | - | - | - |
+| 0.285 | f0_semi | 11 (0.327) | 0.217 | 0.470 | 0.220 | -0.044 | - | - |
+| 0.285 | f0_slow | 11 (0.339) | 0.204 | 0.538 | 0.206 | -0.059 | - | -0.074 |
+| 0.285 | f0_phrase | 12 (0.031) | 0.007 | 0.053 | 0.008 | -0.000 | - | -0.003 |
+| 0.285 | f0_note | 11 (0.005) | -0.000 | 0.001 | -0.001 | -0.000 | - | - |
+| 0.285 | f0_delta | 12 (0.005) | 0.000 | -0.000 | 0.000 | -0.000 | - | - |
+| 0.285 | beat | 14 (0.829) | 0.586 | - | 0.606 | - | - | - |
+| 0.137 | f0_semi | 11 (0.326) | 0.219 | 0.474 | 0.220 | -0.044 | 0.151 | - |
+| 0.137 | f0_slow | 11 (0.342) | 0.205 | 0.554 | 0.206 | -0.059 | 0.148 | -0.072 |
+| 0.137 | f0_phrase | 12 (0.029) | 0.007 | 0.060 | 0.008 | -0.000 | 0.004 | -0.004 |
+| 0.137 | f0_note | 13 (0.003) | -0.001 | 0.001 | -0.001 | -0.000 | -0.001 | - |
+| 0.137 | f0_delta | 12 (0.003) | 0.000 | -0.000 | 0.000 | -0.000 | -0.002 | - |
+| 0.137 | beat | 14 (0.828) | 0.601 | - | 0.606 | - | - | - |

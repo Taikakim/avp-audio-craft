@@ -1,0 +1,6 @@
+[analyze] sigma 0.99: best blocks {'f0_semi': 3, 'f0_slow': 3, 'f0_phrase': 6, 'f0_note': 8, 'f0_delta': 6, 'beat': 14}  (268 s)
+[analyze] sigma 0.909: best blocks {'f0_semi': 1, 'f0_slow': 1, 'f0_phrase': 6, 'f0_note': 9, 'f0_delta': 10, 'beat': 22}  (252 s)
+[analyze] sigma 0.715: best blocks {'f0_semi': 13, 'f0_slow': 15, 'f0_phrase': 16, 'f0_note': 14, 'f0_delta': 12, 'beat': 14}  (252 s)
+[analyze] sigma 0.5: best blocks {'f0_semi': 12, 'f0_slow': 12, 'f0_phrase': 12, 'f0_note': 11, 'f0_delta': 12, 'beat': 14}  (254 s)
+[analyze] sigma 0.285: best blocks {'f0_semi': 11, 'f0_slow': 11, 'f0_phrase': 12, 'f0_note': 11, 'f0_delta': 12, 'beat': 14}  (260 s)
+[analyze] sigma 0.137: best blocks {'f0_semi': 11, 'f0_slow': 11, 'f0_phrase': 12, 'f0_note': 13, 'f0_delta': 12, 'beat': 14}  (262 s)
