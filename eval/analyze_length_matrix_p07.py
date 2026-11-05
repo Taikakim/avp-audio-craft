@@ -109,7 +109,21 @@ def main():
 
     print(f"Analyzing {len(files)} files...")
     results = []
+    cached = {}
+    if os.path.exists(args.out_json):
+        try:
+            with open(args.out_json, "r") as in_f:
+                prev = json.load(in_f)
+                for item in prev:
+                    if "filename" in item:
+                        cached[item["filename"]] = item
+        except Exception:
+            pass
+
     for i, f in enumerate(files):
+        if f.name in cached:
+            results.append(cached[f.name])
+            continue
         t0 = time.time()
         print(f"[{i+1}/{len(files)}] Processing {f.name}...")
         r = analyze_clip(f, run_audiobox=True)

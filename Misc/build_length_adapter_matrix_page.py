@@ -128,6 +128,10 @@ def build_page():
                     cfg_badge = '<span class="badge cfg-high">CFG 12</span>'
                 elif cfg == 16.0:
                     cfg_badge = '<span class="badge cfg-ext">CFG 16</span>'
+                elif cfg == 24.0:
+                    cfg_badge = '<span class="badge cfg-hyper">CFG 24</span>'
+                elif cfg == 32.0:
+                    cfg_badge = '<span class="badge cfg-ultra">CFG 32</span>'
                 else:
                     cfg_badge = f'<span class="badge cfg-std">CFG {cfg}</span>'
 
@@ -194,6 +198,8 @@ def build_page():
 .cfg-std{{background:#edf2f7;color:#4a5568}}
 .cfg-high{{background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8}}
 .cfg-ext{{background:#fffaf0;color:#c05621;border:1px solid #feebc8}}
+.cfg-hyper{{background:#f3e8ff;color:#6b21a8;border:1px solid #e9d5ff}}
+.cfg-ultra{{background:#ffe4e6;color:#9f1239;border:1px solid #fecdd3}}
 .gen-stats{{margin-left:auto;font-size:10px;color:var(--dim)}}
 .clip-controls{{display:flex;flex-direction:column;gap:8px;margin-top:4px}}
 button.pl{{font:inherit;font-size:12px;font-weight:600;padding:8px 12px;border:1px solid var(--edge);border-radius:4px;background:var(--edge);color:#fff;cursor:pointer;text-align:left;transition:all .15s ease}}
@@ -231,8 +237,8 @@ button.pl.playing{{background:#000;border-color:#000}}
   <h1 style="font-size:18px;margin:4px 0 10px;color:var(--ink)">Sequence Length x Adapter Gain Matrix</h1>
 
   <div class="ex">
-    <strong>A/B/CFG Matrix Design:</strong> Evaluating sequence length scaling (128 to 4096 frames / 11.9s to 6.3m) across three adapter weight conditions (<strong>w=0.75</strong> hot, <strong>w=0.30</strong> mild, and <strong>w=0.00</strong> backbone only), two contrast prompts, and guidance scales (<strong>CFG 6.0</strong>, <strong>CFG 12.0</strong>, and <strong>CFG 16.0</strong> at long sequence lengths).<br>
-    <strong>Core Question:</strong> Long latents exhibit a fragile attractor / dipole dynamic (stable driving passages alternating with arrhythmic kick stumble). Does high CFG (12 &amp; 16) lock the trajectory into the rhythmic basin, or induce high-frequency burnout?
+    <strong>A/B/CFG Matrix Design:</strong> Evaluating sequence length scaling (128 to 4096 frames / 11.9s to 6.3m) across three adapter weight conditions (<strong>w=0.75</strong> hot, <strong>w=0.30</strong> mild, and <strong>w=0.00</strong> backbone only), two contrast prompts, and guidance scales (<strong>CFG 6.0</strong>, <strong>12.0</strong>, <strong>16.0</strong>, <strong>24.0</strong>, and <strong>32.0</strong>).<br>
+    <strong>Core Question:</strong> Long latents exhibit a fragile attractor / dipole dynamic (stable driving passages alternating with arrhythmic kick stumble). Does hyper/ultra CFG (24 &amp; 32) permanently lock the trajectory into the rhythmic basin, or induce high-frequency burnout and distortion?
   </div>
 
   <div id="bar">
@@ -253,6 +259,8 @@ button.pl.playing{{background:#000;border-color:#000}}
         <option value="6">CFG 6.0 (Baseline)</option>
         <option value="12">CFG 12.0 (High Attractor)</option>
         <option value="16">CFG 16.0 (Extreme Attractor)</option>
+        <option value="24">CFG 24.0 (Hyper Guidance)</option>
+        <option value="32">CFG 32.0 (Ultra Guidance)</option>
       </select>
     </label>
     <label>Adapter Weight:

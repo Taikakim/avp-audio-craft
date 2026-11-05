@@ -103,11 +103,25 @@ def build_tasks():
                     "clip_id": f"matrix_{p_key}_{w_str}_len{f:04d}"
                 })
 
-    # High-CFG matrix for long lengths 2048 & 4096 at CFG 12.0 and 16.0
+    # High-CFG matrix for long lengths 2048 & 4096 at CFG 12.0, 16.0, 24.0, 32.0
     for p_key in PROMPTS:
         for w in ADAPTER_WEIGHTS:
             for f in [2048, 4096]:
-                for cfg in [12.0, 16.0]:
+                for cfg in [12.0, 16.0, 24.0, 32.0]:
+                    w_str = f"w{int(round(w * 100)):03d}"
+                    tasks.append({
+                        "prompt_key": p_key,
+                        "weight": w,
+                        "frames": f,
+                        "cfg": cfg,
+                        "clip_id": f"matrix_{p_key}_{w_str}_len{f:04d}_cfg{int(cfg):02d}"
+                    })
+
+    # Multi-CFG matrix for short lengths 256 & 512 at CFG 12.0, 16.0, 24.0, 32.0
+    for p_key in PROMPTS:
+        for w in ADAPTER_WEIGHTS:
+            for f in [256, 512]:
+                for cfg in [12.0, 16.0, 24.0, 32.0]:
                     w_str = f"w{int(round(w * 100)):03d}"
                     tasks.append({
                         "prompt_key": p_key,
