@@ -82,8 +82,8 @@ def build_page():
         sorted_lengths = sorted(p_data.keys())
         for f in sorted_lengths:
             items = p_data[f]
-            # sort items by CFG ascending, then adapter_weight descending (0.75, 0.30, 0.00)
-            items.sort(key=lambda x: (x.get("cfg", 6.0), -x["adapter_weight"]))
+            # sort items: healthy dora256 first, then CFG ascending, then adapter_weight descending
+            items.sort(key=lambda x: (x.get("adapter_name", "subloss_k24") != "dora256_avp_aug10", x.get("cfg", 6.0), -x["adapter_weight"]))
 
             dur = items[0]["dur"]
             bars = items[0]["bars"]
@@ -111,19 +111,31 @@ def build_page():
                 cid = it["clip_id"]
                 w = it["adapter_weight"]
                 cfg = it.get("cfg", 6.0)
+                ad_name = it.get("adapter_name", "subloss_k24")
                 gen_s = it.get("gen_time_s", 0)
                 vram = it.get("peak_vram_gb", 0)
                 audio_rel = f"{SUB_DIR}/{cid}.m4a"
 
+                if ad_name == "dora256_avp_aug10":
+                    ad_badge = '<span class="badge adapter-healthy">dora256 (#1 Matrix)</span>'
+                else:
+                    ad_badge = '<span class="badge adapter-subloss">subloss_k24</span>'
+
                 if w == 0.75:
-                    w_badge = '<span class="badge weight-hot">LoRA w=0.75 (Hot)</span>'
+                    w_badge = '<span class="badge weight-hot">w=0.75 (Hot)</span>'
+                elif w == 0.50:
+                    w_badge = '<span class="badge weight-mid50">w=0.50 (Balanced)</span>'
                 elif w == 0.30:
-                    w_badge = '<span class="badge weight-mild">LoRA w=0.30 (Mild)</span>'
+                    w_badge = '<span class="badge weight-mild">w=0.30 (Mild)</span>'
+                elif w == 0.25:
+                    w_badge = '<span class="badge weight-mid25">w=0.25 (Subtle)</span>'
                 else:
                     w_badge = '<span class="badge weight-none">Backbone Only (w=0.0)</span>'
 
                 if cfg == 6.0:
                     cfg_badge = '<span class="badge cfg-std">CFG 6</span>'
+                elif cfg == 7.0:
+                    cfg_badge = '<span class="badge cfg-std">CFG 7</span>'
                 elif cfg == 12.0:
                     cfg_badge = '<span class="badge cfg-high">CFG 12</span>'
                 elif cfg == 16.0:
@@ -136,9 +148,10 @@ def build_page():
                     cfg_badge = f'<span class="badge cfg-std">CFG {cfg}</span>'
 
                 card_html = f"""
-                <div class="card" id="{cid}" data-len="{f}" data-weight="{w}" data-cfg="{cfg}" data-prompt="{pk}">
+                <div class="card" id="{cid}" data-len="{f}" data-weight="{w}" data-cfg="{cfg}" data-adapter="{ad_name}" data-prompt="{pk}">
                   <div class="top">
                     <span class="tid">{cid}</span>
+                    {ad_badge}
                     {w_badge}
                     {cfg_badge}
                     <span class="dim gen-stats">{gen_s:.1f}s gen · {vram:.1f}G VRAM</span>
@@ -192,8 +205,12 @@ def build_page():
 .badge-short{{background:#eef6fc;color:#1c6ca1}}
 .badge-mid{{background:#f4f0fa;color:#6b3ba6}}
 .badge-long{{background:#fdf2e9;color:#b25900}}
+.adapter-healthy{{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}}
+.adapter-subloss{{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}}
 .weight-hot{{background:#fbeae5;color:#c0392b}}
+.weight-mid50{{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}}
 .weight-mild{{background:#e8f8f5;color:#16a085}}
+.weight-mid25{{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}}
 .weight-none{{background:#eaeded;color:#5d6d7e}}
 .cfg-std{{background:#edf2f7;color:#4a5568}}
 .cfg-high{{background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8}}
@@ -242,6 +259,13 @@ button.pl.playing{{background:#000;border-color:#000}}
   </div>
 
   <div id="bar">
+    <label>Adapter:
+      <select id="sel-adapter">
+        <option value="all">All Adapters</option>
+        <option value="dora256_avp_aug10">dora256_avp (Rank #1 Healthy)</option>
+        <option value="subloss_k24">subloss_k24 (Experimental)</option>
+      </select>
+    </label>
     <label>Length:
       <select id="sel-len">
         <option value="all">All Lengths (128–4096)</option>
@@ -257,6 +281,7 @@ button.pl.playing{{background:#000;border-color:#000}}
       <select id="sel-cfg">
         <option value="all">All CFGs</option>
         <option value="6">CFG 6.0 (Baseline)</option>
+        <option value="7">CFG 7.0 (Default)</option>
         <option value="12">CFG 12.0 (High Attractor)</option>
         <option value="16">CFG 16.0 (Extreme Attractor)</option>
         <option value="24">CFG 24.0 (Hyper Guidance)</option>
@@ -267,7 +292,9 @@ button.pl.playing{{background:#000;border-color:#000}}
       <select id="sel-weight">
         <option value="all">All Weights</option>
         <option value="0.75">w=0.75 (Hot)</option>
+        <option value="0.5">w=0.50 (Balanced)</option>
         <option value="0.3">w=0.30 (Mild)</option>
+        <option value="0.25">w=0.25 (Subtle)</option>
         <option value="0.0">w=0.00 (Backbone only)</option>
       </select>
     </label>
@@ -517,19 +544,22 @@ function applyFilters() {{
   const cfgVal = document.getElementById('sel-cfg').value;
   const wVal = document.getElementById('sel-weight').value;
   const pVal = document.getElementById('sel-prompt').value;
+  const adVal = document.getElementById('sel-adapter').value;
 
   document.querySelectorAll('.card').forEach(card => {{
     const cLen = card.getAttribute('data-len');
     const cCfg = card.getAttribute('data-cfg');
     const cW = card.getAttribute('data-weight');
     const cP = card.getAttribute('data-prompt');
+    const cAd = card.getAttribute('data-adapter') || 'subloss_k24';
 
     const matchLen = (lenVal === 'all' || lenVal === cLen);
     const matchCfg = (cfgVal === 'all' || parseFloat(cfgVal) === parseFloat(cCfg));
     const matchW = (wVal === 'all' || parseFloat(wVal) === parseFloat(cW));
     const matchP = (pVal === 'all' || pVal === cP);
+    const matchAd = (adVal === 'all' || adVal === cAd);
 
-    if (matchLen && matchCfg && matchW && matchP) {{
+    if (matchLen && matchCfg && matchW && matchP && matchAd) {{
       card.style.display = 'flex';
     }} else {{
       card.style.display = 'none';
@@ -539,7 +569,7 @@ function applyFilters() {{
   // Hide empty len-sections
   document.querySelectorAll('.len-section').forEach(sec => {{
     const visibleCards = sec.querySelectorAll('.card[style*="display: flex"]');
-    if (visibleCards.length === 0 && (lenVal !== 'all' || cfgVal !== 'all' || wVal !== 'all' || pVal !== 'all')) {{
+    if (visibleCards.length === 0 && (lenVal !== 'all' || cfgVal !== 'all' || wVal !== 'all' || pVal !== 'all' || adVal !== 'all')) {{
       sec.style.display = 'none';
     }} else {{
       sec.style.display = 'block';
@@ -557,6 +587,7 @@ function applyFilters() {{
   }});
 }}
 
+document.getElementById('sel-adapter').addEventListener('change', applyFilters);
 document.getElementById('sel-len').addEventListener('change', applyFilters);
 document.getElementById('sel-cfg').addEventListener('change', applyFilters);
 document.getElementById('sel-weight').addEventListener('change', applyFilters);
