@@ -278,23 +278,59 @@ function start(b) {{
 
   const isCurrentlyPlaying = !a.paused && a.currentTime > 0;
   const prevTime = a.currentTime;
-  isSwitching = true;
-  a.src = f;
 
-  a.addEventListener('loadedmetadata', () => {{
-    if (isCurrentlyPlaying) {{
-      const d = a.duration || 1e9;
-      a.currentTime = prevTime < d ? prevTime : (prevTime % d);
+  if (isCurrentlyPlaying) {{
+    // Continuous playhead across clip switching
+    isSwitching = true;
+    wasPaused = false;
+    manualSeek = false;
+    a.src = f;
+
+    let seekDone = false;
+    const applySeek = () => {{
+      if (seekDone) return;
+      const d = a.duration;
+      if (d && isFinite(d) && d > 0) {{
+        a.currentTime = (prevTime < d) ? prevTime : (prevTime % d);
+        seekDone = true;
+      }}
+    }};
+
+    a.addEventListener('loadedmetadata', applySeek, {{ once: true }});
+    a.addEventListener('canplay', applySeek, {{ once: true }});
+
+    // Call play() synchronously in the user touch event stack (vital for mobile browsers!)
+    const p = a.play();
+    if (p !== undefined) {{
+      p.then(() => {{
+        applySeek();
+        setTimeout(() => {{ isSwitching = false; }}, 80);
+      }}).catch(err => {{
+        console.error("Audio playback error:", err);
+        isSwitching = false;
+      }});
     }} else {{
-      a.currentTime = 0;
+      setTimeout(() => {{ isSwitching = false; }}, 80);
     }}
-    a.play().then(() => {{
-      isSwitching = false;
-    }}).catch(e => {{
-      isSwitching = false;
-      console.log('play err', e);
-    }});
-  }}, {{ once: true }});
+  }} else {{
+    // Was paused or stopped: restart clip from the beginning (0:00)
+    isSwitching = false;
+    wasPaused = false;
+    manualSeek = false;
+    a.src = f;
+    a.currentTime = 0;
+
+    a.addEventListener('loadedmetadata', () => {{
+      a.currentTime = 0;
+    }}, {{ once: true }});
+
+    const p = a.play();
+    if (p !== undefined) {{
+      p.then(() => {{
+        a.currentTime = 0;
+      }}).catch(err => console.error("Playback error:", err));
+    }}
+  }}
 }}
 
 document.addEventListener('click', e => {{
