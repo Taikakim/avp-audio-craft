@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "name": "mixtape_v3/t08_soup_ep7_ep14_base_w100_ext_same",
+  "created": 1793803377.7597182,
+  "payload": {
+    "prompt_core": "hi-tech psytrance, 150 bpm, soaring synth lead, rolling bassline, intricate percussion patterns, dark and hypnotic",
+    "prompt_ext": "hi-tech psytrance, 150 bpm, soaring synth lead, rolling bassline, intricate percussion patterns, dark and hypnotic",
+    "seed": 1126148435,
+    "cfg_scale": 7.0,
+    "steps": 24,
+    "duration": 80.0,
+    "model_config": "soup_ep7_ep14_base_w100",
+    "fullft_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_ep7_ep14.ckpt",
+    "fullft_w": 1.0,
+    "adapter_ckpt": null,
+    "adapter_w": 0.0,
+    "mode": "same",
+    "asymmetric": false,
+    "d_pre": 30.4,
+    "d_post": 30.4,
+    "crop_dur": 19.2
+  }
+}

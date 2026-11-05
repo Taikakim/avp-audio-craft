@@ -11,8 +11,10 @@ is deleted; the LAST checkpoint per run keeps its full resumable form + gets a s
 
 ## Standing policy (Kim)
 
-- **ALL checkpoints are kept** — pruning means stripping optimizer states, NEVER deleting
-  epochs (rule #10). Slims stay eval/inference-usable.
+- **Until a run has been evaluated, ALL checkpoints are kept** — pruning means stripping optimizer states, not
+  deleting epochs (rule #10). Slims stay eval/inference-usable.
+- **After evaluation, prune to the LAST and the BEST epoch, keeping both (Kim 2026-11-03, `docs/TRAINING.md` D35).** Record the
+  verdict and best epoch first. This script has no such mode yet: `--keep-last-only` deletes the best.
 - **The terminal epoch's fat ckpt is sacred**: it is the RESUME POINT. As of 2026-07-23
   runs routinely train FURTHER ("models just start to sound good at eps 5-7" — Kim's
   audit), so a lost terminal fat = a lost ability to continue that run. The script keeps

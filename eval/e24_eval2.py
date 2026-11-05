@@ -30,7 +30,12 @@ import e24_eval as X
 
 X.N_CROPS = 24
 PROMPTS = Path("/home/kim/evals_aac/control_runs/mood_deconf_20261103/prompts.json")
-PACKS = {"C": (X.PACK, 2), "B": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_contourB"), 15), "P": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_proll"), 128)}
+PACKS = {
+    "C": (X.PACK, 2),
+    "B": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_contourB"), 15),
+    "A": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_contourA"), 26),
+    "P": (Path("/run/media/kim/Lehto/latents-all-backup/latents_sa3_proll"), 128),
+}
 ARMS = ("true", "shuffled", "true_null", "shuf_null", "zero")
 LOCAL_FRAMES = 16
 

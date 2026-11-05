@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "name": "mixtape_v3/t09_fullft_ep80_fp32cmp_w100_ext_hw",
+  "created": 1793803439.4069731,
+  "payload": {
+    "prompt_core": "late 90s goa trance, 147 bpm",
+    "prompt_ext": "late 90s goa trance, 147 bpm, dual Roland TB-303 acid battle, resonant bandpass filter sweeps, bittersweet eastern modal melody, punchy 909 snare rolls, shimmering psychedelic flange",
+    "seed": 1403519739,
+    "cfg_scale": 8.0,
+    "steps": 24,
+    "duration": 80.0,
+    "model_config": "fullft_ep80_fp32cmp_w100",
+    "fullft_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft_avp_t256/epoch=80-step=46944.weights.ckpt",
+    "fullft_w": 1.0,
+    "adapter_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__precision_compare/fp32cmp_avp_t4096_bs4_lr1e4/epoch=28-step=14953.weights.ckpt",
+    "adapter_w": 1.0,
+    "mode": "hw",
+    "asymmetric": false,
+    "d_pre": 26.67,
+    "d_post": 26.67,
+    "crop_dur": 26.66
+  }
+}

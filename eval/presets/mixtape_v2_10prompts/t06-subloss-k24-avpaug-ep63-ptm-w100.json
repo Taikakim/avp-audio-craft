@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "name": "mixtape_v2_10prompts/t06_subloss_k24_avpaug_ep63_ptm_w100",
+  "created": 1793782044.4500072,
+  "payload": {
+    "prompt": "early 90s downtempo, ambient, meditative soundscape mood, 102 bpm",
+    "seed": 451991434,
+    "cfg_scale": 1.0,
+    "steps": 8,
+    "duration": 80.0,
+    "model_variant": "ptm",
+    "weight": 1.0,
+    "checkpoint": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/subloss_k24/subloss_k24_avpaug_t512_bf16_s1/epoch=63-step=2368.ckpt",
+    "kind": "adapter",
+    "dora": {
+      "ckpt_path": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/subloss_k24/subloss_k24_avpaug_t512_bf16_s1/epoch=63-step=2368.ckpt",
+      "strength": 1.0
+    }
+  }
+}

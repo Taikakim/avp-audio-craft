@@ -15,8 +15,16 @@ from float_player import inject
 
 ST = os.path.expanduser("~/evals_aac")
 SUB = "e24_contour"
-RUNS = {"C": f"{ST}/control_runs/e24_contourC_eval2_20261103", "B": f"{ST}/control_runs/e24_contourB_eval2_20261103"}
-NAMES = {"C": "Arm C: centred pitch", "B": "Arm B: K&amp;P L3 shapes"}
+RUNS = {
+    "C": f"{ST}/control_runs/e24_contourC_eval2_20261103",
+    "B": f"{ST}/control_runs/e24_contourB_eval2_20261103",
+    "A": f"{ST}/control_runs/e24_contourA_eval2_20261104",
+}
+NAMES = {
+    "C": "Arm C: centred pitch",
+    "B": "Arm B: K&amp;P L3 shapes",
+    "A": "Arm A: interval-from-previous-note",
+}
 ARMS = [("ref", "the source crop"), ("zero", "no stream"), ("true_null", "stream, CFG scales it"), ("shuf_null", "shuffled, CFG scales it"), ("true", "stream, both branches"), ("shuffled", "shuffled, both branches")]
 os.makedirs(f"{ST}/{SUB}", exist_ok=True)
 

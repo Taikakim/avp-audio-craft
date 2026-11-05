@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "name": "mixtape_v2_10prompts/t01_soup_mean_ptm_w075",
+  "created": 1793781592.0728915,
+  "payload": {
+    "prompt": "psychedelic trance, 136 bpm, bubbling acid line, pulsating sub bass, tight kick and hi-hats, mystical",
+    "seed": 1382257276,
+    "cfg_scale": 1.0,
+    "steps": 8,
+    "duration": 80.0,
+    "model_variant": "ptm",
+    "weight": 0.75,
+    "checkpoint": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_mean.ckpt",
+    "kind": "fullft",
+    "dora": {
+      "ckpt_path": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_mean.ckpt",
+      "strength": 0.75
+    }
+  }
+}

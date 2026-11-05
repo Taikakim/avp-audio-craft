@@ -7,6 +7,7 @@ set -u
 SAO=/home/kim/Projects/SAO
 cd "$SAO" || exit 1
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0 PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2
+export WANDB_PROJECT=sa3-lora-dev
 export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 NUMEXPR_NUM_THREADS=4
 OUT=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_lora_runs   # 4.4 GB per checkpoint, Mantu is nearly full
 if [ "${SMOKE:-0}" = "1" ]; then NAME=_e24b_smoke; STEPS=20; MILES="20"; EVERY=10; else NAME=e24_contourB_r128_2026-11-03; STEPS="${STEPS:-2400}"; MILES="800 1600 2400"; EVERY=200; fi

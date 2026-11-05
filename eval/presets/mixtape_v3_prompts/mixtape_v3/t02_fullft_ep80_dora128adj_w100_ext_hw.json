@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "name": "mixtape_v3/t02_fullft_ep80_dora128adj_w100_ext_hw",
+  "created": 1793803062.9527206,
+  "payload": {
+    "prompt_core": "This track is a high-energy Psytrance piece that fuses the driving force of classic Goa trance with modern, polished production techniques. It runs at 125 BPM in 4/4 time and is rooted in E\u266d major, with occasional color from an E\u266dmaj7 chord that adds a lush, slightly jazzy lift amid the relentless rhythm.",
+    "prompt_ext": "high-energy psytrance, classic Goa trance, 125 bpm, Eb major, Nord Lead 2 screaming resonant poly-arp, Oberheim SEM warm brass stabs voicing an Ebmaj7 chord, crisp ping-pong stereo delays, relentless driving rolling bassline",
+    "seed": 729796532,
+    "cfg_scale": 8.0,
+    "steps": 24,
+    "duration": 78.61,
+    "model_config": "fullft_ep80_dora128adj_w100",
+    "fullft_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft_avp_t256/epoch=80-step=46944.weights.ckpt",
+    "fullft_w": 1.0,
+    "adapter_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt",
+    "adapter_w": 1.0,
+    "mode": "hw",
+    "asymmetric": true,
+    "d_pre": 22.2,
+    "d_post": 31.91,
+    "crop_dur": 24.51
+  }
+}

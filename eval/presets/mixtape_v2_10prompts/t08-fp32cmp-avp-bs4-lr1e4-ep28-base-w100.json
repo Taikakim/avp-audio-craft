@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "name": "mixtape_v2_10prompts/t08_fp32cmp_avp_bs4_lr1e4_ep28_base_w100",
+  "created": 1793782084.9269235,
+  "payload": {
+    "prompt": "hi-tech psytrance, 150 bpm, soaring synth lead, rolling bassline, intricate percussion patterns, dark and hypnotic",
+    "seed": 1126148435,
+    "cfg_scale": 6.0,
+    "steps": 24,
+    "duration": 80.0,
+    "model_variant": "base",
+    "weight": 1.0,
+    "checkpoint": "/run/media/kim/Mantu/sa3_lora_runs/__precision_compare/fp32cmp_avp_t4096_bs4_lr1e4/epoch=28-step=14953.weights.ckpt",
+    "kind": "adapter",
+    "dora": {
+      "ckpt_path": "/run/media/kim/Mantu/sa3_lora_runs/__precision_compare/fp32cmp_avp_t4096_bs4_lr1e4/epoch=28-step=14953.weights.ckpt",
+      "strength": 1.0
+    }
+  }
+}

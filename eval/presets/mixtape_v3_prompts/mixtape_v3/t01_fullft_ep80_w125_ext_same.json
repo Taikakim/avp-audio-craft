@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "name": "mixtape_v3/t01_fullft_ep80_w125_ext_same",
+  "created": 1793802997.6795816,
+  "payload": {
+    "prompt_core": "psychedelic trance, 136 bpm, bubbling acid line, pulsating sub bass, tight kick and hi-hats, mystical",
+    "prompt_ext": "psychedelic trance, 136 bpm, bubbling acid line, pulsating sub bass, tight kick and hi-hats, mystical",
+    "seed": 1382257276,
+    "cfg_scale": 10.0,
+    "steps": 24,
+    "duration": 80.0,
+    "model_config": "fullft_ep80_w125",
+    "fullft_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft_avp_t256/epoch=80-step=46944.weights.ckpt",
+    "fullft_w": 1.25,
+    "adapter_ckpt": null,
+    "adapter_w": 0.0,
+    "mode": "same",
+    "asymmetric": false,
+    "d_pre": 32.88,
+    "d_post": 32.88,
+    "crop_dur": 14.23
+  }
+}

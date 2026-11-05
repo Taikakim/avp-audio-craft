@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "name": "mixtape_v3/t03_fullft_ep80_dora128adj_w125_ext_same",
+  "created": 1793803097.435885,
+  "payload": {
+    "prompt_core": "2020s tech trance, trance, space mood, 132 bpm",
+    "prompt_ext": "2020s tech trance, trance, space mood, 132 bpm",
+    "seed": 158725066,
+    "cfg_scale": 8.0,
+    "steps": 24,
+    "duration": 80.0,
+    "model_config": "fullft_ep80_dora128adj_w125",
+    "fullft_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft_avp_t256/epoch=80-step=46944.weights.ckpt",
+    "fullft_w": 1.0,
+    "adapter_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt",
+    "adapter_w": 1.25,
+    "mode": "same",
+    "asymmetric": false,
+    "d_pre": 26.96,
+    "d_post": 26.96,
+    "crop_dur": 26.09
+  }
+}

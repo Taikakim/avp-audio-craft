@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "name": "mixtape_v3/t06_soup_mean_base_w100_ext_same",
+  "created": 1793803283.671333,
+  "payload": {
+    "prompt_core": "early 90s downtempo, ambient, meditative soundscape mood, 102 bpm",
+    "prompt_ext": "early 90s downtempo, ambient, meditative soundscape mood, 102 bpm",
+    "seed": 451991434,
+    "cfg_scale": 7.0,
+    "steps": 24,
+    "duration": 80.0,
+    "model_config": "soup_mean_base_w100",
+    "fullft_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_mean.ckpt",
+    "fullft_w": 1.0,
+    "adapter_ckpt": null,
+    "adapter_w": 0.0,
+    "mode": "same",
+    "asymmetric": false,
+    "d_pre": 35.85,
+    "d_post": 35.85,
+    "crop_dur": 8.29
+  }
+}

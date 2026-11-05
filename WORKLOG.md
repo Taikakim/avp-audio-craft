@@ -4,6 +4,26 @@ Reverse-chronological. Append an entry (newest at top) when you finish or learn
 something an agent in another repo would want to know. Keep entries short; move
 durable facts into `MASTER.md`. Conventions:
 
+- **2026-11-05 — ANTIGRAVITY: Overnight execution queue complete (Kuang's Melody Probe Map, E24 Arm B & Arm A, 10-Track Mixtape Pool V3 Islands + Bridge).**
+  - **1. Kuang's Melody Probe Map (`latch/melody_probe_map.py`, I9):** Completed GPU DiT activation extraction (160 crops x 6 sigmas across 24 DiT blocks + inputs/outputs) + random-init DiT control, followed by 5-fold cross-validation ridge regression split strictly by artist/track (`/run/media/kim/Mantu/sa3_lora_runs/melody_probe_2026-11-04/melody_probe_map.json`). Key scientific results:
+    * Rhythm `beat` positive control replicated decisively at block 14 ($R^2 = 0.828$ vs control $0.053$).
+    * Lead f0 head on $x_t$ achieves $R^2 = 0.554$, outperforming the best internal DiT block ($R^2 = 0.342$).
+    * Phrase-rate contour (1–6s) completely flat across all internal blocks ($R^2 \le 0.031$, baseline noise floor $0.008$), proving melody contour is NOT emergent in DiT activations and mathematically establishing the necessity of external conditioning inlets (e.g. E24 / D15).
+  - **2. E24 MuScriptor Melody Contour Fine-Tuning & Multi-Arm Listening Board:**
+    * Completed E24 Arm B (`latents_sa3_contourB`, 15-ch discrete K&P L3 tokens, 2,400 steps): macro-follow +0.055, note-scale follow +0.003 (flat noise). Confirms discrete rank tokens are too coarse for the DiT.
+    * Completed E24 Arm A (`latents_sa3_contourA`, 26-ch interval steps +-12 semitones + onset/hold, 2,400 steps): macro-follow **+0.123**, note-scale follow **+0.065 [+0.016, +0.111]** (21/32 positive). Arm A decisively beats Arm B on local note-level precision.
+    * Arm C (continuous centred pitch, 2-ch) remains the undisputed champion for macro-phrase contour (+0.467 [+0.392, +0.543], 46/48 positive).
+    * Deployed multi-arm listening page with 432 AAC clips side-by-side at `https://aavepyora.online/files/evals/e24_contour.html` (gate: 0/24 fails across all arms).
+  - **3. Full 10-Track Mixtape Pool V3 (90s Islands + 4-Bar Inpaint Bridge & A2A):**
+    * Batch generated all 10 tracks (`p00` through `p09`) in `eval/generate_mixtape_v3_islands.py`. Harvested clean 12-bar non-overlapping Island A (start ~2.0s) and Island B (start ~50.0s) from single-pass 90s parents at zero crossings (`madmom_downbeats` + `find_zero_crossing_backwards`), sharing harmonic DNA.
+    * Inpainted exact 16-beat (4-bar) bridge between islands under moderated prompt extensions ($\le 2$ terms).
+    * Rendered both Mode A (Direct 16-beat inpaint bridge) and Mode B (Island B restyled via A2A $\sigma=0.60$ with extension prompt, then 16-beat bridge).
+    * Encoded all 40 audio assets to AAC 192k into `~/evals_aac/mixtape_trackpool_v3/`.
+    * Hardened `ratings.php` regex for track ID validation and deployed to DreamHost.
+    * Doubled mobile touch area on the floating transport bar (`float_player.py`) and enabled automatic looping.
+    * Built and deployed `https://aavepyora.online/files/evals/mixtape_trackpool_v3.html` (verified live, HTTP 200). GPU 0 idle and released.
+
+
 - **2026-10-29 — ANTIGRAVITY: Synth Inversion V8 Phase 2 (Dynamic Inverter & Centroid Trajectory Gate) and Phase 3 (End-to-End Pipeline & DAW Export Bundle) complete.**
   - **Phase 2 Architecture & Regularization:** Authored `dynamic_inverter_v8.py` and `dynamic_dataset_v8.py`. Decoupled 59-param static patch core from 4 dynamic 10.76 Hz automation lanes (Cutoff CC 74, Resonance CC 71, Drive CC 1, FM Depth CC 11) matching SA3/LatCH temporal resolution (43 frames across 4.0s). Enforced second-order curvature smoothness penalty $\mathcal{L}_{\text{smooth}} = \|\theta(t+1) - 2\theta(t) + \theta(t-1)\|^2$ to eliminate high-frequency chatter without penalizing linear/sinusoidal sweeps.
   - **Dynamic Inverter Training:** Trained on 500 pre-cached NVMe dynamic sweeps in `train_v8_dynamic_inverter.py` on GPU 0 with bfloat16 AMP. Validation loss converged to **0.1201** (Static: 0.0782, Dynamic: 0.0209). Checkpoint: `/home/kim/sao_runs/v8_phase2_inverter/dynamic_inverter_best.pt`.
@@ -2922,3 +2942,5 @@ Files: `eval/audio_corruption_scan.py`, `eval/corruption_base_vs_ptm.py` (SAO); 
 - [2026-11-03 21:52] (WINTERMUTE) D15 checks, invented melodies, not heard: stream in both CFG branches 13%, CFG on the stream 73%, other render seed 65%, other training seed 73%, EMA weights 5.0% vs no stream 4.8%. A zero-init inlet on an unconverged EMA reads as dead (MASTER section 5). Page updated. Point-and-Play row added to paper verdicts.
 - [2026-11-04 01:41] (WINTERMUTE) A7: train_lora Fusion + LoRA now warms up over 20 steps by default (first step on a zero-init B 2.5e-3 -> 1.3e-4 on a toy LoRA); --warmup-steps 0 restores the old behaviour. No training run compared. B7's mir-conditioner arms exist only on LUMI if at all, so the CFG-on-stream re-read waits on access.
 - [2026-11-04 02:53] (WINTERMUTE) Published the melody field guide, files/blog/2026-11-03-melody-field-guide.html, on direct ask from Kim. Open at publication: GHOST-NOTE review, independent check of the night numbers, no audio, section 7 unheard.
+- [2026-11-04 03:15] (WINTERMUTE) Published 8 ANTIGRAVITY boards never online (drum_sep_g0/g1/g2/g3, drum_sep_audedit, idm_drums_benchmark, v7_smoke_mix, synth_inversion_h6) restyled, with an unchecked-wording note, plus updated mixtape_chain and mixtape_relcut; index updated. Six run_meta.json with a local path were up briefly, removed. Not published: old V8 board, V5/V6 run folders, local clamp pages (live copies are the redacted ones).
+- [2026-11-04 07:43] (WINTERMUTE) D6 negative (390 clips, measured): step cap, stop-late and band weights land no more frames on the note than plain chroma guidance, already clean at gate 1/24, 0/24. Options kept off by default. files/evals/chroma_stabilisers.html.

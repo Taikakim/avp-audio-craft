@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: THE-FINN 2026-11-04 — heads default to the HEADS dict so a wrapper (chroma_avp_song_gate.py) can swap them; default behaviour unchanged
 # Last edited: THE-FINN 2026-11-03 — paths updated for the __theme sorting of sa3_lora_runs and latch_sweep
 # Last edited: THE-FINN 2026-11-03 — paths updated for the sa3_control_runs/__theme reorganisation
 # Owner: ANTIGRAVITY (created 2026-10-29)
@@ -113,10 +114,11 @@ def free_gb(path):
     return shutil.disk_usage(path).free / 2**30
 
 
-def build_plan(heads=("goa_e13", "avp_aug", "goa_avp"), targets=None, gains=None,
+def build_plan(heads=None, targets=None, gains=None,
                seeds=None, extra=()):
     """Build the test matrix cells. `extra` = iterable of (head, gain) pairs added
     on top of the full heads x gains grid (used for gain-matching the weaker head)."""
+    heads = heads or tuple(HEADS)
     targets = targets or TARGET_IDS
     gains = gains or GAINS
     seeds = seeds or SEEDS
@@ -209,7 +211,7 @@ def main():
         return
 
     # Check that head paths exist before loading
-    for hid in ["goa_e13", "avp_aug", "goa_avp"]:
+    for hid in HEADS:
         try:
             resolved = resolve_head_path(hid)
             print(f"[matrix] Head {hid} -> {resolved}")
@@ -223,7 +225,7 @@ def main():
 
     print("[matrix] Loading StableAudioModel (medium-base)...", flush=True)
     model = StableAudioModel.from_pretrained("medium-base", device="cuda")
-    print(f"[matrix] Loading Goa DoRA adapter ({DORA_FT.name})...", flush=True)
+    print(f"[matrix] Loading DoRA adapter ({DORA_FT}) ...", flush=True)
     model.load_lora([str(DORA_FT)])
     model.set_lora_strength(1.0)
     print("[matrix] Model ready on GPU.", flush=True)

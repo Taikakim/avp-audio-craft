@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "name": "mixtape_v3/t04_fullft_ep80_subloss_k24_w100_ext_hw",
+  "created": 1793803176.4177523,
+  "payload": {
+    "prompt_core": "mid 90s goa trance, melodic mood, 151 bpm",
+    "prompt_ext": "mid 90s goa trance, melodic mood, 151 bpm, Roland JD-800 sparkling crystal lead, Korg Prophecy eastern microtonal lead riff, acid squelch, soaring euphoric dual-lead harmony, frantic 16th-note arpeggios",
+    "seed": 782949196,
+    "cfg_scale": 8.0,
+    "steps": 24,
+    "duration": 80.0,
+    "model_config": "fullft_ep80_subloss_k24_w100",
+    "fullft_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft_avp_t256/epoch=80-step=46944.weights.ckpt",
+    "fullft_w": 1.0,
+    "adapter_ckpt": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/subloss_k24/subloss_k24_avpaug_t512_bf16_s1/epoch=63-step=2368.ckpt",
+    "adapter_w": 1.0,
+    "mode": "hw",
+    "asymmetric": false,
+    "d_pre": 27.04,
+    "d_post": 27.04,
+    "crop_dur": 25.92
+  }
+}

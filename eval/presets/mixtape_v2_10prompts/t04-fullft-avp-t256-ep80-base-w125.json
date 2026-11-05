@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "name": "mixtape_v2_10prompts/t04_fullft_avp_t256_ep80_base_w125",
+  "created": 1793781857.4260375,
+  "payload": {
+    "prompt": "mid 90s goa trance, melodic mood, 151 bpm",
+    "seed": 782949196,
+    "cfg_scale": 6.0,
+    "steps": 24,
+    "duration": 80.0,
+    "model_variant": "base",
+    "weight": 1.25,
+    "checkpoint": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft_avp_t256/epoch=80-step=46944.weights.ckpt",
+    "kind": "fullft",
+    "dora": {
+      "ckpt_path": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft_avp_t256/epoch=80-step=46944.weights.ckpt",
+      "strength": 1.25
+    }
+  }
+}

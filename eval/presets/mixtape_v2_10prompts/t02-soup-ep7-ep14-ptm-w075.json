@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "name": "mixtape_v2_10prompts/t02_soup_ep7_ep14_ptm_w075",
+  "created": 1793781751.4034996,
+  "payload": {
+    "prompt": "This track is a high-energy Psytrance piece that fuses the driving force of classic Goa trance with modern, polished production techniques. It runs at 125 BPM in 4/4 time and is rooted in E\u266d major, with occasional color from an E\u266dmaj7 chord that adds a lush, slightly jazzy lift amid the relentless rhythm.",
+    "seed": 729796532,
+    "cfg_scale": 1.0,
+    "steps": 8,
+    "duration": 80.0,
+    "model_variant": "ptm",
+    "weight": 0.75,
+    "checkpoint": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_ep7_ep14.ckpt",
+    "kind": "fullft",
+    "dora": {
+      "ckpt_path": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_ep7_ep14.ckpt",
+      "strength": 0.75
+    }
+  }
+}

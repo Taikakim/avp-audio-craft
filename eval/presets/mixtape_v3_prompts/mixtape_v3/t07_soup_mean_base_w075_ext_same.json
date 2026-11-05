@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "name": "mixtape_v3/t07_soup_mean_base_w075_ext_same",
+  "created": 1793803315.1698325,
+  "payload": {
+    "prompt_core": "early 2000s goa trance, melodic dark mood, 145 bpm",
+    "prompt_ext": "early 2000s goa trance, melodic dark mood, 145 bpm",
+    "seed": 1391676905,
+    "cfg_scale": 7.0,
+    "steps": 24,
+    "duration": 78.5,
+    "model_config": "soup_mean_base_w075",
+    "fullft_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_mean.ckpt",
+    "fullft_w": 0.75,
+    "adapter_ckpt": null,
+    "adapter_w": 0.0,
+    "mode": "same",
+    "asymmetric": true,
+    "d_pre": 24.06,
+    "d_post": 34.58,
+    "crop_dur": 19.86
+  }
+}

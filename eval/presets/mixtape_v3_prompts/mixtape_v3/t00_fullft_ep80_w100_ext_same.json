@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "name": "mixtape_v3/t00_fullft_ep80_w100_ext_same",
+  "created": 1793802965.6367414,
+  "payload": {
+    "prompt_core": "2020s goa trance, space retro mood, 143 bpm",
+    "prompt_ext": "2020s goa trance, space retro mood, 143 bpm",
+    "seed": 1321560844,
+    "cfg_scale": 10.0,
+    "steps": 24,
+    "duration": 80.0,
+    "model_config": "fullft_ep80_w100",
+    "fullft_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft_avp_t256/epoch=80-step=46944.weights.ckpt",
+    "fullft_w": 1.0,
+    "adapter_ckpt": null,
+    "adapter_w": 0.0,
+    "mode": "same",
+    "asymmetric": false,
+    "d_pre": 29.93,
+    "d_post": 29.93,
+    "crop_dur": 20.14
+  }
+}

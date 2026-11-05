@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "name": "mixtape_v2_10prompts/t00_soup_mean_ptm_w075",
+  "created": 1793781578.4017932,
+  "payload": {
+    "prompt": "2020s goa trance, space retro mood, 143 bpm",
+    "seed": 1321560844,
+    "cfg_scale": 1.0,
+    "steps": 8,
+    "duration": 80.0,
+    "model_variant": "ptm",
+    "weight": 0.75,
+    "checkpoint": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_mean.ckpt",
+    "kind": "fullft",
+    "dora": {
+      "ckpt_path": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft/fullft_soup_fp32cmp_avp_t4096_bs1_no35/soup_mean.ckpt",
+      "strength": 0.75
+    }
+  }
+}

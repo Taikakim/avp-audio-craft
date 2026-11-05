@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "name": "mixtape_v3/t05_fullft_ep80_subloss_k24_w125_ext_same",
+  "created": 1793803214.4379516,
+  "payload": {
+    "prompt_core": "mid 90s goa trance, ambient, space soundscape mood, 110 bpm",
+    "prompt_ext": "mid 90s goa trance, ambient, space soundscape mood, 110 bpm",
+    "seed": 1262357892,
+    "cfg_scale": 8.0,
+    "steps": 24,
+    "duration": 80.0,
+    "model_config": "fullft_ep80_subloss_k24_w125",
+    "fullft_ckpt": "/run/media/kim/Mantu/sa3_lora_runs/__fullft/fullft_avp_t256/epoch=80-step=46944.weights.ckpt",
+    "fullft_w": 1.0,
+    "adapter_ckpt": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/subloss_k24/subloss_k24_avpaug_t512_bf16_s1/epoch=63-step=2368.ckpt",
+    "adapter_w": 1.25,
+    "mode": "same",
+    "asymmetric": false,
+    "d_pre": 26.58,
+    "d_post": 26.58,
+    "crop_dur": 26.85
+  }
+}

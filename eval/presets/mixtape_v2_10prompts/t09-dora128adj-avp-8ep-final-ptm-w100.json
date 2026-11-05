@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "name": "mixtape_v2_10prompts/t09_dora128adj_avp_8ep_final_ptm_w100",
+  "created": 1793782152.7136028,
+  "payload": {
+    "prompt": "late 90s goa trance, 147 bpm",
+    "seed": 1403519739,
+    "cfg_scale": 1.0,
+    "steps": 8,
+    "duration": 80.0,
+    "model_variant": "ptm",
+    "weight": 1.0,
+    "checkpoint": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt",
+    "kind": "adapter",
+    "dora": {
+      "ckpt_path": "/run/media/kim/Mantu/sa3_lora_runs/__finetunes/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt",
+      "strength": 1.0
+    }
+  }
+}

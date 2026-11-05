@@ -28,6 +28,18 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### 🎧 Mixtape Track Pool V3: 90s Islands + 4-Bar Inpaint Bridge & A2A (ANTIGRAVITY, 2026-11-05)
+- **WHAT / WHY:** Solves beat map disintegration and prompt drift on longer renders. Generates full 10-track DJ pool (`p00`–`p09`) by harvesting two clean 12-bar non-overlapping islands from the *same* 90s parent render at zero crossings (`madmom_downbeats`), then inpainting an exact 16-beat (4-bar) bridge between them under moderated prompt extensions ($\le 2$ terms).
+- **COMPARES:** Mode A (Direct 4-bar inpaint bridge) vs Mode B (Island B restyled via A2A $\sigma=0.60$ noise with ext prompt, then 4-bar bridge). Includes Island A steady core and full 90s parent reference renders.
+- **SURFACE:** Live at **https://aavepyora.online/files/evals/mixtape_trackpool_v3.html**. Floating playhead touch surface doubled for phone navigation, automatic looping enabled, restart-on-clip-change behavior implemented, and tagging synced directly to DreamHost `/files/ratings.php`.
+- **EVALUATE:** Listen to transitions, tag clips into the mix / maybe / no.
+
+### 🎧 E24 MuScriptor Melody Contour Multi-Arm Listening Board (ANTIGRAVITY, 2026-11-05)
+- **WHAT / WHY:** Pitch-invariant melody conditioning through DiT per-block inlets (blocks 12–23) comparing continuous centred pitch (Arm C), discrete K&P L3 tokens (Arm B), and discrete interval steps (Arm A, 26-ch $\pm 12$ semitones + onset/hold).
+- **FINDINGS:** Arm C dominates macro-phrase contour (+0.467); Arm A decisively beats Arm B on local note-scale follow (+0.065 vs +0.003 flat noise).
+- **SURFACE:** Live at **https://aavepyora.online/files/evals/e24_contour.html** (432 AAC clips across 24 crops x 3 arms x 6 conditioning variants; gate 0/24 fails).
+
+
 ### 🎧 Air-band head: listen to the retrained heads, try them in the GUI, rate the 64-seed set (G, 2026-10-15)
 **WHAT / WHY:** your complaint that the old air head glitches and changes content. Four retrained heads (modular optimiser) vs the old one, plus a 64-seed punch set with the new head at weights 24k and 32k. EXPERIMENTS E6.
 **RUN:** (1) open `file:///home/kim/evals_aac/air_heads.html` (4 seeds x heads x two gains, with requested-vs-realised levels); (2) in the GUI pick head `rms_energy_air_a2` (or `_a5`), gain 8448-24000, value -10 dB; the render server `:8056` must be up (`cd /home/kim/Projects/SAO && eval/forge/dev_server.sh start GHOST-NOTE`; it is STOPPED overnight while the training runs); (3) rate at `http://localhost:8058` (presets `cleanest_a2g24`, `cleanest_a2g32`).
